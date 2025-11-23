@@ -98,3 +98,10 @@ AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 4) waarmee een
 - **Config:** nieuw `config/ai.php` met driver/model/base_url; .env.example uitbreiden met `AI_DRIVER`, `AI_MODEL`, `OPENAI_API_KEY`, `OPENAI_BASE_URL` placeholders.
 - **Queue jobs:** `GenerateSessionReflectionJob` en `GenerateWeaponInsightJob` roepen de service aan en verwerken resultaten in respectieve modellen/velden.
 - **Filament actions:** in `SessionResource` en `WeaponResource` extra actions om jobs te dispatchen (AI-calls blijven async).
+
+## 12) Iteratie: AI-Coach vrije vragen page (huidige taak)
+- **Doel:** Filament-pagina `AiCoachPage` waar gebruiker vrije vragen kan stellen over eigen sessies/wapens, met optionele filters (wapen + periode) en veiligheid/disclaimer in UI + prompt.
+- **Datamodel:** nieuwe tabel `coach_questions` met `id, user_id (fk), weapon_id (nullable), question, answer, asked_at (timestamp), period_from/to (nullable), created_at/updated_at`. Relaties: User hasMany CoachQuestions; Weapon hasMany CoachQuestions; CoachQuestion belongsTo User en Weapon.
+- **Service-uitbreiding:** `ShooterCoach::answerCoachQuestion(User $user, string $question, ?int $weaponId = null, ?Carbon $from = null, ?Carbon $to = null)` bouwt context: relevante sessies van user gefilterd op periode/wapen + recente wapen entries; prompt benadrukt veiligheid/geen illegale tips en dat AI geen vervanging is voor instructeurs/regels. Retourneert antwoordstring.
+- **Filament Page:** `AiCoachPage` met textarea vraag, select wapen (optioneel), date range filter, submit-button "Stel vraag aan AI-coach", resultaatkaart met antwoord (en waarschuwing dat AI geen vervanging is). Na submit: roept ShooterCoach aan, slaat vraag/antwoord op in `coach_questions` en toont laatste antwoord. Toon recente historie (bijv. table/list van vorige Q/A van gebruiker) voor context.
+- **Veiligheid:** System prompt + UI bevatten disclaimer over veiligheid, geen illegale/gevaarlijke adviezen; antwoord max ~150 woorden. Geen queue-job nodig (synchrone vraag), maar blijf defensief bij API-fouten (toon melding).
