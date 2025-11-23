@@ -6,20 +6,22 @@ use App\Enums\WeaponType;
 use App\Jobs\GenerateWeaponInsightJob;
 use App\Models\Weapon;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Infolists\Components\Section as InfoSection;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section as InfoSection;
 use Filament\Schemas\Schema;
-use Filament\Tables\Actions;
-use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -50,7 +52,7 @@ class WeaponResource extends Resource
                     ->required()
                     ->dehydrated(fn ($state) => filled($state)),
 
-                Section::make('Basisgegevens')
+                InfoSection::make('Basisgegevens')
                     ->columns(2)
                     ->schema([
                         TextInput::make('name')
@@ -132,8 +134,8 @@ class WeaponResource extends Resource
                     ]),
             ])
             ->actions([
-                Actions\ViewAction::make(),
-                Actions\EditAction::make(),
+                ViewAction::make(),
+                EditAction::make(),
                 Action::make('generateAiWeaponInsight')
                     ->label('Genereer AI-inzichten nu')
                     ->icon('heroicon-m-sparkles')
@@ -149,8 +151,8 @@ class WeaponResource extends Resource
                     }),
             ])
             ->bulkActions([
-                Actions\BulkActionGroup::make([
-                    Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -167,7 +169,9 @@ class WeaponResource extends Resource
                         TextEntry::make('serial_number')->label('Serienummer'),
                         TextEntry::make('storage_location')->label('Opslaglocatie'),
                         TextEntry::make('owned_since')->label('In bezit sinds')->date(),
-                        TextEntry::make('is_active')->label('Actief')->boolean(),
+                        TextEntry::make('is_active')
+                            ->label('Actief')
+                            ->formatStateUsing(fn ($state) => $state ? 'Ja' : 'Nee'),
                         TextEntry::make('notes')->label('Notities')->markdown(),
                     ]),
                 InfoSection::make('AI-inzichten')
