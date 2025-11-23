@@ -38,7 +38,7 @@ class SessionExportService
         $filename = sprintf('sessions_%s_%s.csv', $from->format('Ymd'), $to->format('Ymd'));
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ];
 
         $columns = [
@@ -78,6 +78,7 @@ class SessionExportService
                         null,
                         $session->notes_raw,
                     ]);
+
                     continue;
                 }
 
@@ -129,7 +130,7 @@ class SessionExportService
             ->groupBy(function ($entry) {
                 $weapon = $entry->weapon;
 
-                return $weapon?->name . '|' . ($weapon?->caliber ?? 'onbekend');
+                return $weapon?->name.'|'.($weapon?->caliber ?? 'onbekend');
             })
             ->map(function ($entries, $key) {
                 [$weaponName, $caliber] = explode('|', $key);

@@ -19,9 +19,7 @@ class GenerateWeaponInsightJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public function __construct(public Weapon $weapon)
-    {
-    }
+    public function __construct(public Weapon $weapon) {}
 
     public function handle(): void
     {

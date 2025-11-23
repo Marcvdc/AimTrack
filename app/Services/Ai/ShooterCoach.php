@@ -22,8 +22,7 @@ class ShooterCoach
         private readonly string $model = '',
         private readonly ?string $baseUrl = null,
         private readonly ?string $apiKey = null,
-    ) {
-    }
+    ) {}
 
     public static function make(): self
     {
