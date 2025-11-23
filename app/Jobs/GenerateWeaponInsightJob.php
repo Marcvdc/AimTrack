@@ -3,11 +3,14 @@
 namespace App\Jobs;
 
 use App\Models\Weapon;
+use App\Services\Ai\ShooterCoach;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class GenerateWeaponInsightJob implements ShouldQueue
 {
@@ -22,6 +25,13 @@ class GenerateWeaponInsightJob implements ShouldQueue
 
     public function handle(): void
     {
-        // TODO: invullen met AI-call via ShooterCoach service.
+        try {
+            ShooterCoach::make()->generateWeaponInsight($this->weapon->fresh(['sessionWeapons.session']));
+        } catch (Throwable $exception) {
+            Log::error('AI: genereren wapeninzichten mislukt', [
+                'weapon_id' => $this->weapon->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 }
