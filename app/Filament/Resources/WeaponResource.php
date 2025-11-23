@@ -38,6 +38,8 @@ class WeaponResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Wapens';
 
+    protected static ?string $navigationGroup = 'Beheer';
+
     public static function form(Schema $schema): Schema
     {
         return $schema
@@ -168,17 +170,21 @@ class WeaponResource extends Resource
                         TextEntry::make('notes')->label('Notities')->markdown(),
                     ]),
                 InfoSection::make('AI-inzichten')
+                    ->description('Automatisch gegenereerd; vat trends samen op basis van je sessies.')
                     ->schema([
                         TextEntry::make('aiWeaponInsight.summary')
                             ->label('Samenvatting')
+                            ->icon('heroicon-o-sparkles')
                             ->placeholder('Nog niet beschikbaar'),
                         TextEntry::make('aiWeaponInsight.patterns')
                             ->label('Patronen')
                             ->bulleted()
+                            ->icon('heroicon-o-sparkles')
                             ->placeholder('Nog niet beschikbaar'),
                         TextEntry::make('aiWeaponInsight.suggestions')
                             ->label('Suggesties')
                             ->bulleted()
+                            ->icon('heroicon-o-sparkles')
                             ->placeholder('Nog niet beschikbaar'),
                     ])
                     ->columnSpanFull(),

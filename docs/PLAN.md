@@ -133,3 +133,21 @@ AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 4) waarmee een
 - **Release workflow:** GitHub Actions `docker-release` op push naar `main`; bouwt en pusht image naar GHCR met tags `latest` + semver (laatste git tag fallback), gebruikt provenance cache waar mogelijk.
 - **Prod defaults:** `.env.example` op `APP_ENV=production`, `APP_DEBUG=false`, DB user met beperkte rechten. Force HTTPS via config flag en trusted proxies; queue worker persistent; AI timeouts/retries + defensieve fallback bij netwerkfouten.
 - **Checklist "Application Hardened":** document in `docs/` met concrete stappen (keys/APP_KEY, caches, storage permissions, DB user, HTTPS/headers, mail/queue readiness, backups/logging) die voor livegang moeten zijn afgevinkt.
+
+## 17) Monitoring & logging + UX-final pass (huidige iteratie)
+- **Healthcheck:** publieke (unauthenticated) endpoint `/health` die DB-connectiviteit, queue-config en storage schrijfbaarheid verifieert en `200 OK` + JSON teruggeeft; geen gevoelige data. Te gebruiken voor container/orchestration probes.
+- **Loggingstrategie:** Sentry als primaire error-tracker met env-toggle; val terug op structured file logging (Stack driver) en `stderr` voor containers. Config in `config/logging.php` en `.env.example` placeholders voor DSN/sample rate. Alle queue-jobs loggen failures; AI-service errors krijgen breadcrumbs.
+- **Queue monitoring:** Laravel Horizon optioneel, maar minimaal `queue:failed` view + Filament dashboard widget die recente mislukte jobs toont. Horizon config voorbereiden maar niet verplicht voor runtime.
+- **Back-ups:** documenteer in `docs/` een pragmatische strategie voor database + storage (bijv. pg_dump cron + object storage sync) inclusief frequentie en herstelstappen. Geen code-automation nu, alleen checklist/strategie.
+- **UX final pass:**
+  - NL-labels nalopen in Filament resources/forms, navigatie groeperen (bijv. "Dagboek" voor sessies, "Beheer" voor wapens/AI-inzichten).
+  - AI-output visueel onderscheiden (badge "AI" + aparte kaart/tabelsectie) en user-notities duidelijk labelen.
+  - Foutmeldingen verduidelijken in Livewire/Filament (notifications met NL teksten, duidelijke empty states).
+  - Export lay-out check: PDF/CSV bevat disclaimers en nette kolomtitels (NL), basisstijl in Blade-view.
+
+**Aanpak volgorde:**
+1. Healthcheck route + controller toevoegen incl. storage write-check en DB ping.
+2. Logging/Sentry configureren (`config/logging.php`, `.env.example`, `config/sentry.php` indien nodig) + queue failure logging.
+3. Queue monitoring: eenvoudige Filament widget voor recente failed jobs en link naar `queue:failed` (CLI) of Horizon stub.
+4. Backupstrategie uitschrijven in `docs/BACKUPS.md` (DB + storage + herstelstappen).
+5. UX-polish: labels/navigatie in Filament, AI-output badges, duidelijke meldingen, export PDF/CSV labels/disclaimer en leeg-states.

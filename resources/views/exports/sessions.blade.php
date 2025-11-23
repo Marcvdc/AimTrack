@@ -11,6 +11,7 @@
         th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
         th { background: #f7f7f7; }
         .muted { color: #555; }
+        .disclaimer { border: 1px dashed #999; padding: 10px; margin-top: 12px; background: #f9fafb; }
     </style>
 </head>
 <body>
@@ -58,6 +59,7 @@
                 <th>Groepering</th>
                 <th>Afwijking</th>
                 <th>Flyers</th>
+                <th>Notities (gebruiker)</th>
             </tr>
         </thead>
         <tbody>
@@ -69,6 +71,7 @@
                         <td>{{ $session->range_name }}</td>
                         <td>{{ $session->location }}</td>
                         <td colspan="8" class="muted">Geen wapens geregistreerd</td>
+                        <td>{{ $session->notes_raw }}</td>
                     </tr>
                 @else
                     @foreach ($entries as $entry)
@@ -84,17 +87,20 @@
                             <td>{{ $entry->group_quality_text }}</td>
                             <td>{{ $entry->deviation?->value ?? $entry->deviation }}</td>
                             <td>{{ $entry->flyers_count }}</td>
+                            <td>{{ $session->notes_raw }}</td>
                         </tr>
                     @endforeach
                 @endif
             @empty
                 <tr>
-                    <td colspan="11">Geen sessies gevonden.</td>
+                    <td colspan="12">Geen sessies gevonden.</td>
                 </tr>
             @endforelse
         </tbody>
     </table>
 
-    <p class="small" style="margin-top: 14px;">{{ $disclaimer }}</p>
+    <div class="disclaimer small">
+        <strong>Disclaimer:</strong> {{ $disclaimer }}
+    </div>
 </body>
 </html>

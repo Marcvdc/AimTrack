@@ -43,6 +43,8 @@ class SessionResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Sessies';
 
+    protected static ?string $navigationGroup = 'Dagboek';
+
     public static function form(Schema $schema): Schema
     {
         return $schema
@@ -206,6 +208,7 @@ class SessionResource extends Resource
                     ->sortable(),
                 TextColumn::make('aiReflection.summary')
                     ->label('AI-reflectie')
+                    ->icon('heroicon-m-sparkles')
                     ->limit(40)
                     ->placeholder('Nog niet gegenereerd')
                     ->toggleable(),
@@ -259,12 +262,17 @@ class SessionResource extends Resource
                         Tab::make('Details')
                             ->schema([
                                 InfoSection::make('Sessie')
+                                    ->description('Eigen invoer')
                                     ->schema([
                                         TextEntry::make('date')->label('Datum')->date(),
                                         TextEntry::make('range_name')->label('Baan/vereniging'),
                                         TextEntry::make('location')->label('Locatie'),
-                                        TextEntry::make('notes_raw')->label('Notities (ruw)')->markdown(),
-                                        TextEntry::make('manual_reflection')->label('Handmatige reflectie')->markdown(),
+                                        TextEntry::make('notes_raw')
+                                            ->label('Notities (ruw)')
+                                            ->markdown(),
+                                        TextEntry::make('manual_reflection')
+                                            ->label('Handmatige reflectie (gebruiker)')
+                                            ->markdown(),
                                     ]),
                                 InfoSection::make('Sessiewapens')
                                     ->schema([
@@ -295,20 +303,25 @@ class SessionResource extends Resource
                         Tab::make('AI-reflectie')
                             ->schema([
                                 InfoSection::make('Reflectie door AI')
+                                    ->description('Automatisch gegenereerd; gebruik ter inspiratie, blijf kritisch en veilig schieten.')
                                     ->schema([
                                         TextEntry::make('aiReflection.summary')
                                             ->label('Samenvatting')
+                                            ->icon('heroicon-o-sparkles')
                                             ->placeholder('Nog niet beschikbaar'),
                                         TextEntry::make('aiReflection.positives')
                                             ->label('Wat ging goed')
                                             ->bulleted()
+                                            ->icon('heroicon-o-sparkles')
                                             ->placeholder('Nog niet beschikbaar'),
                                         TextEntry::make('aiReflection.improvements')
                                             ->label('Verbeterpunten')
                                             ->bulleted()
+                                            ->icon('heroicon-o-sparkles')
                                             ->placeholder('Nog niet beschikbaar'),
                                         TextEntry::make('aiReflection.next_focus')
                                             ->label('Focus voor volgende keer')
+                                            ->icon('heroicon-o-sparkles')
                                             ->placeholder('Nog niet beschikbaar'),
                                     ]),
                             ]),

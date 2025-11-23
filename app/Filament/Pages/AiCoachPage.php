@@ -29,6 +29,8 @@ class AiCoachPage extends Page implements HasForms
 
     protected static ?string $title = 'AI-coach';
 
+    protected static ?string $navigationGroup = 'AI & inzichten';
+
     protected string $view = 'filament.pages.ai-coach-page';
 
     public ?array $data = [];

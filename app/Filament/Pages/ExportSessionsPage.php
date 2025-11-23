@@ -27,6 +27,8 @@ class ExportSessionsPage extends Page implements HasForms
 
     protected static ?string $title = 'Export sessies';
 
+    protected static ?string $navigationGroup = 'Exports & rapportage';
+
     protected string $view = 'filament.pages.export-sessions-page';
 
     public ?array $data = [];

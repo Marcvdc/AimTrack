@@ -14,10 +14,13 @@
             </div>
 
             @if ($answer)
-                <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-lg font-semibold">Antwoord van de AI-coach</h2>
-                        <span class="text-xs text-gray-500">Context: eigen sessiedata, geen officiële adviezen</span>
+                <div class="rounded-lg border border-indigo-100 bg-white p-4 shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="rounded bg-indigo-50 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-indigo-700">AI</span>
+                            <h2 class="text-lg font-semibold">Antwoord van de AI-coach</h2>
+                        </div>
+                        <span class="text-xs text-gray-500">Context: jouw eigen sessiedata; blijf zelf beoordelen en veilig handelen.</span>
                     </div>
                     <p class="mt-3 whitespace-pre-line text-gray-800">{{ $answer }}</p>
                 </div>
@@ -27,7 +30,7 @@
         <div class="space-y-3">
             <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                 <h3 class="text-md font-semibold">Recente vragen</h3>
-                <p class="text-sm text-gray-600">Alleen jouw eigen vragen en AI-antwoorden worden getoond.</p>
+                <p class="text-sm text-gray-600">Alleen jouw eigen vragen (gebruiker) en AI-antwoorden worden getoond.</p>
                 <div class="mt-3 space-y-3">
                     @forelse ($history as $item)
                         <div class="rounded-md border border-gray-100 bg-gray-50 p-3">
@@ -39,8 +42,10 @@
                                     <span class="text-gray-500">Alle wapens</span>
                                 @endif
                             </div>
-                            <p class="mt-2 text-sm font-medium text-gray-800">Vraag: {{ Str::limit($item->question, 120) }}</p>
-                            <p class="mt-1 text-sm text-gray-700">Antwoord: {{ Str::limit($item->answer, 180) }}</p>
+                            <p class="mt-2 text-sm font-semibold text-gray-800">Vraag (gebruiker)</p>
+                            <p class="text-sm text-gray-700">{{ Str::limit($item->question, 160) }}</p>
+                            <p class="mt-2 text-sm font-semibold text-indigo-800">AI-antwoord</p>
+                            <p class="text-sm text-gray-700">{{ Str::limit($item->answer, 200) }}</p>
                         </div>
                     @empty
                         <p class="text-sm text-gray-600">Nog geen vragen gesteld.</p>
