@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Filament\Resources\WeaponResource\RelationManagers;
+
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Form;
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+
+class SessionWeaponsRelationManager extends RelationManager
+{
+    protected static string $relationship = 'sessionWeapons';
+
+    protected static ?string $title = 'Sessies';
+
+    public function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                TextInput::make('distance_m')
+                    ->label('Afstand (m)')
+                    ->numeric()
+                    ->minValue(0),
+                TextInput::make('rounds_fired')
+                    ->label('Patronen')
+                    ->numeric()
+                    ->minValue(0)
+                    ->required(),
+                TextInput::make('ammo_type')
+                    ->label('Munitie')
+                    ->maxLength(255),
+                Textarea::make('group_quality_text')
+                    ->label('Groepering')
+                    ->rows(2)
+                    ->columnSpanFull(),
+                TextInput::make('deviation')
+                    ->label('Afwijking'),
+                TextInput::make('flyers_count')
+                    ->label('Flyers')
+                    ->numeric()
+                    ->default(0),
+            ]);
+    }
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('session.date')->label('Datum')->date()->sortable(),
+                TextColumn::make('session.range_name')->label('Baan/vereniging')->wrap(),
+                TextColumn::make('distance_m')->label('Afstand (m)'),
+                TextColumn::make('rounds_fired')->label('Patronen'),
+                TextColumn::make('ammo_type')->label('Munitie'),
+                TextColumn::make('deviation')->label('Afwijking'),
+            ])
+            ->filters([
+                Filter::make('periode')
+                    ->form([
+                        DatePicker::make('from')->label('Vanaf'),
+                        DatePicker::make('until')->label('Tot'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when($data['from'] ?? null, fn (Builder $q, $date) => $q->whereHas('session', fn (Builder $sq) => $sq->whereDate('date', '>=', $date)))
+                            ->when($data['until'] ?? null, fn (Builder $q, $date) => $q->whereHas('session', fn (Builder $sq) => $sq->whereDate('date', '<=', $date)));
+                    }),
+            ])
+            ->headerActions([
+                Tables\Actions\CreateAction::make()
+                    ->label('Sessieregel toevoegen'),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->defaultSort('session.date', 'desc');
+    }
+}

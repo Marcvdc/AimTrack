@@ -70,3 +70,18 @@ AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 4) waarmee een
 5. Filament Resources (SessionResource, WeaponResource, AiReflectionResource, AiWeaponInsightResource, AttachmentResource) + Pages (AI-CoachPage, ExportPage).
 6. Export service + Filament downloadflow (CSV/PDF) + disclaimer.
 7. Seeders/tests (basis smoke), Docker Compose/Makefile voor dev + queue worker.
+
+## 9) Filament admin-plan (concreet voor deze iteratie)
+- **PanelProvider:** `App\Providers\Filament\AdminPanelProvider` met default auth (Laravel), locale nl, kleuraccent donkerblauw; navigation met Sessions & Wapens bovenaan.
+- **SessionResource:**
+  - Form: sectie "Sessie" (datum, baan/vereniging `range_name`, locatie, notities `notes_raw`, handmatige reflectie), relation `user_id` hidden default current user.
+  - Repeatable/hasMany form voor `session_weapons` (select wapen, afstand, afgevuurde patronen, ammo type, group quality text, deviation enum, flyers count).
+  - File upload voor bijlagen (foto/pdf) gekoppeld aan session attachments; toon lijst in tabel of via relation manager.
+  - Table: datum, baan, locatie, wapens (chips), totaal schoten, AI-reflectie status; filters op periode, wapen, afwijking/kaliber (where relevant via relationship).
+  - Show view: tabs Details / AI-reflectie; AI-tab toont `summary`, `positives`, `improvements`, `next_focus` + actie "AI-reflectie opnieuw genereren" die job dispatcht.
+- **WeaponResource:**
+  - Form: naam, type (enum `WeaponType`), kaliber, serienummer, opslaglocatie, aankoopdatum, actief toggle, notities; user default current.
+  - Table: naam, type, kaliber, actief, sessietelling, AI-inzicht status; filters op type, kaliber, actief.
+  - Show view: sectie "Sessies" via relation manager op `sessionWeapons`; sectie "AI-inzichten" met `summary`, `patterns`, `suggestions` + actie "AI-inzichten genereren" die job dispatcht.
+- **AttachmentResource (optioneel):** read-only listing van uploads indien nodig; primair integreren via SessionResource file upload component.
+- **Jobs/hooks:** actions dispatchen queue jobs `GenerateSessionReflectionJob` en `GenerateWeaponInsightJob`; jobs stubs voorzien totdat AI-service is ingevuld.
