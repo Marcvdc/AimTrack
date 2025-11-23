@@ -90,15 +90,20 @@ class ShooterCoach
 
         try {
             $response = Http::baseUrl($this->baseUrl ?: 'https://api.openai.com/v1')
-                ->timeout(30)
-                ->withToken($this->apiKey)
                 ->acceptJson()
+                ->withToken($this->apiKey)
+                ->connectTimeout(5)
+                ->timeout(20)
+                ->retry(2, 500, throw: false)
                 ->post('/chat/completions', $payload);
 
             if (! $response->successful()) {
-                Log::error('AI: fout bij API-call', ['status' => $response->status(), 'body' => $response->body()]);
+                Log::error('AI: fout bij API-call', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
 
-                return 'Geen AI-antwoord beschikbaar (API-fout).';
+                return 'Geen AI-antwoord beschikbaar (API-fout of timeout). Probeer het later opnieuw.';
             }
 
             $content = data_get($response->json(), 'choices.0.message.content');
@@ -109,7 +114,7 @@ class ShooterCoach
                 'message' => $exception->getMessage(),
             ]);
 
-            return 'Geen AI-antwoord beschikbaar (technical error).';
+            return 'Geen AI-antwoord beschikbaar (timeout of netwerkfout). Probeer het opnieuw of controleer de provider.';
         }
     }
 

@@ -7,7 +7,14 @@ use Illuminate\Http\Request;
 
 class TrustProxies extends Middleware
 {
-    protected $proxies;
+    protected $proxies = '*';
 
-    protected $headers = Request::HEADER_X_FORWARDED_ALL;
+    protected $headers = Request::HEADER_X_FORWARDED_AWS_ELB;
+
+    public function __construct()
+    {
+        $configured = env('TRUSTED_PROXIES', '*');
+
+        $this->proxies = $configured === '*' ? '*' : array_map('trim', explode(',', $configured));
+    }
 }
