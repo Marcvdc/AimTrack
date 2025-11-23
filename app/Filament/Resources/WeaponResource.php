@@ -24,6 +24,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use Filament\Tables\Actions\Action;
+use Illuminate\Database\Eloquent\Builder;
 
 class WeaponResource extends Resource
 {
@@ -43,6 +44,7 @@ class WeaponResource extends Resource
             ->schema([
                 Hidden::make('user_id')
                     ->default(fn () => auth()->id())
+                    ->required()
                     ->dehydrated(fn ($state) => filled($state)),
 
                 Section::make('Basisgegevens')
@@ -198,5 +200,11 @@ class WeaponResource extends Resource
             'edit' => WeaponResource\Pages\EditWeapon::route('/{record}/edit'),
             'view' => WeaponResource\Pages\ViewWeapon::route('/{record}'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('user_id', auth()->id());
     }
 }
