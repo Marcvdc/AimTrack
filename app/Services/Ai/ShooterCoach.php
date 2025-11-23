@@ -6,7 +6,9 @@ use App\Models\AiReflection;
 use App\Models\AiWeaponInsight;
 use App\Models\Session;
 use App\Models\SessionWeapon;
+use App\Models\User;
 use App\Models\Weapon;
+use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -53,14 +55,15 @@ class ShooterCoach
         return $weapon->aiWeaponInsight()->updateOrCreate([], $parsed);
     }
 
-    public function answerCoachQuestion($user, string $question): string
+    public function answerCoachQuestion(User $user, string $question, ?int $weaponId = null, ?Carbon $from = null, ?Carbon $to = null): string
     {
-        $prompt = $this->buildCoachPrompt((string) $question);
+        $context = $this->buildCoachContext($user, $weaponId, $from, $to);
+        $prompt = $this->buildCoachPrompt($question, $context);
 
-        return $this->callModel($prompt);
+        return $this->callModel($prompt, expectsJson: false);
     }
 
-    private function callModel(string $prompt): string
+    private function callModel(string $prompt, bool $expectsJson = true): string
     {
         if (blank($this->apiKey)) {
             Log::error('AI: geen API key geconfigureerd.');
@@ -80,8 +83,11 @@ class ShooterCoach
                     'content' => $prompt,
                 ],
             ],
-            'response_format' => ['type' => 'json_object'],
         ];
+
+        if ($expectsJson) {
+            $payload['response_format'] = ['type' => 'json_object'];
+        }
 
         try {
             $response = Http::baseUrl($this->baseUrl ?: 'https://api.openai.com/v1')
@@ -174,14 +180,64 @@ Gevraagde output: JSON met velden summary (string), patterns (array van strings)
 PROMPT);
     }
 
-    private function buildCoachPrompt(string $question): string
+    private function buildCoachPrompt(string $question, string $context): string
     {
         return trim(<<<PROMPT
-Je bent een persoonlijke AI-schietcoach. Antwoord beknopt in het Nederlands, focus op veiligheid en legaal handelen.
-Vraag: {$question}
+Je bent een persoonlijke AI-schietcoach. Antwoord beknopt in het Nederlands, focus op veiligheid en legaal handelen. Je bent geen vervanging voor erkende instructeurs of officiële instanties en weigert onveilige of illegale adviezen.
 
-Antwoord in maximaal 120 woorden.
+Gebruikerscontext:
+{$context}
+
+Vraag van gebruiker: {$question}
+
+Antwoord in maximaal 150 woorden en verwijs naar naleving van baanregels en wetgeving waar relevant.
 PROMPT);
+    }
+
+    private function buildCoachContext(User $user, ?int $weaponId, ?Carbon $from, ?Carbon $to): string
+    {
+        $sessions = Session::query()
+            ->with(['sessionWeapons.weapon'])
+            ->where('user_id', $user->id)
+            ->when($weaponId, fn ($query) => $query->whereHas(
+                'sessionWeapons',
+                fn ($subQuery) => $subQuery->where('weapon_id', $weaponId)
+            ))
+            ->when($from, fn ($query) => $query->whereDate('date', '>=', $from))
+            ->when($to, fn ($query) => $query->whereDate('date', '<=', $to))
+            ->latest('date')
+            ->take(10)
+            ->get();
+
+        if ($sessions->isEmpty()) {
+            return 'Geen sessies gevonden voor deze gebruiker binnen de geselecteerde filters.';
+        }
+
+        $sessionLines = $sessions->map(function (Session $session) {
+            $weaponDetails = $session->sessionWeapons
+                ->map(fn (SessionWeapon $entry) => sprintf(
+                    '%s | %sm | %s schoten | afwijking: %s | notitie: %s',
+                    $entry->weapon?->name ?? 'Onbekend wapen',
+                    $entry->distance_m ?? '-',
+                    $entry->rounds_fired ?? '-',
+                    $entry->deviation ?? '-',
+                    Str::limit($entry->group_quality_text ?? '-', 80)
+                ))
+                ->filter()
+                ->values()
+                ->join('; ');
+
+            return sprintf(
+                '- %s @ %s (%s): %s | Reflectie: %s',
+                $session->date?->format('Y-m-d') ?? 'onbekende datum',
+                $session->range_name,
+                $session->location,
+                $weaponDetails ?: 'geen wapenregistraties',
+                Str::limit($session->manual_reflection ?? $session->notes_raw ?? '-', 120)
+            );
+        })->join("\n");
+
+        return "Recente sessies:\n{$sessionLines}";
     }
 
     private function parseReflectionPayload(string $raw): array
