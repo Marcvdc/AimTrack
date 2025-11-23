@@ -18,7 +18,7 @@ class ViewSession extends ViewRecord
             Actions\EditAction::make()
                 ->label('Bewerken'),
             Actions\Action::make('regenerateAi')
-                ->label('AI-reflectie opnieuw genereren')
+                ->label('Genereer AI-reflectie nu')
                 ->icon('heroicon-m-sparkles')
                 ->color('primary')
                 ->requiresConfirmation()

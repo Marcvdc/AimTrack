@@ -3,7 +3,9 @@
 namespace App\Filament\Resources;
 
 use App\Enums\Deviation;
+use App\Jobs\GenerateSessionReflectionJob;
 use App\Models\Session;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
@@ -26,6 +28,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Notifications\Notification;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class SessionResource extends Resource
@@ -225,6 +228,19 @@ class SessionResource extends Resource
             ->actions([
                 Actions\ViewAction::make(),
                 Actions\EditAction::make(),
+                Action::make('generateAiReflection')
+                    ->label('Genereer AI-reflectie nu')
+                    ->icon('heroicon-m-sparkles')
+                    ->requiresConfirmation()
+                    ->action(function (Session $record): void {
+                        GenerateSessionReflectionJob::dispatch($record);
+
+                        Notification::make()
+                            ->title('AI-reflectie ingepland')
+                            ->body('De job is toegevoegd aan de wachtrij.')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->bulkActions([
                 Actions\BulkActionGroup::make([

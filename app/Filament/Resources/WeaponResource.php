@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Enums\WeaponType;
+use App\Jobs\GenerateWeaponInsightJob;
 use App\Models\Weapon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
@@ -21,6 +22,8 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Filament\Notifications\Notification;
+use Filament\Tables\Actions\Action;
 
 class WeaponResource extends Resource
 {
@@ -126,6 +129,19 @@ class WeaponResource extends Resource
             ->actions([
                 Actions\ViewAction::make(),
                 Actions\EditAction::make(),
+                Action::make('generateAiWeaponInsight')
+                    ->label('Genereer AI-inzichten nu')
+                    ->icon('heroicon-m-sparkles')
+                    ->requiresConfirmation()
+                    ->action(function (Weapon $record): void {
+                        GenerateWeaponInsightJob::dispatch($record);
+
+                        Notification::make()
+                            ->title('AI-inzichten ingepland')
+                            ->body('De job is toegevoegd aan de wachtrij.')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->bulkActions([
                 Actions\BulkActionGroup::make([

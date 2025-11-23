@@ -85,3 +85,9 @@ AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 4) waarmee een
   - Show view: sectie "Sessies" via relation manager op `sessionWeapons`; sectie "AI-inzichten" met `summary`, `patterns`, `suggestions` + actie "AI-inzichten genereren" die job dispatcht.
 - **AttachmentResource (optioneel):** read-only listing van uploads indien nodig; primair integreren via SessionResource file upload component.
 - **Jobs/hooks:** actions dispatchen queue jobs `GenerateSessionReflectionJob` en `GenerateWeaponInsightJob`; jobs stubs voorzien totdat AI-service is ingevuld.
+
+## 10) Iteratieplan: AI-service + jobs + Filament acties
+- **Service:** implementeer `App\Services\Ai\ShooterCoach` met generieke LLM-client (configurable driver/model/base_url) en NL-prompts voor sessie-reflectie, wapen-inzichten en coachvragen. Output parse defensief (JSON → fallback tekst) en log fouten.
+- **Config:** nieuw `config/ai.php` met driver/model/base_url; .env.example uitbreiden met `AI_DRIVER`, `AI_MODEL`, `OPENAI_API_KEY`, `OPENAI_BASE_URL` placeholders.
+- **Queue jobs:** `GenerateSessionReflectionJob` en `GenerateWeaponInsightJob` roepen de service aan en verwerken resultaten in respectieve modellen/velden.
+- **Filament actions:** in `SessionResource` en `WeaponResource` extra actions om jobs te dispatchen (AI-calls blijven async).

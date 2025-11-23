@@ -18,7 +18,7 @@ class ViewWeapon extends ViewRecord
             Actions\EditAction::make()
                 ->label('Bewerken'),
             Actions\Action::make('generateAi')
-                ->label('AI-inzichten genereren')
+                ->label('Genereer AI-inzichten nu')
                 ->icon('heroicon-m-sparkles')
                 ->color('primary')
                 ->requiresConfirmation()
