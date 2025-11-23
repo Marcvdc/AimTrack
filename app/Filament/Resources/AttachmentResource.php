@@ -25,6 +25,8 @@ class AttachmentResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Bijlagen';
 
+    protected static ?string $navigationGroup = 'Dagboek';
+
     public static function form(Schema $schema): Schema
     {
         return $schema

@@ -103,6 +103,15 @@ class ShooterCoach
                     'body' => $response->body(),
                 ]);
 
+                if (app()->bound('sentry')) {
+                    app('sentry')->captureMessage('AI API-call mislukt', [
+                        'level' => 'error',
+                        'extra' => [
+                            'status' => $response->status(),
+                        ],
+                    ]);
+                }
+
                 return 'Geen AI-antwoord beschikbaar (API-fout of timeout). Probeer het later opnieuw.';
             }
 
@@ -113,6 +122,10 @@ class ShooterCoach
             Log::error('AI: exception tijdens API-call', [
                 'message' => $exception->getMessage(),
             ]);
+
+            if (app()->bound('sentry')) {
+                app('sentry')->captureException($exception);
+            }
 
             return 'Geen AI-antwoord beschikbaar (timeout of netwerkfout). Probeer het opnieuw of controleer de provider.';
         }
