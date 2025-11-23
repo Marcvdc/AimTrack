@@ -105,3 +105,12 @@ AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 4) waarmee een
 - **Service-uitbreiding:** `ShooterCoach::answerCoachQuestion(User $user, string $question, ?int $weaponId = null, ?Carbon $from = null, ?Carbon $to = null)` bouwt context: relevante sessies van user gefilterd op periode/wapen + recente wapen entries; prompt benadrukt veiligheid/geen illegale tips en dat AI geen vervanging is voor instructeurs/regels. Retourneert antwoordstring.
 - **Filament Page:** `AiCoachPage` met textarea vraag, select wapen (optioneel), date range filter, submit-button "Stel vraag aan AI-coach", resultaatkaart met antwoord (en waarschuwing dat AI geen vervanging is). Na submit: roept ShooterCoach aan, slaat vraag/antwoord op in `coach_questions` en toont laatste antwoord. Toon recente historie (bijv. table/list van vorige Q/A van gebruiker) voor context.
 - **Veiligheid:** System prompt + UI bevatten disclaimer over veiligheid, geen illegale/gevaarlijke adviezen; antwoord max ~150 woorden. Geen queue-job nodig (synchrone vraag), maar blijf defensief bij API-fouten (toon melding).
+
+## 13) Infra: Docker Compose voor lokale ontwikkeling
+- **Containers:**
+  - `app`: PHP 8.4/8.5 FPM + benodigde extensies (pdo, pdo_pgsql/pdo_mysql, gd, mbstring, intl, zip, exif), Composer aanwezig; mount project naar `/var/www/html`.
+  - `web`: nginx die `/public/index.php` serveert en requests proxyt naar `app:9000`.
+  - `db`: PostgreSQL (default) met volume voor data; MySQL kan later als alternatief.
+  - `queue`: hergebruikt het app-image en draait `php artisan queue:work --tries=3`.
+- **Flow:** `docker compose up -d` start stack; daarna `docker compose exec app php artisan key:generate` en `docker compose exec app php artisan migrate` om de app klaar te zetten.
+- **ENV-waarden:** `APP_URL=http://localhost:8080`, `DB_HOST=db`, `DB_PORT=5432`, `QUEUE_CONNECTION=database`, optioneel `VITE_*` voor asset build; AI-variabelen blijven in `.env` staan.
