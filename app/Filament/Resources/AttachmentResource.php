@@ -1,0 +1,67 @@
+<?php
+
+namespace App\Filament\Resources;
+
+use App\Models\Attachment;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables\Actions;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+
+class AttachmentResource extends Resource
+{
+    protected static ?string $model = Attachment::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-paper-clip';
+
+    protected static ?string $navigationLabel = 'Bijlagen';
+
+    protected static ?string $modelLabel = 'Bijlage';
+
+    protected static ?string $pluralModelLabel = 'Bijlagen';
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                TextInput::make('original_name')->label('Bestandsnaam')->disabled(),
+                TextInput::make('mime_type')->label('MIME-type')->disabled(),
+                TextInput::make('size')->label('Grootte (bytes)')->disabled(),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('original_name')->label('Bestandsnaam')->searchable(),
+                TextColumn::make('mime_type')->label('MIME-type'),
+                TextColumn::make('size')->label('Grootte (bytes)')->formatStateUsing(fn ($state) => number_format($state) . ' B'),
+                TextColumn::make('session.date')->label('Sessie datum')->date(),
+            ])
+            ->filters([
+                Filter::make('groot')->label('Groter dan 5MB')
+                    ->query(fn (Builder $query) => $query->where('size', '>', 5 * 1024 * 1024)),
+            ])
+            ->actions([
+                Actions\ViewAction::make(),
+                Actions\DeleteAction::make(),
+            ])
+            ->bulkActions([
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => AttachmentResource\Pages\ListAttachments::route('/'),
+        ];
+    }
+}
