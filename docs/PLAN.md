@@ -86,6 +86,13 @@ AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 4) waarmee een
 - **AttachmentResource (optioneel):** read-only listing van uploads indien nodig; primair integreren via SessionResource file upload component.
 - **Jobs/hooks:** actions dispatchen queue jobs `GenerateSessionReflectionJob` en `GenerateWeaponInsightJob`; jobs stubs voorzien totdat AI-service is ingevuld.
 
+## 11) Export-scope voor WM-4 (huidige iteratie)
+- **Service:** `App\Services\Export\SessionExportService` met methode `exportSessions(User $user, Carbon $from, Carbon $to, ?array $weaponIds, string $format)` die sessies binnen periode ophaalt (optionele wapenfilter) en een downloadresponse teruggeeft.
+- **CSV-output:** kolommen `datum, baan, locatie, wapen, kaliber, afstand (m), rondes, munitietype, groepering, afwijking, flyers, notities`; per sessiewapen een regel.
+- **PDF-output:** eenvoudige Blade-view (`resources/views/exports/sessions.blade.php`) met periode-overzicht, totalen per wapen/kaliber, lijst van sessies en NL-disclaimer: "Let op: dit document is een hulpmiddel; controleer altijd zelf of dit voldoet aan de actuele eisen van de politie / korpschef voor een WM-4 aanvraag." PDF-rendering via een lichte lib (bijv. Dompdf) zonder zware styling.
+- **Filament Page:** `App\Filament\Pages\ExportSessionsPage` met formulier (van/tot, multi-select wapens, formaatkeuze CSV/PDF) en actie die service aanroept en download terugstuurt.
+- **Uitbreidbaarheid:** structuur laten voor extra exportprofielen (aparte view/logica), en rekening houden met single-tenant (alle queries gefilterd op ingelogde gebruiker).
+
 ## 10) Iteratieplan: AI-service + jobs + Filament acties
 - **Service:** implementeer `App\Services\Ai\ShooterCoach` met generieke LLM-client (configurable driver/model/base_url) en NL-prompts voor sessie-reflectie, wapen-inzichten en coachvragen. Output parse defensief (JSON → fallback tekst) en log fouten.
 - **Config:** nieuw `config/ai.php` met driver/model/base_url; .env.example uitbreiden met `AI_DRIVER`, `AI_MODEL`, `OPENAI_API_KEY`, `OPENAI_BASE_URL` placeholders.
