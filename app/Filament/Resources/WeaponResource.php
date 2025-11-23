@@ -25,6 +25,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class WeaponResource extends Resource
 {
@@ -38,7 +39,7 @@ class WeaponResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Wapens';
 
-    protected static ?string $navigationGroup = 'Beheer';
+    protected static UnitEnum|string|null $navigationGroup = 'Beheer';
 
     public static function form(Schema $schema): Schema
     {

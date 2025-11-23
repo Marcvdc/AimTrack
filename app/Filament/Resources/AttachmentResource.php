@@ -12,6 +12,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class AttachmentResource extends Resource
 {
@@ -25,7 +26,7 @@ class AttachmentResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Bijlagen';
 
-    protected static ?string $navigationGroup = 'Dagboek';
+    protected static UnitEnum|string|null $navigationGroup = 'Dagboek';
 
     public static function form(Schema $schema): Schema
     {

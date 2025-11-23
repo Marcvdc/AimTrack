@@ -16,6 +16,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Collection;
+use UnitEnum;
 
 class ExportSessionsPage extends Page implements HasForms
 {
@@ -27,7 +28,7 @@ class ExportSessionsPage extends Page implements HasForms
 
     protected static ?string $title = 'Export sessies';
 
-    protected static ?string $navigationGroup = 'Exports & rapportage';
+    protected static UnitEnum|string|null $navigationGroup = 'Exports & rapportage';
 
     protected string $view = 'filament.pages.export-sessions-page';
 
