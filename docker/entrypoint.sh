@@ -3,9 +3,15 @@ set -euo pipefail
 
 cd /var/www/html
 
-if [ -z "${APP_KEY:-}" ]; then
-    echo "[entrypoint] APP_KEY ontbreekt; genereer tijdelijke key voor deze container" >&2
-    php artisan key:generate --force --ansi
+mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
+
+if [ -f .env ]; then
+    if ! grep -Eq '^APP_KEY=.+$' .env; then
+        echo "[entrypoint] APP_KEY ontbreekt of is leeg in .env; genereer application key" >&2
+        php artisan key:generate --force --ansi
+    fi
 fi
 
 php artisan storage:link --ansi >/dev/null 2>&1 || true

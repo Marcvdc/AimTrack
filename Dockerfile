@@ -17,6 +17,7 @@ RUN apt-get update \
         libzip-dev \
         libicu-dev \
         locales \
+        libonig-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" gd intl mbstring pdo pdo_pgsql pdo_mysql zip exif \
     && docker-php-ext-enable opcache \
@@ -30,12 +31,12 @@ WORKDIR /var/www/html
 
 FROM base AS dev
 COPY composer.json composer.lock* ./
-RUN composer install --prefer-dist --no-progress
+RUN composer install --prefer-dist --no-progress --no-scripts
 COPY . .
 
 FROM base AS vendor
 COPY composer.json composer.lock* ./
-RUN composer install --no-dev --prefer-dist --no-progress --optimize-autoloader
+RUN composer install --no-dev --prefer-dist --no-progress --optimize-autoloader --no-scripts
 
 FROM base AS production
 ENV APP_ENV=production \
