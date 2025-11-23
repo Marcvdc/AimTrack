@@ -23,7 +23,7 @@ class FailedJobsWidget extends BaseWidget
         return FailedJob::query()->latest('failed_at');
     }
 
-    protected function getDefaultTableRecordsPerPageSelectOption(): int
+    public function getDefaultTableRecordsPerPageSelectOption(): int
     {
         return 5;
     }

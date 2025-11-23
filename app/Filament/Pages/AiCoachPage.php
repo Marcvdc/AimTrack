@@ -18,6 +18,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Collection;
+use UnitEnum;
 
 class AiCoachPage extends Page implements HasForms
 {
@@ -29,7 +30,7 @@ class AiCoachPage extends Page implements HasForms
 
     protected static ?string $title = 'AI-coach';
 
-    protected static ?string $navigationGroup = 'AI & inzichten';
+    protected static UnitEnum|string|null $navigationGroup = 'AI & inzichten';
 
     protected string $view = 'filament.pages.ai-coach-page';
 
