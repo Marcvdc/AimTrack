@@ -1,7 +1,11 @@
-# Base image: official PHP-FPM 8.4 (use 8.5 when available)
-FROM php:8.4-fpm
+# syntax=docker/dockerfile:1.7
+ARG PHP_VERSION=8.4
 
-# Install system dependencies and PHP extensions (pdo, pgsql/mysql, gd, intl, mbstring, zip, exif)
+FROM php:${PHP_VERSION}-fpm-bookworm AS base
+
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    COMPOSER_NO_INTERACTION=1
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git \
@@ -10,37 +14,49 @@ RUN apt-get update \
         libjpeg-dev \
         libpng-dev \
         libfreetype6-dev \
-        libonig-dev \
         libzip-dev \
         libicu-dev \
         locales \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd intl mbstring pdo pdo_pgsql pdo_mysql zip exif \
+    && docker-php-ext-install -j"$(nproc)" gd intl mbstring pdo pdo_pgsql pdo_mysql zip exif \
     && docker-php-ext-enable opcache \
-    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 WORKDIR /var/www/html
 
-# Install Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-# Copy dependency definition files first for better build caching
+FROM base AS dev
 COPY composer.json composer.lock* ./
-
-# Install PHP dependencies (opt out of dev if desired)
-RUN composer install --no-interaction --prefer-dist --no-progress --ansi
-
-# Copy application code
+RUN composer install --prefer-dist --no-progress
 COPY . .
 
-# Optional: install Node.js/npm for Vite builds (uncomment if needed)
-# RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-#     && apt-get install -y nodejs \
-#     && npm install --production=false
+FROM base AS vendor
+COPY composer.json composer.lock* ./
+RUN composer install --no-dev --prefer-dist --no-progress --optimize-autoloader
 
-# Expose PHP-FPM port
+FROM base AS production
+ENV APP_ENV=production \
+    APP_DEBUG=false \
+    PHP_OPCACHE_VALIDATE_TIMESTAMPS=0 \
+    PHP_OPCACHE_MAX_ACCELERATED_FILES=10000
+
+WORKDIR /var/www/html
+
+COPY --from=vendor /var/www/html/vendor ./vendor
+COPY . .
+
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint
+
+RUN mkdir -p storage bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && find storage -type d -exec chmod 775 {} \; \
+    && chmod 775 bootstrap/cache \
+    && chmod +x /usr/local/bin/entrypoint
+
 EXPOSE 9000
 
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
 CMD ["php-fpm"]

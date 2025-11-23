@@ -126,3 +126,10 @@ AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 4) waarmee een
 - **Lintingstandaard:** Laravel Pint configureren met Laravel preset + projectbrede aanpassingen (max line length/logische imports waar nodig). Composer scripts `lint` (Pint) en `lint:fix` toevoegen en `test` laten verwijzen naar Pest.
 - **Automatische checks:** GitHub Actions workflow met PHP 8.3/8.4 matrix; stappen voor Composer cache, install, `php artisan key:generate`, `php artisan migrate --env=testing` met in-memory/SQLite of DB volgens default; run `pest` en `pint --test`.
 - **Doel:** waarborgen consistente codekwaliteit en snelle feedback in CI voor lint + testen.
+
+## 16) Release & productiehardening (huidige iteratie)
+- **Multi-stage Docker image:** builder met Composer install (zonder dev), runtime met PHP-FPM 8.4/8.5, opcache en minimale surface. Entry script forceert `php artisan optimize` (config/route/view cache) bij start in production mode.
+- **Docker Compose (dev):** nginx + php-fpm + Postgres + queue worker met `restart: unless-stopped`, shared volumes, `.env` dev defaults. HTTPS headers en trusted proxies geconfigureerd zodat reverse proxies en SSL-terminatie goed werken.
+- **Release workflow:** GitHub Actions `docker-release` op push naar `main`; bouwt en pusht image naar GHCR met tags `latest` + semver (laatste git tag fallback), gebruikt provenance cache waar mogelijk.
+- **Prod defaults:** `.env.example` op `APP_ENV=production`, `APP_DEBUG=false`, DB user met beperkte rechten. Force HTTPS via config flag en trusted proxies; queue worker persistent; AI timeouts/retries + defensieve fallback bij netwerkfouten.
+- **Checklist "Application Hardened":** document in `docs/` met concrete stappen (keys/APP_KEY, caches, storage permissions, DB user, HTTPS/headers, mail/queue readiness, backups/logging) die voor livegang moeten zijn afgevinkt.
