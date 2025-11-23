@@ -114,3 +114,10 @@ AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 4) waarmee een
   - `queue`: hergebruikt het app-image en draait `php artisan queue:work --tries=3`.
 - **Flow:** `docker compose up -d` start stack; daarna `docker compose exec app php artisan key:generate` en `docker compose exec app php artisan migrate` om de app klaar te zetten.
 - **ENV-waarden:** `APP_URL=http://localhost:8080`, `DB_HOST=db`, `DB_PORT=5432`, `QUEUE_CONNECTION=database`, optioneel `VITE_*` voor asset build; AI-variabelen blijven in `.env` staan.
+
+## 14) Stabilisatieplan (eindcontrole)
+- **Relaties en scope:** Sessions, Weapons, SessionWeapons, AiReflection en AiWeaponInsight blijven strikt gekoppeld aan de ingelogde gebruiker; Filament queries filteren op `user_id` of gekoppelde sessies.
+- **AI-flow robuust:** `ShooterCoach` via service container met config uit `config/ai.php`; jobs/pages delen dezelfde service; defensieve foutafhandeling blijft.
+- **Filament polish:** Forms tonen vereiste velden, repeaters werken end-to-end, relation managers bieden filters en CRUD; detailpagina’s tonen AI-output en bijlagen overzichtelijk.
+- **Export afronden:** CSV/PDF gebruiken dezelfde dataset/filtering, tonen disclaimer en aggregaties; Filament exportpagina valideert periode en selectie.
+- **Opschonen:** Geen TODO’s of losse eindjes; labels NL; defaults voor datumfilters (bijv. huidige maand) en statusnotificaties bij async AI-acties.

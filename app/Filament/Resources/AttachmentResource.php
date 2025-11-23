@@ -64,4 +64,10 @@ class AttachmentResource extends Resource
             'index' => AttachmentResource\Pages\ListAttachments::route('/'),
         ];
     }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->whereHas('session', fn (Builder $query) => $query->where('user_id', auth()->id()));
+    }
 }

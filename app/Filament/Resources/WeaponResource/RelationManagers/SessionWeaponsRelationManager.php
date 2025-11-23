@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\WeaponResource\RelationManagers;
 
+use App\Enums\Deviation;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
@@ -23,6 +25,21 @@ class SessionWeaponsRelationManager extends RelationManager
     {
         return $form
             ->schema([
+                Select::make('session_id')
+                    ->label('Sessie')
+                    ->relationship(
+                        name: 'session',
+                        titleAttribute: 'date',
+                        modifyQueryUsing: fn (Builder $query) => $query->where('user_id', auth()->id()),
+                    )
+                    ->getOptionLabelFromRecordUsing(fn ($record) => sprintf(
+                        '%s - %s (%s)',
+                        optional($record->date)->format('Y-m-d'),
+                        $record->range_name ?? 'onbekend',
+                        $record->location ?? 'locatie n.v.t.',
+                    ))
+                    ->required()
+                    ->searchable(),
                 TextInput::make('distance_m')
                     ->label('Afstand (m)')
                     ->numeric()
@@ -31,6 +48,7 @@ class SessionWeaponsRelationManager extends RelationManager
                     ->label('Patronen')
                     ->numeric()
                     ->minValue(0)
+                    ->default(0)
                     ->required(),
                 TextInput::make('ammo_type')
                     ->label('Munitie')
@@ -39,8 +57,14 @@ class SessionWeaponsRelationManager extends RelationManager
                     ->label('Groepering')
                     ->rows(2)
                     ->columnSpanFull(),
-                TextInput::make('deviation')
-                    ->label('Afwijking'),
+                Select::make('deviation')
+                    ->label('Afwijking')
+                    ->options(
+                        collect(Deviation::cases())
+                            ->mapWithKeys(fn (Deviation $deviation) => [$deviation->value => ucfirst($deviation->value)])
+                            ->all(),
+                    )
+                    ->native(false),
                 TextInput::make('flyers_count')
                     ->label('Flyers')
                     ->numeric()

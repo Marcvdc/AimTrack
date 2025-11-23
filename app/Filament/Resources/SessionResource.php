@@ -49,6 +49,7 @@ class SessionResource extends Resource
             ->schema([
                 Hidden::make('user_id')
                     ->default(fn () => auth()->id())
+                    ->required()
                     ->dehydrated(fn ($state) => filled($state)),
 
                 Section::make('Sessie')
@@ -323,5 +324,11 @@ class SessionResource extends Resource
             'edit' => SessionResource\Pages\EditSession::route('/{record}/edit'),
             'view' => SessionResource\Pages\ViewSession::route('/{record}'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('user_id', auth()->id());
     }
 }
