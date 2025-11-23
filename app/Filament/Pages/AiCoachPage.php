@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\CoachQuestion;
 use App\Models\Weapon;
 use App\Services\Ai\ShooterCoach;
+use BackedEnum;
 use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -13,22 +14,22 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Schema;
 use Illuminate\Support\Collection;
 
 class AiCoachPage extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-sparkles';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-sparkles';
 
     protected static ?string $navigationLabel = 'AI-coach';
 
     protected static ?string $title = 'AI-coach';
 
-    protected static string $view = 'filament.pages.ai-coach-page';
+    protected string $view = 'filament.pages.ai-coach-page';
 
     public ?array $data = [];
 
@@ -48,9 +49,9 @@ class AiCoachPage extends Page implements HasForms
         $this->loadHistory();
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Section::make('Stel je vraag')
                     ->description('De AI-coach gebruikt alleen jouw eigen logs als context en geeft geen vervanging voor erkende instructeurs of officiële regels.')

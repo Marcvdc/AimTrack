@@ -121,3 +121,8 @@ AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 4) waarmee een
 - **Filament polish:** Forms tonen vereiste velden, repeaters werken end-to-end, relation managers bieden filters en CRUD; detailpagina’s tonen AI-output en bijlagen overzichtelijk.
 - **Export afronden:** CSV/PDF gebruiken dezelfde dataset/filtering, tonen disclaimer en aggregaties; Filament exportpagina valideert periode en selectie.
 - **Opschonen:** Geen TODO’s of losse eindjes; labels NL; defaults voor datumfilters (bijv. huidige maand) en statusnotificaties bij async AI-acties.
+
+## 15) Kwaliteit & CI (huidige iteratie)
+- **Lintingstandaard:** Laravel Pint configureren met Laravel preset + projectbrede aanpassingen (max line length/logische imports waar nodig). Composer scripts `lint` (Pint) en `lint:fix` toevoegen en `test` laten verwijzen naar Pest.
+- **Automatische checks:** GitHub Actions workflow met PHP 8.3/8.4 matrix; stappen voor Composer cache, install, `php artisan key:generate`, `php artisan migrate --env=testing` met in-memory/SQLite of DB volgens default; run `pest` en `pint --test`.
+- **Doel:** waarborgen consistente codekwaliteit en snelle feedback in CI voor lint + testen.

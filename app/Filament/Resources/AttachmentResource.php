@@ -3,9 +3,10 @@
 namespace App\Filament\Resources;
 
 use App\Models\Attachment;
+use BackedEnum;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables\Actions;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -16,7 +17,7 @@ class AttachmentResource extends Resource
 {
     protected static ?string $model = Attachment::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-paper-clip';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-paper-clip';
 
     protected static ?string $navigationLabel = 'Bijlagen';
 
@@ -24,9 +25,9 @@ class AttachmentResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Bijlagen';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 TextInput::make('original_name')->label('Bestandsnaam')->disabled(),
                 TextInput::make('mime_type')->label('MIME-type')->disabled(),
@@ -40,7 +41,7 @@ class AttachmentResource extends Resource
             ->columns([
                 TextColumn::make('original_name')->label('Bestandsnaam')->searchable(),
                 TextColumn::make('mime_type')->label('MIME-type'),
-                TextColumn::make('size')->label('Grootte (bytes)')->formatStateUsing(fn ($state) => number_format($state) . ' B'),
+                TextColumn::make('size')->label('Grootte (bytes)')->formatStateUsing(fn ($state) => number_format($state).' B'),
                 TextColumn::make('session.date')->label('Sessie datum')->date(),
             ])
             ->filters([

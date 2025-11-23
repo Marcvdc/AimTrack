@@ -3,9 +3,7 @@
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.3/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
-         convertDeprecationsToExceptions="true"
-         backupGlobals="false"
-         backupStaticAttributes="false">
+         backupGlobals="false">
     <testsuites>
         <testsuite name="Feature">
             <directory suffix="Test.php">./tests/Feature</directory>
@@ -14,9 +12,6 @@
             <directory suffix="Test.php">./tests/Unit</directory>
         </testsuite>
     </testsuites>
-    <extensions>
-        <bootstrap class="NunoMaduro\Collision\Adapters\Phpunit\Extension" />
-    </extensions>
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

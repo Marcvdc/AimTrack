@@ -4,29 +4,30 @@ namespace App\Filament\Pages;
 
 use App\Models\Weapon;
 use App\Services\Export\SessionExportService;
+use BackedEnum;
 use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Form;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Schema;
 use Illuminate\Support\Collection;
 
 class ExportSessionsPage extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-arrow-down-tray';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-arrow-down-tray';
 
     protected static ?string $navigationLabel = 'Export sessies';
 
     protected static ?string $title = 'Export sessies';
 
-    protected static string $view = 'filament.pages.export-sessions-page';
+    protected string $view = 'filament.pages.export-sessions-page';
 
     public ?array $data = [];
 
@@ -39,9 +40,9 @@ class ExportSessionsPage extends Page implements HasForms
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Section::make('Parameters')
                     ->schema([

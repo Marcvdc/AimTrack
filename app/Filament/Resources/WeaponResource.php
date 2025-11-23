@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\WeaponType;
 use App\Jobs\GenerateWeaponInsightJob;
 use App\Models\Weapon;
+use BackedEnum;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
@@ -12,25 +13,24 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Form;
 use Filament\Infolists\Components\Section as InfoSection;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables\Actions;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Filament\Notifications\Notification;
-use Filament\Tables\Actions\Action;
 use Illuminate\Database\Eloquent\Builder;
 
 class WeaponResource extends Resource
 {
     protected static ?string $model = Weapon::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-bolt';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-bolt';
 
     protected static ?string $navigationLabel = 'Wapens';
 
@@ -38,9 +38,9 @@ class WeaponResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Wapens';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Hidden::make('user_id')
                     ->default(fn () => auth()->id())
@@ -152,9 +152,9 @@ class WeaponResource extends Resource
             ]);
     }
 
-    public static function infolist(Infolist $infolist): Infolist
+    public static function infolist(Schema $schema): Schema
     {
-        return $infolist
+        return $schema
             ->schema([
                 InfoSection::make('Wapen')
                     ->schema([

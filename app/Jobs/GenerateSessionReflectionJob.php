@@ -19,9 +19,7 @@ class GenerateSessionReflectionJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public function __construct(public Session $session)
-    {
-    }
+    public function __construct(public Session $session) {}
 
     public function handle(): void
     {
