@@ -7,23 +7,25 @@ use App\Jobs\GenerateSessionReflectionJob;
 use App\Models\Session;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\RepeatableEntry;
-use Filament\Infolists\Components\Section as InfoSection;
-use Filament\Infolists\Components\Tabs;
-use Filament\Infolists\Components\Tabs\Tab;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section as InfoSection;
 use Filament\Schemas\Schema;
-use Filament\Tables\Actions;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -55,7 +57,7 @@ class SessionResource extends Resource
                     ->required()
                     ->dehydrated(fn ($state) => filled($state)),
 
-                Section::make('Sessie')
+                InfoSection::make('Sessie')
                     ->description('Basisgegevens van de sessie')
                     ->columns(2)
                     ->schema([
@@ -79,7 +81,7 @@ class SessionResource extends Resource
                             ->columnSpanFull(),
                     ]),
 
-                Section::make('Wapens in deze sessie')
+                InfoSection::make('Wapens in deze sessie')
                     ->description('Voeg per wapen de afstand en schoten toe')
                     ->schema([
                         Repeater::make('sessionWeapons')
@@ -134,7 +136,7 @@ class SessionResource extends Resource
                         // Eventueel uitbreiden met munitie-voorraad check of scorevelden.
                     ]),
 
-                Section::make('Bijlagen')
+                InfoSection::make('Bijlagen')
                     ->description('Upload foto’s of PDF’s als context')
                     ->schema([
                         Repeater::make('attachments')
@@ -231,8 +233,8 @@ class SessionResource extends Resource
                     ->relationship('sessionWeapons.weapon', 'name'),
             ])
             ->actions([
-                Actions\ViewAction::make(),
-                Actions\EditAction::make(),
+                ViewAction::make(),
+                EditAction::make(),
                 Action::make('generateAiReflection')
                     ->label('Genereer AI-reflectie nu')
                     ->icon('heroicon-m-sparkles')
@@ -248,8 +250,8 @@ class SessionResource extends Resource
                     }),
             ])
             ->bulkActions([
-                Actions\BulkActionGroup::make([
-                    Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

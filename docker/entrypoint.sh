@@ -16,6 +16,10 @@ fi
 
 php artisan storage:link --ansi >/dev/null 2>&1 || true
 
+if [ "${APP_ENV:-local}" = "local" ]; then
+    php artisan filament:assets --ansi >/dev/null 2>&1 || true
+fi
+
 if [ "${APP_ENV:-production}" = "production" ]; then
     php artisan config:clear --ansi >/dev/null 2>&1 || true
     php artisan config:cache --ansi
