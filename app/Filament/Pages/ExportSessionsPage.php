@@ -13,6 +13,9 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Actions as ActionsSchema;
+use Filament\Schemas\Components\EmbeddedSchema;
+use Filament\Schemas\Components\Form as FormSchema;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Collection;
@@ -76,7 +79,20 @@ class ExportSessionsPage extends Page implements HasForms
             ->statePath('data');
     }
 
-    public function submit(SessionExportService $service)
+    public function content(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                FormSchema::make([EmbeddedSchema::make('form')])
+                    ->id('form')
+                    ->livewireSubmitHandler('submit')
+                    ->footer([
+                        ActionsSchema::make($this->getFormActions()),
+                    ]),
+            ]);
+    }
+
+    public function submit()
     {
         $state = $this->form->getState();
 
@@ -93,13 +109,15 @@ class ExportSessionsPage extends Page implements HasForms
             return null;
         }
 
-        return $service->exportSessions(
-            auth()->user(),
-            $from,
-            $to,
-            $state['weapon_ids'] ?? null,
-            $state['format'] ?? 'csv'
-        );
+        $weaponIds = $state['weapon_ids'] ?? [];
+        $weaponIdsParam = ! empty($weaponIds) ? implode(',', $weaponIds) : null;
+
+        return redirect()->route('exports.sessions.download', array_filter([
+            'from' => $from->toDateString(),
+            'to' => $to->toDateString(),
+            'weapon_ids' => $weaponIdsParam,
+            'format' => $state['format'] ?? 'csv',
+        ], fn ($value) => $value !== null && $value !== ''));
     }
 
     protected function getFormActions(): array

@@ -151,3 +151,51 @@ AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 4) waarmee een
 3. Queue monitoring: eenvoudige Filament widget voor recente failed jobs en link naar `queue:failed` (CLI) of Horizon stub.
 4. Backupstrategie uitschrijven in `docs/BACKUPS.md` (DB + storage + herstelstappen).
 5. UX-polish: labels/navigatie in Filament, AI-output badges, duidelijke meldingen, export PDF/CSV labels/disclaimer en leeg-states.
+
+## 18) Accountbeheer: wachtwoord reset + profiel (huidige iteratie)
+
+### Scope
+
+- **In scope**
+  - Zelfservice **wachtwoord reset** voor de gebruiker via een "Wachtwoord vergeten?"-link op het login-scherm.
+  - **Eigen profielbeheer** in het Filament admin panel: ingelogde gebruiker kan eigen e-mail en wachtwoord wijzigen.
+- **Niet in scope (nu)**
+  - Beheren/wijzigen van andere gebruikers (alleen eigen account).
+  - Extra features zoals e-mailverificatie na wijziging en 2FA.
+
+### Functionele aanpak
+
+- **Wachtwoord reset (self-service)**
+  - Gebruik Laravel's standaard password-reset flow met tokens in de database en e-mail met reset-link.
+  - Login-pagina krijgt een link "Wachtwoord vergeten?" die leidt naar een formulier waar de gebruiker zijn/haar e-mailadres invult.
+  - Bij een bekend e-mailadres wordt een reset-e-mail verstuurd (bij onbekend adres wordt een generieke melding getoond).
+  - Via de reset-link komt de gebruiker op een formulier waar een nieuw wachtwoord kan worden ingesteld; na succesvolle reset kan de gebruiker inloggen met het nieuwe wachtwoord.
+
+- **Profielpagina in Filament (eigen gebruiker)**
+  - Filament-pagina of profielscherm "Mijn profiel" voor de ingelogde gebruiker.
+  - Sectie **Persoonlijke gegevens**: velden `name` en `email` met validatie (unieke, geldige e-mail).
+  - Sectie **Wachtwoord wijzigen**: velden huidig wachtwoord, nieuw wachtwoord en bevestiging.
+  - Huidig wachtwoord wordt gevalideerd (bijv. via `Hash::check`); bij succes wordt het nieuwe wachtwoord veilig gehashed opgeslagen (gebruik makend van de bestaande `password` cast op het `User`-model).
+
+### Acceptatiecriteria
+
+1. **Wachtwoord vergeten**
+   - Op het login-scherm is een duidelijke link "Wachtwoord vergeten?" zichtbaar.
+   - Bij invoer van een geldig e-mailadres ontvangt de gebruiker een reset-e-mail met een unieke, tijdsgebonden link.
+   - Bij onbekend e-mailadres wordt een generieke melding getoond zonder prijs te geven of het adres bestaat.
+   - Een reset-link is eenmalig te gebruiken en vervalt na verloop van tijd (standaard Laravel-gedrag).
+
+2. **E-mail wijzigen in profiel**
+   - De ingelogde gebruiker kan in het admin panel zijn/haar eigen e-mailadres wijzigen.
+   - De nieuwe e-mail moet uniek zijn in `users.email` en in een geldig formaat.
+   - Na wijziging wordt het nieuwe e-mailadres direct opgeslagen en gebruikt voor toekomstige logins.
+
+3. **Wachtwoord wijzigen in profiel**
+   - De ingelogde gebruiker moet het huidige wachtwoord correct invoeren om een nieuw wachtwoord te kunnen instellen.
+   - Het nieuwe wachtwoord wordt veilig gehashed opgeslagen via de bestaande password-cast.
+   - Na wijziging werkt uitsluitend het nieuwe wachtwoord voor login; (optioneel) andere sessies/devices worden ongeldig gemaakt.
+
+4. **Beveiliging / non-functional**
+   - Password-reset requests worden beperkt (rate limiting/throttle) om misbruik te beperken.
+   - Er worden geen wachtwoorden of reset-tokens gelogd; foutmeldingen blijven generiek.
+

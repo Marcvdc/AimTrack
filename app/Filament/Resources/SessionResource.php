@@ -146,13 +146,20 @@ class SessionResource extends Resource
                                 FileUpload::make('path')
                                     ->label('Bestand')
                                     ->required()
+                                    ->maxSize(20480)
                                     ->directory('attachments')
                                     ->preserveFilenames()
                                     ->downloadable()
                                     ->openable()
                                     ->getUploadedFileNameForStorageUsing(fn (TemporaryUploadedFile $file): string => $file->getClientOriginalName())
-                                    ->afterStateUpdated(function ($state, callable $set, ?TemporaryUploadedFile $file): void {
-                                        if (! $file) {
+                                    ->afterStateUpdated(function ($state, callable $set): void {
+                                        if (! $state) {
+                                            return;
+                                        }
+
+                                        $file = is_array($state) ? end($state) : $state;
+
+                                        if (! $file instanceof TemporaryUploadedFile) {
                                             return;
                                         }
 
@@ -160,15 +167,14 @@ class SessionResource extends Resource
                                         $set('mime_type', $file->getMimeType());
                                         $set('size', $file->getSize());
                                     }),
-                                TextInput::make('original_name')
-                                    ->label('Bestandsnaam')
+                                Hidden::make('original_name')
+                                    ->dehydrated()
                                     ->required(),
-                                TextInput::make('mime_type')
-                                    ->label('MIME-type')
+                                Hidden::make('mime_type')
+                                    ->dehydrated()
                                     ->required(),
-                                TextInput::make('size')
-                                    ->label('Grootte (bytes)')
-                                    ->numeric()
+                                Hidden::make('size')
+                                    ->dehydrated()
                                     ->required(),
                             ])
                             ->columns(2)
