@@ -17,6 +17,7 @@ class Weapon extends Model
         'caliber',
         'serial_number',
         'storage_location',
+        'storage_location_id',
         'owned_since',
         'is_active',
         'notes',
@@ -46,5 +47,10 @@ class Weapon extends Model
     public function coachQuestions()
     {
         return $this->hasMany(CoachQuestion::class);
+    }
+
+    public function storageLocation()
+    {
+        return $this->belongsTo(Location::class, 'storage_location_id');
     }
 }

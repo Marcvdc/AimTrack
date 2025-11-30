@@ -64,26 +64,33 @@
         </thead>
         <tbody>
             @forelse ($sessions as $session)
-                @php $entries = $session->sessionWeapons; @endphp
+                @php
+                    $entries = $session->sessionWeapons;
+                    $rangeName = optional($session->rangeLocationRef)->name ?? $session->range_name;
+                    $locationName = optional($session->locationRef)->name ?? $session->location;
+                @endphp
                 @if ($entries->isEmpty())
                     <tr>
                         <td>{{ $session->date?->format('Y-m-d') }}</td>
-                        <td>{{ $session->range_name }}</td>
-                        <td>{{ $session->location }}</td>
+                        <td>{{ $rangeName }}</td>
+                        <td>{{ $locationName }}</td>
                         <td colspan="8" class="muted">Geen wapens geregistreerd</td>
                         <td>{{ $session->notes_raw }}</td>
                     </tr>
                 @else
                     @foreach ($entries as $entry)
+                        @php
+                            $ammoLabel = optional($entry->ammoType)->name ?? $entry->ammo_type;
+                        @endphp
                         <tr>
                             <td>{{ $session->date?->format('Y-m-d') }}</td>
-                            <td>{{ $session->range_name }}</td>
-                            <td>{{ $session->location }}</td>
+                            <td>{{ $rangeName }}</td>
+                            <td>{{ $locationName }}</td>
                             <td>{{ $entry->weapon?->name }}</td>
                             <td>{{ $entry->weapon?->caliber }}</td>
                             <td>{{ $entry->distance_m }}</td>
                             <td>{{ $entry->rounds_fired }}</td>
-                            <td>{{ $entry->ammo_type }}</td>
+                            <td>{{ $ammoLabel }}</td>
                             <td>{{ $entry->group_quality_text }}</td>
                             <td>{{ $entry->deviation?->value ?? $entry->deviation }}</td>
                             <td>{{ $entry->flyers_count }}</td>

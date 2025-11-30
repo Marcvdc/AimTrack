@@ -199,3 +199,93 @@ AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 4) waarmee een
    - Password-reset requests worden beperkt (rate limiting/throttle) om misbruik te beperken.
    - Er worden geen wachtwoorden of reset-tokens gelogd; foutmeldingen blijven generiek.
 
+
+## 19) Referentiebeheer: Locaties, Opslaglocaties, Munitietypen, Banen & Verenigingen (variant B)
+- **Status:** APPROVED
+- **Doel**
+  Genormaliseerd beheer van:
+  - Locaties
+  - Opslaglocaties
+  - Munitietypen
+  - Banen & Verenigingen
+  zodat wapens en sessies consistente referentiegegevens gebruiken per gebruiker, in plaats van losse vrije tekstvelden.
+
+- **Datamodel (nieuw/gewijzigd)**
+  - **Nieuwe tabellen**
+    - `locations`:
+      - `id`
+      - `user_id` (fk)
+      - `name` (string)
+      - `is_storage` (bool, default false) — markeert Opslaglocaties
+      - `is_range` (bool, default false) — markeert Banen & Verenigingen
+      - `notes` (text, nullable)
+      - timestamps
+    - `ammo_types`:
+      - `id`
+      - `user_id` (fk)
+      - `name` (string)
+      - `caliber` (string|null)
+      - `notes` (text, nullable)
+      - timestamps
+  - **Aanpassingen bestaande tabellen**
+    - `weapons`:
+      - Toevoegen: `storage_location_id` (fk → `locations.id`)
+      - Bestaand tekstveld voor opslaglocatie kan als legacy blijven bestaan maar wordt in nieuwe UI vervangen door referentie-selectie.
+    - `sessions`:
+      - Toevoegen:
+        - `location_id` (fk → `locations.id`) — Locatie (zelfde waarden als opslaglocaties/locaties)
+        - `range_location_id` (fk → `locations.id`) — Baan & Vereniging (`is_range = true`)
+      - Bestaande stringvelden `location` / `range_name` blijven voor backward compatibility maar worden in nieuwe formulieren secundair gemaakt.
+    - `session_weapon_entries`:
+      - Toevoegen: `ammo_type_id` (fk → `ammo_types.id`)
+      - Bestaand tekstveld `ammo_type` blijft leesbaar, maar nieuwe invoer stuurt op referentie.
+
+- **Filament-resources & labels**
+  1. **Locaties**
+    - Resource: `LocationResource`
+    - Navigatie-label: `Locaties`
+    - Beheert alle records in `locations`.
+    - Form:
+      - Naam
+      - Checkboxes: "Is opslaglocatie", "Is baan/vereniging"
+      - Notities
+    - Table:
+      - Kolommen: naam, flags (Opslaglocatie, Baan & Vereniging), optioneel gekoppelde wapens/sessies.
+    - Saved filters:
+      - "Opslaglocaties" → `is_storage = true`
+      - "Banen & Verenigingen" → `is_range = true`
+  2. **Opslaglocaties**
+    - Geen aparte tabel; subset van `locations`.
+    - In `WeaponResource`:
+      - Veld **Opslaglocatie** als `Select` → `locations` met `is_storage = true`.
+  3. **Munitietypen**
+    - Resource: `AmmoTypeResource`
+    - Navigatie-label: `Munitietypen`
+    - Beheert `ammo_types`.
+    - Form:
+      - Naam
+      - (optioneel) Kaliber
+      - Notities
+    - Koppeling:
+      - In sessie-/entry-formulieren: `ammo_type_id` als `Select`.
+  4. **Banen & Verenigingen**
+    - Geen aparte tabel; subset van `locations` met `is_range = true`.
+    - In `SessionResource`:
+      - Veld **Baan / Vereniging** als `Select` → `locations` waar `is_range = true`.
+      - Veld **Locatie** als `Select` → `locations` (meestal `is_storage = true`, maar combinatie is toegestaan).
+
+- **Acceptatiecriteria**
+  1. Referentiebeheer
+    - Gebruiker kan via Filament de lijsten "Locaties" en "Munitietypen" beheren.
+    - In "Locaties" zijn filters "Opslaglocaties" en "Banen & Verenigingen" beschikbaar en werken.
+  2. Wapens ↔ Opslaglocaties
+    - Wapen-formulier toont een `Select` voor Opslaglocatie op basis van `locations.is_storage = true`.
+    - De keuze wordt opgeslagen in `weapons.storage_location_id`.
+  3. Sessies ↔ Locaties / Banen / Munitietypen
+    - Sessie-formulier toont:
+      - `Baan / Vereniging` als `Select` op basis van `locations.is_range = true`.
+      - `Locatie` als `Select` op basis van `locations` (configurabel filtered op `is_storage`).
+      - `Munitietype` als `Select` uit `ammo_types` (sessie- of entry-niveau, afgestemd op exportservice).
+  4. Backward compatibility
+    - Bestaande wapens en sessies blijven functioneel zonder directe migratie van tekstvelden naar referenties.
+    - Waar geen referentie is gekozen, blijven formulieren valide en worden exports niet gebroken.

@@ -4,6 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Enums\WeaponType;
 use App\Jobs\GenerateWeaponInsightJob;
+use App\Models\AmmoType;
+use App\Models\Location;
 use App\Models\Weapon;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -68,16 +70,45 @@ class WeaponResource extends Resource
                             )
                             ->required()
                             ->native(false),
-                        TextInput::make('caliber')
+                        Select::make('caliber')
                             ->label('Kaliber')
-                            ->required()
-                            ->maxLength(50),
+                            ->options(fn () => AmmoType::query()
+                                ->where('user_id', auth()->id())
+                                ->whereNotNull('caliber')
+                                ->orderBy('caliber')
+                                ->distinct()
+                                ->pluck('caliber', 'caliber'))
+                            ->searchable()
+                            ->preload()
+                            ->required(),
                         TextInput::make('serial_number')
                             ->label('Serienummer')
                             ->maxLength(255),
                         TextInput::make('storage_location')
-                            ->label('Opslaglocatie')
+                            ->label('Opslaglocatie (tekst)')
+                            ->helperText('Vrij tekstveld; gebruik bij voorkeur de referentie-selectie hieronder.')
                             ->maxLength(255),
+                        Select::make('storage_location_id')
+                            ->label('Opslaglocatie')
+                            ->options(fn () => Location::query()
+                                ->where('user_id', auth()->id())
+                                ->where('is_storage', true)
+                                ->orderBy('name')
+                                ->pluck('name', 'id'))
+                            ->searchable()
+                            ->preload()
+                            ->nullable()
+                            ->afterStateUpdated(function ($state, callable $set): void {
+                                if (! $state) {
+                                    return;
+                                }
+
+                                $location = Location::query()->find($state);
+
+                                if ($location) {
+                                    $set('storage_location', $location->name);
+                                }
+                            }),
                         DatePicker::make('owned_since')
                             ->label('In bezit sinds')
                             ->native(false),
@@ -167,7 +198,9 @@ class WeaponResource extends Resource
                         TextEntry::make('weapon_type')->label('Type'),
                         TextEntry::make('caliber')->label('Kaliber'),
                         TextEntry::make('serial_number')->label('Serienummer'),
-                        TextEntry::make('storage_location')->label('Opslaglocatie'),
+                        TextEntry::make('storageLocation.name')
+                            ->label('Opslaglocatie')
+                            ->placeholder(fn (Weapon $record): string => $record->storage_location ?? 'Niet ingesteld'),
                         TextEntry::make('owned_since')->label('In bezit sinds')->date(),
                         TextEntry::make('is_active')
                             ->label('Actief')
