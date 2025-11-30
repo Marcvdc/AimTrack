@@ -18,7 +18,12 @@ class SessionExportService
     public function exportSessions(User $user, Carbon $from, Carbon $to, ?array $weaponIds, string $format): Response|StreamedResponse
     {
         $sessions = Session::query()
-            ->with(['sessionWeapons.weapon'])
+            ->with([
+                'sessionWeapons.weapon',
+                'sessionWeapons.ammoType',
+                'locationRef',
+                'rangeLocationRef',
+            ])
             ->where('user_id', $user->getKey())
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
             ->when($weaponIds, fn ($query) => $query->whereHas(
@@ -64,10 +69,13 @@ class SessionExportService
                 $entries = $session->sessionWeapons;
 
                 if ($entries->isEmpty()) {
+                    $rangeName = $session->rangeLocationRef?->name ?? $session->range_name;
+                    $locationName = $session->locationRef?->name ?? $session->location;
+
                     fputcsv($handle, [
                         $session->date?->format('Y-m-d'),
-                        $session->range_name,
-                        $session->location,
+                        $rangeName,
+                        $locationName,
                         null,
                         null,
                         null,
@@ -84,16 +92,19 @@ class SessionExportService
 
                 foreach ($entries as $entry) {
                     $weapon = $entry->weapon;
+                    $rangeName = $session->rangeLocationRef?->name ?? $session->range_name;
+                    $locationName = $session->locationRef?->name ?? $session->location;
+                    $ammoLabel = $entry->ammoType?->name ?? $entry->ammo_type;
 
                     fputcsv($handle, [
                         $session->date?->format('Y-m-d'),
-                        $session->range_name,
-                        $session->location,
+                        $rangeName,
+                        $locationName,
                         $weapon?->name,
                         $weapon?->caliber,
                         $entry->distance_m,
                         $entry->rounds_fired,
-                        $entry->ammo_type,
+                        $ammoLabel,
                         $entry->group_quality_text,
                         $entry->deviation?->value ?? $entry->deviation,
                         $entry->flyers_count,

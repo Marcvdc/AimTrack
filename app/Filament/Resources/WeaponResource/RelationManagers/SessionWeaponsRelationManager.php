@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\WeaponResource\RelationManagers;
 
 use App\Enums\Deviation;
+use App\Models\AmmoType;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -53,8 +54,28 @@ class SessionWeaponsRelationManager extends RelationManager
                     ->default(0)
                     ->required(),
                 TextInput::make('ammo_type')
-                    ->label('Munitie')
+                    ->label('Munitie (tekst)')
                     ->maxLength(255),
+                Select::make('ammo_type_id')
+                    ->label('Munitietype')
+                    ->options(fn () => AmmoType::query()
+                        ->where('user_id', auth()->id())
+                        ->orderBy('name')
+                        ->pluck('name', 'id'))
+                    ->searchable()
+                    ->preload()
+                    ->nullable()
+                    ->afterStateUpdated(function ($state, callable $set): void {
+                        if (! $state) {
+                            return;
+                        }
+
+                        $ammoType = AmmoType::query()->find($state);
+
+                        if ($ammoType) {
+                            $set('ammo_type', $ammoType->name);
+                        }
+                    }),
                 Textarea::make('group_quality_text')
                     ->label('Groepering')
                     ->rows(2)

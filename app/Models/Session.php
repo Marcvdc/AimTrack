@@ -14,6 +14,8 @@ class Session extends Model
         'date',
         'range_name',
         'location',
+        'location_id',
+        'range_location_id',
         'notes_raw',
         'manual_reflection',
     ];
@@ -40,5 +42,15 @@ class Session extends Model
     public function aiReflection()
     {
         return $this->hasOne(AiReflection::class);
+    }
+
+    public function locationRef()
+    {
+        return $this->belongsTo(Location::class, 'location_id');
+    }
+
+    public function rangeLocationRef()
+    {
+        return $this->belongsTo(Location::class, 'range_location_id');
     }
 }

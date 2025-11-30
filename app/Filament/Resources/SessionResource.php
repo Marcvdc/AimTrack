@@ -4,6 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Enums\Deviation;
 use App\Jobs\GenerateSessionReflectionJob;
+use App\Models\AmmoType;
+use App\Models\Location;
 use App\Models\Session;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -65,12 +67,51 @@ class SessionResource extends Resource
                             ->label('Datum')
                             ->native(false)
                             ->required(),
-                        TextInput::make('range_name')
+                        Select::make('range_location_id')
                             ->label('Baan/vereniging')
-                            ->maxLength(255),
-                        TextInput::make('location')
+                            ->options(fn () => Location::query()
+                                ->where('user_id', auth()->id())
+                                ->where('is_range', true)
+                                ->orderBy('name')
+                                ->pluck('name', 'id'))
+                            ->searchable()
+                            ->preload()
+                            ->nullable()
+                            ->afterStateUpdated(function ($state, callable $set): void {
+                                if (! $state) {
+                                    return;
+                                }
+
+                                $location = Location::query()->find($state);
+
+                                if ($location) {
+                                    $set('range_name', $location->name);
+                                }
+                            }),
+                        Select::make('location_id')
                             ->label('Locatie')
-                            ->maxLength(255),
+                            ->options(fn () => Location::query()
+                                ->where('user_id', auth()->id())
+                                ->orderBy('name')
+                                ->pluck('name', 'id'))
+                            ->searchable()
+                            ->preload()
+                            ->nullable()
+                            ->afterStateUpdated(function ($state, callable $set): void {
+                                if (! $state) {
+                                    return;
+                                }
+
+                                $location = Location::query()->find($state);
+
+                                if ($location) {
+                                    $set('location', $location->name);
+                                }
+                            }),
+                        Hidden::make('range_name')
+                            ->dehydrated(),
+                        Hidden::make('location')
+                            ->dehydrated(),
                         Textarea::make('notes_raw')
                             ->label('Notities (ruw)')
                             ->rows(4)
@@ -108,9 +149,28 @@ class SessionResource extends Resource
                                     ->minValue(0)
                                     ->required()
                                     ->default(0),
-                                TextInput::make('ammo_type')
-                                    ->label('Munitie type')
-                                    ->maxLength(255),
+                                Hidden::make('ammo_type')
+                                    ->dehydrated(),
+                                Select::make('ammo_type_id')
+                                    ->label('Munitietype')
+                                    ->options(fn () => AmmoType::query()
+                                        ->where('user_id', auth()->id())
+                                        ->orderBy('name')
+                                        ->pluck('name', 'id'))
+                                    ->searchable()
+                                    ->preload()
+                                    ->nullable()
+                                    ->afterStateUpdated(function ($state, callable $set): void {
+                                        if (! $state) {
+                                            return;
+                                        }
+
+                                        $ammoType = AmmoType::query()->find($state);
+
+                                        if ($ammoType) {
+                                            $set('ammo_type', $ammoType->name);
+                                        }
+                                    }),
                                 Textarea::make('group_quality_text')
                                     ->label('Groepering / kwaliteit')
                                     ->rows(2)

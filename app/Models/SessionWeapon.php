@@ -16,6 +16,7 @@ class SessionWeapon extends Model
         'distance_m',
         'rounds_fired',
         'ammo_type',
+        'ammo_type_id',
         'group_quality_text',
         'deviation',
         'flyers_count',
@@ -36,5 +37,10 @@ class SessionWeapon extends Model
     public function weapon()
     {
         return $this->belongsTo(Weapon::class);
+    }
+
+    public function ammoType()
+    {
+        return $this->belongsTo(AmmoType::class);
     }
 }
