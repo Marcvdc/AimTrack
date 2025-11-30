@@ -117,7 +117,9 @@ class ShooterCoach
 
             $content = data_get($response->json(), 'choices.0.message.content');
 
-            return is_string($content) ? $content : json_encode($content) ?: '';
+            return is_string($content)
+                ? $content
+                : (json_encode($content) ?: '');
         } catch (Throwable $exception) {
             Log::error('AI: exception tijdens API-call', [
                 'message' => $exception->getMessage(),
