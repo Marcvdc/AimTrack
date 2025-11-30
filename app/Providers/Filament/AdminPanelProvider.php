@@ -6,6 +6,7 @@ use App\Filament\Widgets\FailedJobsWidget;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Illuminate\Support\HtmlString;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -19,6 +20,9 @@ class AdminPanelProvider extends PanelProvider
             ->passwordReset()
             ->registration()
             ->profile()
+            ->brandLogo(new HtmlString('<img src="/test.svg" alt="AimTrack" class="h-8">'))
+            ->darkModeBrandLogo(new HtmlString('<img src="/test.svg" alt="AimTrack" class="h-8" style="filter: invert(1);">'))
+            ->favicon('/test.svg')
             ->colors([
                 'primary' => Color::Indigo,
             ])
