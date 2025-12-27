@@ -53,11 +53,7 @@ COPY . .
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint
 
-RUN mkdir -p storage bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache \
-    && find storage -type d -exec chmod 775 {} \; \
-    && chmod 775 bootstrap/cache \
-    && chmod +x /usr/local/bin/entrypoint
+RUN chmod +x /usr/local/bin/entrypoint
 
 EXPOSE 9000
 
