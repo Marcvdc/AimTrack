@@ -47,8 +47,9 @@ services:
       POSTGRES_DB: aimtrack
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "15432:5432"
+    #dont expost port 5432
+    #ports:
+    #  - "15432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
