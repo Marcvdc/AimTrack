@@ -2,6 +2,7 @@ version: "3.9"
 
 services:
   app:
+    user: "${UID}:${GID}"
     build:
       context: .
       target: dev
@@ -10,9 +11,6 @@ services:
     volumes:
       - ./:/var/www/html
     environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
-      APP_URL: http://localhost:8080
       APP_FORCE_HTTPS: "false"
       TRUSTED_PROXIES: 172.16.0.0/12,127.0.0.1/32
       MAIL_MAILER: smtp
@@ -60,6 +58,7 @@ services:
       retries: 10
 
   queue:
+    user: "${UID}:${GID}"
     build:
       context: .
       target: dev
@@ -69,9 +68,6 @@ services:
     volumes:
       - ./:/var/www/html
     environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
-      APP_URL: http://localhost:8080
       APP_FORCE_HTTPS: "false"
       TRUSTED_PROXIES: 172.16.0.0/12,127.0.0.1/32
       MAIL_MAILER: smtp
