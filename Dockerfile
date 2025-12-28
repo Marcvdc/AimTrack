@@ -31,6 +31,20 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
+FROM node:20-bookworm AS frontend
+WORKDIR /app
+COPY . .
+RUN mkdir -p /opt/artifacts/public-build \
+    && if [ -f package.json ]; then \
+         npm ci --no-progress --fund=false --audit=false; \
+         npm run build --if-present; \
+       else \
+         echo "[frontend] package.json not found, skipping asset build"; \
+       fi \
+    && if [ -d public/build ]; then \
+         cp -r public/build/. /opt/artifacts/public-build/; \
+       fi
+
 FROM base AS dev
 COPY composer.json composer.lock* ./
 RUN composer install --prefer-dist --no-progress --no-scripts
@@ -50,6 +64,7 @@ WORKDIR /var/www/html
 
 COPY --from=vendor /var/www/html/vendor ./vendor
 COPY . .
+COPY --from=frontend /opt/artifacts/public-build ./public/build
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint
 

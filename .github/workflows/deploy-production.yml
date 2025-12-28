@@ -1,0 +1,143 @@
+name: Deploy - Production
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  require-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure CI workflow succeeded
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner,
+              repo,
+              workflow_id: 'ci.yml',
+              head_sha: context.sha,
+            });
+            const run = runs.data.workflow_runs.find(r => r.head_sha === context.sha);
+            if (!run) {
+              throw new Error('CI workflow has not run for this commit.');
+            }
+            if (run.status !== 'completed' || run.conclusion !== 'success') {
+              throw new Error(`CI workflow not successful (status=${run.status}, conclusion=${run.conclusion}). URL: ${run.html_url}`);
+            }
+            core.info(`CI succeeded: ${run.html_url}`);
+
+  deploy:
+    needs: require-ci
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare variables
+        id: vars
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "registry_image=ghcr.io/${OWNER}/aimtrack" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_USERNAME }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          provenance: false
+          build-args: |
+            PHP_VERSION=8.4
+            APP_ENV=production
+          tags: |
+            ${{ steps.vars.outputs.registry_image }}:${{ steps.vars.outputs.short_sha }}
+            ${{ steps.vars.outputs.registry_image }}:prod-latest
+          cache-from: type=gha,scope=deploy-production
+          cache-to: type=gha,mode=max,scope=deploy-production
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "${SSH_KEY}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          PORT="${SSH_PORT:-22}"
+          ssh-keyscan -p "${PORT}" "${SSH_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Sync deployment assets
+        env:
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          PORT="${SSH_PORT:-22}"
+          ssh -p "${PORT}" "${SSH_USER}@${SSH_HOST}" "mkdir -p '${DEPLOY_PATH}'"
+          rsync -avz -e "ssh -p ${PORT}" docker/ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/docker/"
+          rsync -avz -e "ssh -p ${PORT}" scripts/ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/scripts/"
+
+      - name: Upload environment file (optional)
+        if: ${{ secrets.ENV_FILE_B64 != '' }}
+        env:
+          ENV_FILE_B64: ${{ secrets.ENV_FILE_B64 }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          PORT="${SSH_PORT:-22}"
+          echo "${ENV_FILE_B64}" | base64 --decode > /tmp/env.production
+          scp -P "${PORT}" /tmp/env.production "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/.env"
+
+      - name: Remote deploy
+        env:
+          REGISTRY_IMAGE: ${{ steps.vars.outputs.registry_image }}
+          IMAGE_TAG: ${{ steps.vars.outputs.short_sha }}
+          LATEST_TAG: prod-latest
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          APP_URL: ${{ secrets.APP_URL }}
+          ENV_FILE_B64: ${{ secrets.ENV_FILE_B64 }}
+        run: |
+          ssh -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "\
+            cd '${DEPLOY_PATH}' && \
+            REGISTRY_IMAGE='${REGISTRY_IMAGE}' \
+            IMAGE_TAG='${IMAGE_TAG}' \
+            LATEST_TAG='${LATEST_TAG}' \
+            APP_URL='${APP_URL}' \
+            GHCR_USERNAME='${GHCR_USERNAME}' \
+            GHCR_TOKEN='${GHCR_TOKEN}' \
+            ENV_FILE_B64='${ENV_FILE_B64}' \
+            COMPOSE_FILE='docker/compose.prod.yml' \
+            bash scripts/remote_deploy.sh"
