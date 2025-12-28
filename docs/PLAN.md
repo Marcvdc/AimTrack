@@ -124,7 +124,7 @@ AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 4) waarmee een
 
 ## 15) Kwaliteit & CI (huidige iteratie)
 - **Lintingstandaard:** Laravel Pint configureren met Laravel preset + projectbrede aanpassingen (max line length/logische imports waar nodig). Composer scripts `lint` (Pint) en `lint:fix` toevoegen en `test` laten verwijzen naar Pest.
-- **Automatische checks:** GitHub Actions workflow met PHP 8.3/8.4 matrix; stappen voor Composer cache, install, `php artisan key:generate`, `php artisan migrate --env=testing` met in-memory/SQLite of DB volgens default; run `pest` en `pint --test`.
+- **Automatische checks:** GitHub Actions workflow op PHP 8.4; stappen voor Composer cache, install, `php artisan key:generate`, `php artisan migrate --env=testing` met in-memory/SQLite of DB volgens default; run `pest` en `pint --test`.
 - **Doel:** waarborgen consistente codekwaliteit en snelle feedback in CI voor lint + testen.
 
 ## 16) Release & productiehardening (huidige iteratie)

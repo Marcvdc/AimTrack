@@ -1,0 +1,74 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: ..
+      target: dev
+    env_file:
+      - ../.env.local
+    container_name: aimtrack_app
+    restart: unless-stopped
+    volumes:
+      - ..:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: nginx:stable-alpine
+    container_name: aimtrack_web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ..:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+
+  db:
+    image: postgres:16
+    container_name: aimtrack_db
+    restart: unless-stopped
+    env_file:
+      - ../.env.local
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-aimtrack}
+      POSTGRES_USER: ${DB_USERNAME:-aimtrack}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-aimtrack}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-aimtrack} -d ${DB_DATABASE:-aimtrack}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  queue:
+    build:
+      context: ..
+      target: dev
+    env_file:
+      - ../.env.local
+    container_name: aimtrack_queue
+    restart: unless-stopped
+    command: php artisan queue:work --tries=3 --backoff=5
+    volumes:
+      - ..:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: aimtrack_mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+volumes:
+  db_data_dev:
