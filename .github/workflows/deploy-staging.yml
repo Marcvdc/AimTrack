@@ -17,6 +17,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: staging
+    env:
+      ENV_FILE_B64: ${{ secrets.ENV_FILE_B64 }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -55,6 +57,24 @@ jobs:
           cache-from: type=gha,scope=deploy-staging
           cache-to: type=gha,mode=max,scope=deploy-staging
 
+      - name: Install WireGuard
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wireguard
+
+      - name: Start WireGuard tunnel
+        env:
+          WG_CONFIG: ${{ secrets.WG_CONFIG }}
+        run: |
+          umask 077
+          echo "${WG_CONFIG}" > /tmp/wg0.conf
+          sudo wg-quick up /tmp/wg0.conf
+
+      - name: Verify WireGuard tunnel
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: ping -c 2 "${SSH_HOST}"
+
       - name: Configure SSH
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
@@ -80,9 +100,8 @@ jobs:
           rsync -avz -e "ssh -p ${PORT}" scripts/ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/scripts/"
 
       - name: Upload environment file (optional)
-        if: ${{ secrets.ENV_FILE_B64 != '' }}
+        if: ${{ env.ENV_FILE_B64 != '' }}
         env:
-          ENV_FILE_B64: ${{ secrets.ENV_FILE_B64 }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -104,7 +123,7 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
           APP_URL: ${{ secrets.APP_URL }}
-          ENV_FILE_B64: ${{ secrets.ENV_FILE_B64 }}
+          ENV_FILE_B64: ${{ env.ENV_FILE_B64 }}
         run: |
           ssh -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "\
             cd '${DEPLOY_PATH}' && \
@@ -117,3 +136,11 @@ jobs:
             ENV_FILE_B64='${ENV_FILE_B64}' \
             COMPOSE_FILE='docker/compose.staging.yml' \
             bash scripts/remote_deploy.sh"
+
+      - name: Teardown WireGuard tunnel
+        if: always()
+        run: |
+          if [ -f /tmp/wg0.conf ]; then
+            sudo wg-quick down /tmp/wg0.conf
+            rm -f /tmp/wg0.conf
+          fi
