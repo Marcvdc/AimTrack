@@ -92,5 +92,21 @@ Zie ook de Troubleshooting-sectie in `README.md` voor aanvullende tips.
 - Tests: `docker compose ... exec app composer test`
 - Vite build (optioneel): `docker compose ... exec app npm install && npm run build`
 - Artisan vanuit host: `docker compose ... exec app php artisan <command>`
+- Backup dev database:
+  ```bash
+  ./scripts/backup-dev-db.sh                      # eenmalige dump + gzip + 7d retention
+  COMPOSE_FILE=docker/compose.dev.yml \
+  ENV_FILE=.env.local \
+  BACKUP_DIR=backups \
+  ./scripts/backup-dev-db.sh                      # override voorbeelden
+  ```
+  Voeg voor dagelijks cron-job op WSL toe (`crontab -e`):
+  ```
+  0 3 * * * cd /home/<user>/CascadeProjects/AimTrack && ./scripts/backup-dev-db.sh >> backups/cron.log 2>&1
+  ```
+  Restoren:
+  ```bash
+  zcat backups/db-YYYYMMDD-HHMMSS.sql.gz | docker compose -f docker/compose.dev.yml --env-file .env.local exec -T db psql -U aimtrack -d aimtrack
+  ```
 
 Volg altijd de PLAN-FIRST richtlijnen: pas je `.env.local` aan vóórdat je containers start, en houd documentatie synchroon bij wijzigingen.
