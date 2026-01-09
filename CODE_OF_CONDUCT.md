@@ -23,7 +23,7 @@ Maintainers mogen bijdragen verwijderen, issues sluiten of bans opleggen die nie
 Dit geldt voor alle projectruimtes en publieke ruimtes wanneer iemand het project vertegenwoordigt.
 
 ## Rapporteren
-Meld incidenten via **conduct@aimtrack.local**. Klachten worden vertrouwelijk behandeld. Maintainers beoordelen en communiceren binnen redelijke termijn over vervolgstappen.
+Meld incidenten via **security@aimrack.nl**. Klachten worden vertrouwelijk behandeld. Maintainers beoordelen en communiceren binnen redelijke termijn over vervolgstappen.
 
 ## Attribution
 Gebaseerd op de [Contributor Covenant](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).

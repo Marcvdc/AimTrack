@@ -19,12 +19,15 @@ Belangrijkste variabelen:
 - `QUEUE_CONNECTION=database` (default).
 - AI: `AI_DRIVER`, `AI_MODEL`, `OPENAI_API_KEY`, `OPENAI_BASE_URL`.
 - Logging/monitoring: Sentry DSN indien gebruikt.
+- Lokale Docker (WSL): `UID`, `GID` (meestal 1000) om permissies gelijk te trekken met de gebruiker in WSL; `COMPOSE_PROJECT_NAME` om containernaam-conflicten te vermijden; `WEB_PORT` voor hostpoort.
+- Mail: standaard `MAIL_FROM_ADDRESS=support@aimrack.nl` en `MAIL_FROM_NAME="AimTrack Support"` (of `support+local@aimrack.nl` voor lokale Mailpit). Pas SMTP host/poort aan per omgeving.
 
 ## Lifecycle
-1. `docker compose up -d` start stack.
-2. `docker compose exec app composer install` (eerste keer) en `php artisan key:generate`.
-3. `docker compose exec app php artisan migrate --seed` om schema op te zetten.
-4. Queue worker draait automatisch; anders handmatig starten met `docker compose exec queue php artisan queue:work`.
+1. `docker compose -f docker/compose.dev.yml --env-file .env.local up -d` start de lokale stack (WSL).
+2. `docker compose -f docker/compose.dev.yml --env-file .env.local exec app composer install` (eerste keer) en `php artisan key:generate`.
+3. `docker compose -f docker/compose.dev.yml --env-file .env.local exec app php artisan migrate --seed` om schema op te zetten.
+4. Queue worker draait automatisch; anders handmatig starten met `docker compose -f docker/compose.dev.yml --env-file .env.local exec queue php artisan queue:work`.
+5. Stoppen met `docker compose -f docker/compose.dev.yml --env-file .env.local down` (optioneel `-v` voor volumes).
 
 ## Caching en assets
 - Gebruik `php artisan config:cache`, `route:cache`, `view:cache` voor productie (entrypoint kan dit doen).
