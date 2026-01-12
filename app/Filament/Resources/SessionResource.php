@@ -35,6 +35,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Laravel\Pennant\Feature;
 use UnitEnum;
 
 class SessionResource extends Resource
@@ -282,7 +283,8 @@ class SessionResource extends Resource
                     ->icon('heroicon-m-sparkles')
                     ->limit(40)
                     ->placeholder('Nog niet gegenereerd')
-                    ->toggleable(),
+                    ->toggleable()
+                    ->visible(fn (): bool => Feature::active('aimtrack-ai')),
             ])
             ->filters([
                 Filter::make('periode')
@@ -308,6 +310,16 @@ class SessionResource extends Resource
                     ->icon('heroicon-m-sparkles')
                     ->requiresConfirmation()
                     ->action(function (Session $record): void {
+                        if (Feature::inactive('aimtrack-ai')) {
+                            Notification::make()
+                                ->title('AI-functies uitgeschakeld')
+                                ->body('Schakel de featureflag aimtrack-ai in om AI-reflecties te genereren.')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
                         GenerateSessionReflectionJob::dispatch($record);
 
                         Notification::make()
@@ -393,6 +405,7 @@ class SessionResource extends Resource
                                     ]),
                             ]),
                         Tab::make('AI-reflectie')
+                            ->visible(fn (): bool => Feature::active('aimtrack-ai'))
                             ->columns(1)
                             ->schema([
                                 InfoSection::make('Reflectie door AI')
