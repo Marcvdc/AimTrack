@@ -8,6 +8,7 @@ use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Enums\Width;
+use Laravel\Pennant\Feature;
 
 class ViewSession extends ViewRecord
 {
@@ -25,6 +26,16 @@ class ViewSession extends ViewRecord
                 ->color('primary')
                 ->requiresConfirmation()
                 ->action(function (): void {
+                    if (Feature::inactive('aimtrack-ai')) {
+                        Notification::make()
+                            ->title('AI-functies uitgeschakeld')
+                            ->body('Schakel de featureflag aimtrack-ai in om AI-reflecties te genereren.')
+                            ->warning()
+                            ->send();
+
+                        return;
+                    }
+
                     GenerateSessionReflectionJob::dispatch($this->record);
 
                     Notification::make()

@@ -29,6 +29,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Laravel\Pennant\Feature;
 use UnitEnum;
 
 class WeaponResource extends Resource
@@ -147,7 +148,8 @@ class WeaponResource extends Resource
                 TextColumn::make('aiWeaponInsight.summary')
                     ->label('AI-inzichten')
                     ->limit(40)
-                    ->placeholder('Nog niet gegenereerd'),
+                    ->placeholder('Nog niet gegenereerd')
+                    ->visible(fn (): bool => Feature::active('aimtrack-ai')),
             ])
             ->filters([
                 SelectFilter::make('weapon_type')
@@ -172,6 +174,16 @@ class WeaponResource extends Resource
                     ->icon('heroicon-m-sparkles')
                     ->requiresConfirmation()
                     ->action(function (Weapon $record): void {
+                        if (Feature::inactive('aimtrack-ai')) {
+                            Notification::make()
+                                ->title('AI-functies uitgeschakeld')
+                                ->body('Schakel de featureflag aimtrack-ai in om AI-inzichten te genereren.')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
                         GenerateWeaponInsightJob::dispatch($record);
 
                         Notification::make()
@@ -209,6 +221,7 @@ class WeaponResource extends Resource
                     ]),
                 InfoSection::make('AI-inzichten')
                     ->description('Automatisch gegenereerd; vat trends samen op basis van je sessies.')
+                    ->visible(fn (): bool => Feature::active('aimtrack-ai'))
                     ->schema([
                         TextEntry::make('aiWeaponInsight.summary')
                             ->label('Samenvatting')
