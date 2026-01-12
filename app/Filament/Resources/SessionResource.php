@@ -22,11 +22,12 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section as InfoSection;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\View as ViewComponent;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -159,7 +160,6 @@ class SessionResource extends Resource
                                         ->pluck('name', 'id'))
                                     ->searchable()
                                     ->preload()
-                                    ->nullable()
                                     ->afterStateUpdated(function ($state, callable $set): void {
                                         if (! $state) {
                                             return;
@@ -244,6 +244,7 @@ class SessionResource extends Resource
                         // Extra tuning: validatie op toegestane mime-types of max grootte.
                     ])
                     ->collapsed(),
+
             ]);
     }
 
@@ -369,6 +370,19 @@ class SessionResource extends Resource
                                             ->columns(3),
                                     ]),
                             ]),
+                        Tab::make('Schoten')
+                            ->schema([
+                                InfoSection::make('Interactieve roos & schoten per beurt')
+                                    ->description('Leg schoten vast per beurt en zie direct de totals. Beschikbaar tijdens het bewerken.')
+                                    ->schema([
+                                        ViewComponent::make('filament.sessions.session-shot-board-panel')
+                                            ->viewData(fn (?Session $record = null) => [
+                                                'readOnly' => true,
+                                                'record' => $record,
+                                            ])
+                                            ->key(fn (?Session $record) => 'session-shot-board-form-'.($record?->getKey() ?? 'new')),
+                                    ]),
+                            ]),
                         Tab::make('AI-reflectie')
                             ->schema([
                                 InfoSection::make('Reflectie door AI')
@@ -405,6 +419,7 @@ class SessionResource extends Resource
             'create' => SessionResource\Pages\CreateSession::route('/create'),
             'edit' => SessionResource\Pages\EditSession::route('/{record}/edit'),
             'view' => SessionResource\Pages\ViewSession::route('/{record}'),
+            'shots' => SessionResource\Pages\ManageSessionShots::route('/{record}/shots'),
         ];
     }
 

@@ -15,6 +15,10 @@ class EditSession extends EditRecord
         return [
             Actions\DeleteAction::make()
                 ->label('Verwijderen'),
+            Actions\Action::make('manageShots')
+                ->label('Schoten registreren')
+                ->icon('heroicon-o-sparkles')
+                ->url(fn (): string => static::getResource()::getUrl('shots', ['record' => $this->getRecord()])),
         ];
     }
 }

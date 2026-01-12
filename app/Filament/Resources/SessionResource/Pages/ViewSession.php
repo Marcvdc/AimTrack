@@ -7,10 +7,12 @@ use App\Jobs\GenerateSessionReflectionJob;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Support\Enums\Width;
 
 class ViewSession extends ViewRecord
 {
     protected static string $resource = SessionResource::class;
+    protected Width | string | null $maxContentWidth = Width::Full;
 
     protected function getHeaderActions(): array
     {
