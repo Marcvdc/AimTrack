@@ -54,6 +54,7 @@ class SessionResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema
+            ->columns(1)
             ->schema([
                 Hidden::make('user_id')
                     ->default(fn () => auth()->id())
@@ -326,12 +327,16 @@ class SessionResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema
+            ->columns(1)
             ->schema([
                 Tabs::make('Details en reflectie')
+                    ->contained(false)
                     ->tabs([
                         Tab::make('Details')
+                            ->columns(1)
                             ->schema([
                                 InfoSection::make('Sessie')
+                                    ->contained(false)
                                     ->description('Eigen invoer')
                                     ->schema([
                                         TextEntry::make('date')->label('Datum')->date(),
@@ -345,6 +350,7 @@ class SessionResource extends Resource
                                             ->markdown(),
                                     ]),
                                 InfoSection::make('Sessiewapens')
+                                    ->contained(false)
                                     ->schema([
                                         RepeatableEntry::make('sessionWeapons')
                                             ->schema([
@@ -359,6 +365,7 @@ class SessionResource extends Resource
                                             ->columns(3),
                                     ]),
                                 InfoSection::make('Bijlagen')
+                                    ->contained(false)
                                     ->schema([
                                         RepeatableEntry::make('attachments')
                                             ->schema([
@@ -371,8 +378,10 @@ class SessionResource extends Resource
                                     ]),
                             ]),
                         Tab::make('Schoten')
+                            ->columns(1)
                             ->schema([
                                 InfoSection::make('Interactieve roos & schoten per beurt')
+                                    ->contained(false)
                                     ->description('Leg schoten vast per beurt en zie direct de totals. Beschikbaar tijdens het bewerken.')
                                     ->schema([
                                         ViewComponent::make('filament.sessions.session-shot-board-panel')
@@ -384,8 +393,10 @@ class SessionResource extends Resource
                                     ]),
                             ]),
                         Tab::make('AI-reflectie')
+                            ->columns(1)
                             ->schema([
                                 InfoSection::make('Reflectie door AI')
+                                    ->contained(false)
                                     ->description('Automatisch gegenereerd; gebruik ter inspiratie, blijf kritisch en veilig schieten.')
                                     ->schema([
                                         TextEntry::make('aiReflection.summary')
