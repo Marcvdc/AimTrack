@@ -370,14 +370,21 @@ class SessionResource extends Resource
                                             ->columns(3),
                                     ]),
                             ]),
-                        Tab::make('AI-reflectie & schoten')
+                        Tab::make('Schoten')
                             ->schema([
                                 InfoSection::make('Interactieve roos & schoten per beurt')
                                     ->description('Leg schoten vast per beurt en zie direct de totals. Beschikbaar tijdens het bewerken.')
                                     ->schema([
                                         ViewComponent::make('filament.sessions.session-shot-board-panel')
+                                            ->viewData(fn (?Session $record = null) => [
+                                                'readOnly' => true,
+                                                'record' => $record,
+                                            ])
                                             ->key(fn (?Session $record) => 'session-shot-board-form-'.($record?->getKey() ?? 'new')),
                                     ]),
+                            ]),
+                        Tab::make('AI-reflectie')
+                            ->schema([
                                 InfoSection::make('Reflectie door AI')
                                     ->description('Automatisch gegenereerd; gebruik ter inspiratie, blijf kritisch en veilig schieten.')
                                     ->schema([

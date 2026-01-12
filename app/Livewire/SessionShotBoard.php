@@ -35,6 +35,8 @@ class SessionShotBoard extends Component implements HasTable, HasSchemas, HasAct
 
     public Session $session;
 
+    public bool $readOnly = false;
+
     public int $currentTurnIndex = 0;
 
     /** @var array<int, array<int, array<string, mixed>>> */
@@ -65,6 +67,10 @@ class SessionShotBoard extends Component implements HasTable, HasSchemas, HasAct
         $this->session = $session;
         $this->canEdit = Gate::allows('update', $session)
             || ($session->user_id === auth()->id());
+
+        if ($this->readOnly) {
+            $this->canEdit = false;
+        }
 
         $this->refreshData();
         $this->currentTurnIndex = $this->turnOptions[0] ?? 0;
@@ -255,7 +261,8 @@ class SessionShotBoard extends Component implements HasTable, HasSchemas, HasAct
                 SessionShot::query()
                     ->where('session_id', $this->session->id)
             )
-            ->paginated(false)
+            ->paginated(15)
+            ->paginationPageOptions([10, 15, 25, 50])
             ->defaultSort('turn_index')
             ->columns([
                 TextColumn::make('id')
