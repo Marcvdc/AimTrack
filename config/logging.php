@@ -5,6 +5,12 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
 use Monolog\Processor\PsrLogMessageProcessor;
 
+$stackChannels = array_values(array_filter(array_map('trim', explode(',', (string) env('LOG_STACK', 'daily')))));
+
+if (! in_array('daily', $stackChannels, true)) {
+    array_unshift($stackChannels, 'daily');
+}
+
 return [
 
     /*
@@ -54,7 +60,7 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            'channels' => $stackChannels,
             'ignore_exceptions' => false,
         ],
 

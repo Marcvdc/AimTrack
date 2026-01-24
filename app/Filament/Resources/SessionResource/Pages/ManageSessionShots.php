@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\SessionResource\Pages;
 
 use App\Filament\Resources\SessionResource;
-use App\Models\Session;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
@@ -23,7 +22,7 @@ class ManageSessionShots extends Page
 
     protected bool $shouldAuthorizeAccess = true;
 
-    public function mount(int | string $record): void
+    public function mount(int|string $record): void
     {
         $this->record = $this->resolveRecord($record);
         $this->authorizeAccess();

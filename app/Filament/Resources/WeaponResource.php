@@ -7,6 +7,7 @@ use App\Jobs\GenerateWeaponInsightJob;
 use App\Models\AmmoType;
 use App\Models\Location;
 use App\Models\Weapon;
+use App\Support\Features\AimtrackFeatureToggle;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -29,7 +30,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Laravel\Pennant\Feature;
 use UnitEnum;
 
 class WeaponResource extends Resource
@@ -149,7 +149,7 @@ class WeaponResource extends Resource
                     ->label('AI-inzichten')
                     ->limit(40)
                     ->placeholder('Nog niet gegenereerd')
-                    ->visible(fn (): bool => Feature::active('aimtrack-ai')),
+                    ->visible(fn (): bool => static::features()->aiEnabled()),
             ])
             ->filters([
                 SelectFilter::make('weapon_type')
@@ -174,7 +174,7 @@ class WeaponResource extends Resource
                     ->icon('heroicon-m-sparkles')
                     ->requiresConfirmation()
                     ->action(function (Weapon $record): void {
-                        if (Feature::inactive('aimtrack-ai')) {
+                        if (static::features()->aiDisabled()) {
                             Notification::make()
                                 ->title('AI-functies uitgeschakeld')
                                 ->body('Schakel de featureflag aimtrack-ai in om AI-inzichten te genereren.')
@@ -221,7 +221,7 @@ class WeaponResource extends Resource
                     ]),
                 InfoSection::make('AI-inzichten')
                     ->description('Automatisch gegenereerd; vat trends samen op basis van je sessies.')
-                    ->visible(fn (): bool => Feature::active('aimtrack-ai'))
+                    ->visible(fn (): bool => static::features()->aiEnabled())
                     ->schema([
                         TextEntry::make('aiWeaponInsight.summary')
                             ->label('Samenvatting')
@@ -263,5 +263,10 @@ class WeaponResource extends Resource
     {
         return parent::getEloquentQuery()
             ->where('user_id', auth()->id());
+    }
+
+    protected static function features(): AimtrackFeatureToggle
+    {
+        return app(AimtrackFeatureToggle::class);
     }
 }
