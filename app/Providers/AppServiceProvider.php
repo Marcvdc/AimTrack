@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Http\Responses\Auth\AdminLogoutResponse;
 use App\Services\Ai\ShooterCoach;
+use App\Support\Features\AimtrackFeatureToggle;
+use Filament\Auth\Http\Responses\Contracts\LogoutResponse as LogoutResponseContract;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
@@ -15,6 +18,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(ShooterCoach::class, fn () => ShooterCoach::make());
+        $this->app->singleton(AimtrackFeatureToggle::class);
+
+        $this->app->bind(LogoutResponseContract::class, AdminLogoutResponse::class);
     }
 
     public function boot(): void
