@@ -4,7 +4,6 @@ use App\Support\Features\AimtrackFeatureToggle;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Pennant\Feature as FeatureFacade;
-use Mockery;
 
 it('uses Laravel Pennant when the features table exists', function (): void {
     Schema::shouldReceive('hasTable')
@@ -34,13 +33,11 @@ it('falls back to the configured default and logs once when the table is missing
 
     Log::shouldReceive('warning')
         ->once()
-        ->with(
-            'Pennant features table ontbreekt; val terug op env default.',
-            Mockery::on(function (array $context): bool {
-                return $context['feature'] === 'aimtrack-ai'
-                    && $context['default'] === false;
-            })
-        );
+        ->withArgs(function (string $message, array $context): bool {
+            return $message === 'Pennant features table ontbreekt; val terug op env default.'
+                && ($context['feature'] ?? null) === 'aimtrack-ai'
+                && ($context['default'] ?? null) === false;
+        });
 
     $toggle = new AimtrackFeatureToggle;
 
