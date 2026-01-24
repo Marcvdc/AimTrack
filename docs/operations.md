@@ -9,7 +9,7 @@ Runbook voor dagelijks beheer, incidentrespons en onderhoud van AimTrack.
 
 ## Incidentrespons
 1. **App down**: controleer containers (`docker compose ps`), bekijk logs van `web` en `app`. Herstart met `docker compose restart app web`.
-2. **DB issues**: check `db` logs. Indien migrations ontbreken, voer `php artisan migrate --force` uit (met backup!).
+2. **DB issues**: check `db` logs. Indien migrations ontbreken (bijv. Pennant `features`-tabel mist en logs tonen `Pennant features table ontbreekt; val terug op env default.`), voer de migraties uit binnen de containerstack: `docker compose -p aimtrack_dev exec app php artisan migrate --force` (met backup!).
 3. **Queue stilgevallen**: herstart `queue` service; inspecteer `queue:failed` en gebruik `queue:retry` na het oplossen van de oorzaak.
 4. **AI-fouten**: controleer `.env` voor API-key/base_url, timeouts in `config/ai.php`, en foutmeldingen in `ai_reflections`/`ai_weapon_insights`.
 5. **Exports mislukken**: controleer bestandssysteem en permissies; valideer dat filters geldige data leveren.

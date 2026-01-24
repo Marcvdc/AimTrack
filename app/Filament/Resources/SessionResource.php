@@ -7,6 +7,7 @@ use App\Jobs\GenerateSessionReflectionJob;
 use App\Models\AmmoType;
 use App\Models\Location;
 use App\Models\Session;
+use App\Support\Features\AimtrackFeatureToggle;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -35,7 +36,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
-use Laravel\Pennant\Feature;
 use UnitEnum;
 
 class SessionResource extends Resource
@@ -284,7 +284,7 @@ class SessionResource extends Resource
                     ->limit(40)
                     ->placeholder('Nog niet gegenereerd')
                     ->toggleable()
-                    ->visible(fn (): bool => Feature::active('aimtrack-ai')),
+                    ->visible(fn (): bool => static::features()->aiEnabled()),
             ])
             ->filters([
                 Filter::make('periode')
@@ -310,7 +310,7 @@ class SessionResource extends Resource
                     ->icon('heroicon-m-sparkles')
                     ->requiresConfirmation()
                     ->action(function (Session $record): void {
-                        if (Feature::inactive('aimtrack-ai')) {
+                        if (static::features()->aiDisabled()) {
                             Notification::make()
                                 ->title('AI-functies uitgeschakeld')
                                 ->body('Schakel de featureflag aimtrack-ai in om AI-reflecties te genereren.')
@@ -405,7 +405,7 @@ class SessionResource extends Resource
                                     ]),
                             ]),
                         Tab::make('AI-reflectie')
-                            ->visible(fn (): bool => Feature::active('aimtrack-ai'))
+                            ->visible(fn (): bool => static::features()->aiEnabled())
                             ->columns(1)
                             ->schema([
                                 InfoSection::make('Reflectie door AI')
@@ -445,6 +445,11 @@ class SessionResource extends Resource
             'view' => SessionResource\Pages\ViewSession::route('/{record}'),
             'shots' => SessionResource\Pages\ManageSessionShots::route('/{record}/shots'),
         ];
+    }
+
+    protected static function features(): AimtrackFeatureToggle
+    {
+        return app(AimtrackFeatureToggle::class);
     }
 
     public static function getEloquentQuery(): Builder

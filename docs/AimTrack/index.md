@@ -4,6 +4,7 @@
 Deze map bevat alle documentatie voor het AimTrack-project volgens het PLAN-FIRST proces. Zie `docs/plans/` voor lopende plannen en `docs/AimTrack/tech/` voor technische referenties.
 
 ## Recent
+- 2026-01-24 — GH-42 Laravel logrotatie ingericht (daily channel, tests, runbook)
 - 2026-01-24 — Filament logout flow gefixed (signed GET fallback + melding) — GH-33
 - 2026-01-24 — GH-41 Pennant fallback helper + Filament aanpassingen (features-table resilience)
 - 2026-01-24 — Laravel Boost tooling geïnstalleerd en geconfigureerd voor dev (GitHub #34)

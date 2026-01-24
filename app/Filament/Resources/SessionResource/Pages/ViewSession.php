@@ -4,16 +4,17 @@ namespace App\Filament\Resources\SessionResource\Pages;
 
 use App\Filament\Resources\SessionResource;
 use App\Jobs\GenerateSessionReflectionJob;
+use App\Support\Features\AimtrackFeatureToggle;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Enums\Width;
-use Laravel\Pennant\Feature;
 
 class ViewSession extends ViewRecord
 {
     protected static string $resource = SessionResource::class;
-    protected Width | string | null $maxContentWidth = Width::Full;
+
+    protected Width|string|null $maxContentWidth = Width::Full;
 
     protected function getHeaderActions(): array
     {
@@ -26,7 +27,7 @@ class ViewSession extends ViewRecord
                 ->color('primary')
                 ->requiresConfirmation()
                 ->action(function (): void {
-                    if (Feature::inactive('aimtrack-ai')) {
+                    if ($this->features()->aiDisabled()) {
                         Notification::make()
                             ->title('AI-functies uitgeschakeld')
                             ->body('Schakel de featureflag aimtrack-ai in om AI-reflecties te genereren.')
@@ -45,5 +46,10 @@ class ViewSession extends ViewRecord
                         ->send();
                 }),
         ];
+    }
+
+    protected function features(): AimtrackFeatureToggle
+    {
+        return app(AimtrackFeatureToggle::class);
     }
 }

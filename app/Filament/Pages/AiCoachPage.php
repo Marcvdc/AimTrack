@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\CoachQuestion;
 use App\Models\Weapon;
 use App\Services\Ai\ShooterCoach;
+use App\Support\Features\AimtrackFeatureToggle;
 use BackedEnum;
 use Carbon\Carbon;
 use Filament\Actions\Action;
@@ -40,8 +41,15 @@ class AiCoachPage extends Page implements HasForms
 
     public Collection $history;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::features()->aiEnabled() && parent::shouldRegisterNavigation();
+    }
+
     public function mount(): void
     {
+        abort_if(static::features()->aiDisabled(), 403, 'AI-functies zijn uitgeschakeld.');
+
         $this->form->fill([
             'question' => '',
             'weapon_id' => null,
@@ -50,6 +58,11 @@ class AiCoachPage extends Page implements HasForms
         ]);
 
         $this->loadHistory();
+    }
+
+    protected static function features(): AimtrackFeatureToggle
+    {
+        return app(AimtrackFeatureToggle::class);
     }
 
     public function form(Schema $schema): Schema
@@ -87,6 +100,16 @@ class AiCoachPage extends Page implements HasForms
 
     public function submit(ShooterCoach $coach): void
     {
+        if (static::features()->aiDisabled()) {
+            Notification::make()
+                ->title('AI-functies uitgeschakeld')
+                ->body('Schakel de featureflag aimtrack-ai in om vragen aan de AI-coach te stellen.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
         $state = $this->form->getState();
 
         $from = isset($state['from_date']) && $state['from_date'] ? Carbon::parse($state['from_date']) : null;
