@@ -6,6 +6,7 @@ use App\Filament\Widgets\FailedJobsWidget;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Support\HtmlString;
 
 class AdminPanelProvider extends PanelProvider
@@ -34,6 +35,10 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 FailedJobsWidget::class,
             ])
+            ->renderHook(
+                PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
+                fn () => view('filament.auth.logout-status'),
+            )
             ->middleware([
                 // Core Laravel stack; uitbreidbaar met locale middleware.
                 \Illuminate\Cookie\Middleware\EncryptCookies::class,
