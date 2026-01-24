@@ -145,21 +145,48 @@
             font-size: 1.6rem;
         }
         .heatmap {
-            height: 180px;
             border-radius: 18px;
             border: 1px dashed rgba(255, 255, 255, .15);
-            background: radial-gradient(circle at 60% 40%, rgba(255, 255, 255, .4), transparent 45%),
-                        radial-gradient(circle at 40% 60%, rgba(100, 244, 179, .5), transparent 55%),
-                        rgba(9, 13, 25, .7);
-            position: relative;
+            background: rgba(9, 13, 25, .7);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
-        .heatmap::after {
-            content: 'Sessies heatmap (demo)';
-            position: absolute;
-            bottom: 12px;
-            right: 16px;
+        .heatmap-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .heatmap-header span {
             font-size: .85rem;
             color: var(--text-muted);
+        }
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+            gap: 10px;
+        }
+        .heatmap-ring {
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, .1);
+            padding: 10px;
+            background: rgba(100, 244, 179, calc(.1 + var(--heat-intensity) * .5));
+            box-shadow: inset 0 0 15px rgba(100, 244, 179, calc(.05 + var(--heat-intensity) * .25));
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .heatmap-ring span {
+            font-size: .8rem;
+            color: var(--text-muted);
+        }
+        .heatmap-ring strong {
+            font-size: 1.4rem;
+        }
+        .heatmap-empty {
+            color: var(--text-muted);
+            font-size: .9rem;
         }
         .section {
             margin-bottom: 72px;
@@ -268,6 +295,19 @@
     </style>
 </head>
 <body>
+@php
+    $sessionsThisMonth = (int) data_get($stats ?? [], 'sessions_this_month', 0);
+    $averageScore = number_format((float) data_get($stats ?? [], 'average_score', 0), 1);
+    $aiReflections = (int) data_get($stats ?? [], 'ai_reflections_last_30_days', 0);
+    $ringHeatmap = collect(data_get($stats ?? [], 'ring_heatmap', []));
+    if ($ringHeatmap->isEmpty()) {
+        $ringHeatmap = collect(range(0, 10))->map(fn ($ring) => [
+            'ring' => $ring,
+            'total' => 0,
+            'intensity' => 0,
+        ]);
+    }
+@endphp
 <main>
     <section class="hero">
         <div>
@@ -287,19 +327,36 @@
             </div>
         </div>
         <div class="card stats-card">
-            <div class="heatmap"></div>
+            <div class="heatmap">
+                <div class="heatmap-header">
+                    <h3 style="margin:0;font-size:1rem;">Ring heatmap (30 dagen)</h3>
+                    <span>Laatste {{ $ringHeatmap->sum('total') }} schoten</span>
+                </div>
+                @if($ringHeatmap->sum('total') > 0)
+                    <div class="heatmap-grid">
+                        @foreach($ringHeatmap as $ringStat)
+                            <div class="heatmap-ring" style="--heat-intensity: {{ $ringStat['intensity'] ?? 0 }};">
+                                <span>Ring {{ $ringStat['ring'] }}</span>
+                                <strong>{{ $ringStat['total'] }}</strong>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="heatmap-empty">Nog geen schoten geregistreerd in de afgelopen 30 dagen.</p>
+                @endif
+            </div>
             <div class="stats-grid">
                 <div class="stat">
                     <span>Sessies deze maand</span>
-                    <strong>48</strong>
+                    <strong>{{ $sessionsThisMonth }}</strong>
                 </div>
                 <div class="stat">
                     <span>Gem. score</span>
-                    <strong>92.4</strong>
+                    <strong>{{ $averageScore }}</strong>
                 </div>
                 <div class="stat">
-                    <span>AI reflecties</span>
-                    <strong>17</strong>
+                    <span>AI reflecties (30d)</span>
+                    <strong>{{ $aiReflections }}</strong>
                 </div>
             </div>
             <p style="margin:0;color:var(--text-muted);font-size:.9rem;">Live data vanuit AimTrack • Dashboard preview</p>
@@ -349,24 +406,16 @@
             <p>Belangrijkste artikelen om veilig en up-to-date te blijven. Links openen in een nieuw tabblad.</p>
         </div>
         <div class="grid">
-            <article class="card resource-card">
-                <small>Bron: KNSA</small>
-                <h3>Veilig wapenbezit</h3>
-                <p>De 10 basisregels voor verantwoord omgaan met je wapen, thuis en op de baan.</p>
-                <a href="https://www.knsa.nl/veiligheid/veilig-wapenbezit" target="_blank" rel="noreferrer noopener">Lees de regels →</a>
-            </article>
-            <article class="card resource-card">
-                <small>Bron: KNSA</small>
-                <h3>Checklist baanveiligheid</h3>
-                <p>Gebruik de checklist vóór elke sessie om baancondities en procedures te verifiëren.</p>
-                <a href="https://www.knsa.nl/veiligheid/checklist-baanveiligheid" target="_blank" rel="noreferrer noopener">Open checklist →</a>
-            </article>
-            <article class="card resource-card">
-                <small>Bron: KNSA</small>
-                <h3>Wedstrijdkalender &amp; reglementen</h3>
-                <p>Bereid trainingen voor volgens actuele wedstrijdregels en plan je agenda.</p>
-                <a href="https://www.knsa.nl/wedstrijden/reglementen" target="_blank" rel="noreferrer noopener">Bekijk reglementen →</a>
-            </article>
+            @forelse($knsaLinks ?? [] as $link)
+                <article class="card resource-card">
+                    <small>Bron: KNSA</small>
+                    <h3>{{ $link['title'] }}</h3>
+                    <p>{{ $link['description'] }}</p>
+                    <a href="{{ $link['url'] }}" target="_blank" rel="noreferrer noopener">Lees meer →</a>
+                </article>
+            @empty
+                <p style="color: var(--text-muted);">Geen KNSA-links geconfigureerd.</p>
+            @endforelse
         </div>
     </section>
 
