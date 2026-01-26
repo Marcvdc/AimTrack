@@ -4,6 +4,7 @@
 Deze map bevat alle documentatie voor het AimTrack-project volgens het PLAN-FIRST proces. Zie `docs/plans/` voor lopende plannen en `docs/AimTrack/tech/` voor technische referenties.
 
 ## Recent
+- 2026-01-26 — GH-37 Sessies-export herbouwd (shared dataset, shots samenvatting, PDF lay-out fixes + tests)
 - 2026-01-26 — UI landing CTA + profielmenu-link naar marketingpagina (UI-VERBETERING-USER)
 - 2026-01-26 — GH-38 Backup services + cron jobs toegevoegd (staging/prod compose, runbook)
 - 2026-01-24 — GH-42 Laravel logrotatie ingericht (daily channel, tests, runbook)
