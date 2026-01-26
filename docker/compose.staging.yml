@@ -17,6 +17,33 @@ services:
       - app_storage:/var/www/html/storage
       - app_bootstrap_cache:/var/www/html/bootstrap/cache
 
+  backup:
+    image: ${REGISTRY_IMAGE}:${IMAGE_TAG}
+    env_file:
+      - ../.env
+    environment:
+      APP_ENV: staging
+      BACKUP_MODE: direct
+      BACKUP_DIR: /backups
+      BACKUP_PREFIX: ${BACKUP_PREFIX_STAGING:-staging-db}
+      RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_SCHEDULE: "${BACKUP_SCHEDULE:-0 3 * * *}"
+      BACKUP_LOG: /backups/cron.log
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-aimtrack}
+      DB_USERNAME: ${DB_USERNAME:-aimtrack}
+      DB_PASSWORD: ${DB_PASSWORD:-aimtrack}
+    entrypoint: ["/var/www/html/docker/backup/entrypoint.sh"]
+    command: []
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - app_code:/var/www/html:ro
+      - db_backups_staging:/backups
+
   queue:
     image: ${REGISTRY_IMAGE}:${IMAGE_TAG}
     env_file:
@@ -70,3 +97,4 @@ volumes:
   app_storage:
   app_bootstrap_cache:
   db_data_staging:
+  db_backups_staging:
