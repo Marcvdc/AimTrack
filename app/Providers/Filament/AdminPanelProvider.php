@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Widgets\FailedJobsWidget;
+use Filament\Actions\Action;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -35,9 +36,16 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 FailedJobsWidget::class,
             ])
+            ->userMenuItems([
+                Action::make('landing-page')
+                    ->label('Terug naar landingpage')
+                    ->icon('heroicon-o-document-text')
+                    ->url(fn (): string => route('welcome'))
+                    ->openUrlInNewTab(),
+            ])
             ->renderHook(
                 PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
-                fn () => view('filament.auth.logout-status'),
+                fn (): string => view('filament.auth.login-extras')->render(),
             )
             ->middleware([
                 // Core Laravel stack; uitbreidbaar met locale middleware.
