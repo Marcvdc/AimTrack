@@ -1,0 +1,16 @@
+{
+    "mcpServers": {
+        "laravel-boost": {
+            "command": "wsl.exe",
+            "args": [
+                "-d",
+                "Ubuntu",
+                "-e",
+                "bash",
+                "-lc",
+                "cd /home/brandnetel/CascadeProjects/AimTrack && /usr/bin/php8.4 artisan boost:mcp --verbose"
+            ],
+            "timeoutMs": 40000
+        }
+    }
+}
