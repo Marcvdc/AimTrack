@@ -5,6 +5,7 @@ Deze map bevat alle documentatie voor het AimTrack-project volgens het PLAN-FIRS
 
 ## Recent
 - 2026-01-26 — GH-37 Sessies-export herbouwd (shared dataset, shots samenvatting, PDF lay-out fixes + tests)
+- 2026-01-26 — GH-49 Export downloads forceren HTTPS via configuratie + tests
 - 2026-01-26 — UI landing CTA + profielmenu-link naar marketingpagina (UI-VERBETERING-USER)
 - 2026-01-26 — GH-38 Backup services + cron jobs toegevoegd (staging/prod compose, runbook)
 - 2026-01-24 — GH-42 Laravel logrotatie ingericht (daily channel, tests, runbook)
