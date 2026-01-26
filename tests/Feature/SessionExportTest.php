@@ -37,9 +37,9 @@ it('streams csv export with shared dataset and shots summary', function (): void
     ]);
 
     SessionShot::factory()->count(3)->for($session)->state(new Sequence(
-        ['score' => 8, 'ring' => 8],
-        ['score' => 9, 'ring' => 9],
-        ['score' => 10, 'ring' => 10],
+        ['score' => 8, 'ring' => 8, 'shot_index' => 0],
+        ['score' => 9, 'ring' => 9, 'shot_index' => 1],
+        ['score' => 10, 'ring' => 10, 'shot_index' => 2],
     ))->create();
 
     $this->actingAs($user);

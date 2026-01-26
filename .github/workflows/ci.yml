@@ -16,6 +16,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Prepare storage directories
+        run: |
+          mkdir -p storage/framework/cache
+          mkdir -p storage/framework/cache/data
+          mkdir -p storage/framework/sessions
+          mkdir -p storage/framework/views
+          chmod -R 775 storage/framework
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -47,6 +55,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Prepare storage directories
+        run: |
+          mkdir -p storage/framework/cache
+          mkdir -p storage/framework/cache/data
+          mkdir -p storage/framework/sessions
+          mkdir -p storage/framework/views
+          chmod -R 775 storage/framework
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -99,6 +115,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Prepare storage directories
+        run: |
+          mkdir -p storage/framework/cache
+          mkdir -p storage/framework/cache/data
+          mkdir -p storage/framework/sessions
+          mkdir -p storage/framework/views
+          chmod -R 775 storage/framework
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2

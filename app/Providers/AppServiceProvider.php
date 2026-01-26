@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Http\Responses\Auth\AdminLogoutResponse;
 use App\Services\Ai\ShooterCoach;
 use App\Support\Features\AimtrackFeatureToggle;
+use App\Support\StoragePathInitializer;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse as LogoutResponseContract;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Config;
@@ -25,6 +26,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        StoragePathInitializer::ensure();
+
         if (config('app.force_https')) {
             URL::forceScheme('https');
         } elseif ($this->app->environment('local')) {
