@@ -1,4 +1,16 @@
-<div class="mt-6 space-y-6">
+<div class="mt-6 space-y-6" x-data="{
+        deleteConfirmationMessage: '',
+        pendingDeleteShotId: null,
+        ...targetBoard({
+            recordShot: (x, y) => $wire.recordShot(x, y),
+            canEdit: @js($canEdit),
+            rawMarkers: @entangle('markers').live,
+            turns: @entangle('turnOptions').live,
+            currentTurn: @entangle('currentTurnIndex').live,
+            turnLegend: @entangle('turnLegend').live,
+            allTurnsValue: @js(\App\Livewire\SessionShotBoard::ALL_TURNS_VALUE),
+        })
+    }">
     @php
         $legendEntries = collect($turnLegend ?? [])->map(fn ($entry) => [
             'label' => $entry['label'] ?? 'Beurt',
@@ -6,6 +18,35 @@
         ])->values()->all();
 
     @endphp
+
+    <!-- Delete Confirmation Modal -->
+    <x-filament::modal id="delete-shot-modal">
+        <x-slot name="heading">
+            Schot verwijderen?
+        </x-slot>
+        
+        <div>
+            <p>Weet je zeker dat je dit schot wilt verwijderen?</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400" x-text="deleteConfirmationMessage"></p>
+        </div>
+        
+        <x-slot name="footer">
+            <x-filament::button
+                type="button"
+                color="danger"
+                wire:click="confirmDeleteShot"
+            >
+                Verwijderen
+            </x-filament::button>
+            <x-filament::button
+                type="button"
+                color="gray"
+                x-on:click="$dispatch('close-modal', { id: 'delete-shot-modal' })"
+            >
+                Annuleren
+            </x-filament::button>
+        </x-slot>
+    </x-filament::modal>
 
     <!-- Beurt Selectie -->
     <div class="mb-6 rounded-3xl border border-gray-200/70 bg-white/80 px-5 py-4 shadow-sm dark:border-gray-800/60 dark:bg-gray-900/60">
@@ -350,11 +391,10 @@
                     const clickedMarker = this.getMarkerAtPosition(event);
                     
                     if (clickedMarker) {
-                        // Show confirmation before deleting
-                        const turnLabel = clickedMarker.turn_label || 'deze beurt';
-                        if (confirm(`Weet je zeker dat je dit schot uit ${turnLabel} wilt verwijderen?`)) {
-                            this.$wire.confirmDeleteShot(clickedMarker.id);
-                        }
+                        // Set confirmation data and open modal
+                        this.$root.deleteConfirmationMessage = `Schot uit ${clickedMarker.turn_label || 'deze beurt'} verwijderen?`;
+                        this.$wire.set('pendingDeleteShotId', clickedMarker.id);
+                        this.$dispatch('open-modal', { id: 'delete-shot-modal' });
                     }
                 },
                 handleCanvasClick(event) {
@@ -490,11 +530,10 @@
                         this.longPressTriggered = true;
                         this.cancelLongPress({ keepTriggered: true });
                         
-                        // Show confirmation before deleting
-                        const turnLabel = marker.turn_label || 'deze beurt';
-                        if (confirm(`Weet je zeker dat je dit schot uit ${turnLabel} wilt verwijderen?`)) {
-                            this.$wire.confirmDeleteShot(marker.id);
-                        }
+                        // Set confirmation data and open modal
+                        this.$root.deleteConfirmationMessage = `Schot uit ${marker.turn_label || 'deze beurt'} verwijderen?`;
+                        this.$wire.set('pendingDeleteShotId', marker.id);
+                        this.$dispatch('open-modal', { id: 'delete-shot-modal' });
                     }, this.longPressDelay);
                 },
                 endLongPress(forceCancel = false) {

@@ -64,6 +64,8 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
 
     public bool $canEdit = false;
 
+    public ?int $pendingDeleteShotId = null;
+
     protected SessionShotService $shotService;
 
     private const TURN_COLOR_PALETTE = [
@@ -202,16 +204,23 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
         $this->resetTable();
     }
 
-    public function confirmDeleteShot(int $shotId): void
+    public function confirmDeleteShot(): void
     {
-        $shot = $this->session->shots()->whereKey($shotId)->first();
-
-        if (! $shot instanceof SessionShot) {
+        if (! $this->pendingDeleteShotId) {
             return;
         }
 
-        // Direct deletion - frontend will handle confirmation
-        $this->deleteShot($shotId);
+        $shot = $this->session->shots()->whereKey($this->pendingDeleteShotId)->first();
+
+        if (! $shot) {
+            return;
+        }
+
+        $this->deleteShot($this->pendingDeleteShotId);
+        $this->pendingDeleteShotId = null;
+        
+        // Close the modal
+        $this->dispatch('close-modal', id: 'delete-shot-modal');
     }
 
     #[On('shots::refresh')]
