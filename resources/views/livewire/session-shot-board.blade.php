@@ -50,28 +50,28 @@
 
     <!-- Beurt Selectie -->
     <div class="mb-6 rounded-3xl border border-gray-200/70 bg-white/80 px-5 py-4 shadow-sm dark:border-gray-800/60 dark:bg-gray-900/60">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div class="flex flex-col gap-2">
-                <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Beurt selectie</span>
-                <div class="flex flex-wrap gap-3">
-                    <select wire:model.live="currentTurnIndex" class="rounded-2xl border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                        <option value="{{ \App\Livewire\SessionShotBoard::ALL_TURNS_VALUE }}">Alle beurten</option>
-                        @foreach ($turnOptions as $turn)
-                            <option value="{{ $turn }}">Beurt {{ $turn + 1 }}</option>
-                        @endforeach
-                    </select>
-                    @if ($canEdit)
-                        <x-filament::button
-                            type="button"
-                            size="sm"
-                            color="primary"
-                            icon="heroicon-m-plus"
-                            wire:click="addTurn"
-                        >
-                            Nieuwe beurt
-                        </x-filament::button>
-                    @endif
-                </div>
+        <div class="flex flex-col gap-2">
+            <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Beurt selectie</span>
+            <div class="relative">
+                <select wire:model.live="currentTurnIndex" class="rounded-2xl border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                    <option value="{{ \App\Livewire\SessionShotBoard::ALL_TURNS_VALUE }}">Alle beurten</option>
+                    @foreach ($turnOptions as $turn)
+                        <option value="{{ $turn }}">Beurt {{ $turn + 1 }}</option>
+                    @endforeach
+                </select>
+                @if ($canEdit)
+                    <x-filament::button
+                        type="button"
+                        size="sm"
+                        color="primary"
+                        icon="heroicon-m-plus"
+                        wire:click="addTurn"
+                        style="float: right;"
+                    >
+                        Nieuwe beurt
+                    </x-filament::button>
+                @endif
+                <div style="clear: both;"></div>
             </div>
         </div>
     </div>
@@ -109,7 +109,6 @@
                 <div class="bg-white/80 dark:bg-gray-900/60 rounded-2xl shadow">
                     <div class="p-4 border-b border-gray-200 dark:border-gray-800">
                         <div class="flex items-center gap-2">
-                            <x-filament::icon icon="heroicon-o-document-text" class="h-3 w-3" />
                             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-100">Doelgebied & schoten</h3>
                         </div>
                         <p class="text-xs text-gray-500 mt-1">Beheer beurten en bekijk gedetailleerde schotinformatie. Gebruik de filters om specifieke beurten te tonen.</p>
