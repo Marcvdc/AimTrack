@@ -49,34 +49,42 @@
     </x-filament::modal>
 
     <!-- Beurt Selectie -->
-    <div class="mb-6 rounded-3xl border border-gray-200/70 bg-white/80 px-5 py-4 shadow-sm dark:border-gray-800/60 dark:bg-gray-900/60">
-        <div class="flex flex-col gap-2">
-            <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Beurt selectie</span>
-            <div class="relative">
-                <select wire:model.live="currentTurnIndex" class="rounded-2xl border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+    <div class="mb-6">
+        <x-filament::section>
+            <x-slot name="heading">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-100">Beurt selectie</span>
+                    @if ($canEdit)
+
+
+                     <x-slot name="afterHeader">
+                         <x-filament::button
+                            type="button"
+                            size="sm"
+                            color="primary"
+                            icon="heroicon-m-plus"
+                            wire:click="addTurn"
+                        >
+                            Nieuwe beurt
+                        </x-filament::button>
+                    </x-slot>
+                       
+                    @endif
+                </div>
+            </x-slot>
+            
+            <div class="space-y-2">
+                <select wire:model.live="currentTurnIndex" class="rounded-lg border-gray-300 bg-white px-4 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                     <option value="{{ \App\Livewire\SessionShotBoard::ALL_TURNS_VALUE }}">Alle beurten</option>
                     @foreach ($turnOptions as $turn)
                         <option value="{{ $turn }}">Beurt {{ $turn + 1 }}</option>
                     @endforeach
                 </select>
-                @if ($canEdit)
-                    <x-filament::button
-                        type="button"
-                        size="sm"
-                        color="primary"
-                        icon="heroicon-m-plus"
-                        wire:click="addTurn"
-                        style="float: right;"
-                    >
-                        Nieuwe beurt
-                    </x-filament::button>
-                @endif
-                <div style="clear: both;"></div>
             </div>
-        </div>
+        </x-filament::section>
     </div>
 
-    <div class="rounded-3xl border border-gray-200/70 bg-white/80 px-5 py-5 shadow-sm dark:border-gray-800/60 dark:bg-gray-900/60">
+    <div class="mx-10 rounded-3xl border border-gray-200/70 bg-white/80 px-5 py-5 shadow-sm dark:border-gray-800/60 dark:bg-gray-900/60">
         <div class="mt-6"
             x-data="targetBoard({
             recordShot: (x, y) => $wire.recordShot(x, y),
@@ -106,17 +114,26 @@
 
             <!-- Doelgebied & Schoten -->
             <div class="flex-1 space-y-4">
-                <div class="bg-white/80 dark:bg-gray-900/60 rounded-2xl shadow">
-                    <div class="p-4 border-b border-gray-200 dark:border-gray-800">
+                <x-filament::section>
+                    <x-slot name="heading">
                         <div class="flex items-center gap-2">
                             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-100">Doelgebied & schoten</h3>
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">Beheer beurten en bekijk gedetailleerde schotinformatie. Gebruik de filters om specifieke beurten te tonen.</p>
+                    </x-slot>
+
+                     <x-slot name="description">
+                        Beheer beurten en bekijk gedetailleerde schotinformatie. Gebruik de filters om specifieke beurten te tonen.
+                    </x-slot>
+                    
+                    <div class="space-y-2">
+                        <p class="text-xs text-gray-500 mb-0"></p>
+                        <div class="p-2">
+                            {{ $this->table }}
+                        </div>
                     </div>
-                    <div class="p-2">
-                        {{ $this->table }}
-                    </div>
-                </div>
+                </x-filament::section>
+
+                
             </div>
         </div>
     </div>
