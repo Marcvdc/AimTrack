@@ -5,10 +5,10 @@ namespace App\Livewire;
 use App\Models\Session;
 use App\Models\SessionShot;
 use App\Services\Sessions\SessionShotService;
-use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Facades\Filament;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Support\Contracts\TranslatableContentDriver;
@@ -31,13 +31,19 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
 {
     use InteractsWithActions;
     use InteractsWithSchemas;
-    use InteractsWithTable;
+    use InteractsWithTable {
+        InteractsWithTable::resetTable as protected filamentResetTable;
+    }
+
+    public const ALL_TURNS_VALUE = -1;
 
     public Session $session;
 
     public bool $readOnly = false;
 
     public int $currentTurnIndex = 0;
+
+    public int $lastActiveTurnIndex = 0;
 
     /** @var array<int, array<int, array<string, mixed>>> */
     public array $shotsByTurn = [];
@@ -53,9 +59,25 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
     /** @var array<int, int> */
     public array $turnOptions = [0];
 
+    /** @var array<int, array<string, string>> */
+    public array $turnLegend = [];
+
     public bool $canEdit = false;
 
+    public ?int $pendingDeleteShotId = null;
+
     protected SessionShotService $shotService;
+
+    private const TURN_COLOR_PALETTE = [
+        '#0ea5e9', // sky
+        '#a855f7', // purple
+        '#f97316', // orange
+        '#10b981', // green
+        '#ec4899', // pink
+        '#f59e0b', // amber
+        '#6366f1', // indigo
+        '#14b8a6', // teal
+    ];
 
     public function boot(SessionShotService $shotService): void
     {
@@ -75,6 +97,8 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
         $this->refreshData();
         $this->currentTurnIndex = $this->turnOptions[0] ?? 0;
         $this->selectedTurnId = $this->currentTurnIndex;
+        $this->lastActiveTurnIndex = $this->currentTurnIndex;
+        $this->applyTurnScopeFilter();
         $this->rebuildShotTable();
 
         Log::info('[SessionShotBoard] mounted', [
@@ -85,15 +109,28 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
         ]);
     }
 
+    public function updatedCurrentTurnIndex(int $turnIndex): void
+    {
+        $this->setTurn($turnIndex);
+    }
+
     public function setTurn(int $turnIndex): void
     {
+        if ($turnIndex === self::ALL_TURNS_VALUE) {
+            $this->currentTurnIndex = self::ALL_TURNS_VALUE;
+            $this->applyTurnScopeFilter('all');
+
+            return;
+        }
+
         if (! in_array($turnIndex, $this->turnOptions, true)) {
             return;
         }
 
         $this->currentTurnIndex = $turnIndex;
         $this->selectedTurnId = $turnIndex;
-        $this->resetTable();
+        $this->lastActiveTurnIndex = $turnIndex;
+        $this->applyTurnScopeFilter((string) $turnIndex);
     }
 
     public function addTurn(): void
@@ -116,6 +153,15 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
     public function recordShot(float $xNormalized, float $yNormalized): void
     {
         if (! $this->canEdit) {
+            return;
+        }
+
+        if ($this->currentTurnIndex === self::ALL_TURNS_VALUE) {
+            Notification::make()
+                ->title('Selecteer eerst een specifieke beurt om een schot te registreren.')
+                ->warning()
+                ->send();
+
             return;
         }
 
@@ -150,8 +196,31 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
         }
 
         $this->shotService->deleteShot($shot);
+        Notification::make()
+            ->title('Schot verwijderd.')
+            ->success()
+            ->send();
         $this->refreshData();
         $this->resetTable();
+    }
+
+    public function confirmDeleteShot(): void
+    {
+        if (! $this->pendingDeleteShotId) {
+            return;
+        }
+
+        $shot = $this->session->shots()->whereKey($this->pendingDeleteShotId)->first();
+
+        if (! $shot) {
+            return;
+        }
+
+        $this->deleteShot($this->pendingDeleteShotId);
+        $this->pendingDeleteShotId = null;
+        
+        // Close the modal
+        $this->dispatch('close-modal', id: 'delete-shot-modal');
     }
 
     #[On('shots::refresh')]
@@ -188,6 +257,8 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
                 'score' => $shot->score,
                 'ring' => $shot->ring,
                 'turn_index' => $shot->turn_index,
+                'turn_label' => $this->makeTurnLabel($shot->turn_index),
+                'color' => $this->getTurnColor($shot->turn_index),
             ])
             ->values()
             ->all();
@@ -216,6 +287,10 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
             ->values()
             ->all();
 
+        if (! in_array($this->lastActiveTurnIndex, $this->turnOptions, true)) {
+            $this->lastActiveTurnIndex = $this->turnOptions[0] ?? 0;
+        }
+
         foreach ($this->turnOptions as $turn) {
             $this->shotsByTurn[$turn] ??= [];
         }
@@ -226,8 +301,12 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
             $this->turnOptions = [0];
         }
 
-        if (! in_array($this->currentTurnIndex, $this->turnOptions, true)) {
+        if (
+            $this->currentTurnIndex !== self::ALL_TURNS_VALUE
+            && ! in_array($this->currentTurnIndex, $this->turnOptions, true)
+        ) {
             $this->currentTurnIndex = $this->turnOptions[0];
+            $this->lastActiveTurnIndex = $this->currentTurnIndex;
         }
 
         Log::debug('[SessionShotBoard] data refreshed', [
@@ -237,21 +316,25 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
             'markers_count' => count($this->markers),
         ]);
 
+        $this->turnLegend = collect($this->turnOptions)
+            ->map(fn (int $turn) => [
+                'label' => $this->makeTurnLabel($turn),
+                'color' => $this->getTurnColor($turn),
+                'turn_index' => $turn,
+            ])
+            ->values()
+            ->all();
+
         $this->resetTable();
     }
 
     protected function getTurnFilterOptions(): array
     {
-        $options = [
-            'current' => 'Huidige beurt',
-            'all' => 'Alle beurten',
-        ];
-
-        foreach ($this->turnOptions as $turnIndex) {
-            $options[(string) $turnIndex] = 'Beurt '.($turnIndex + 1);
-        }
-
-        return $options;
+        return collect($this->turnOptions)
+            ->mapWithKeys(fn (int $turnIndex) => [(string) $turnIndex => $this->makeTurnLabel($turnIndex)])
+            ->prepend('Alle beurten', 'all')
+            ->prepend('Huidige beurt', 'current')
+            ->all();
     }
 
     public function table(Table $table): Table
@@ -343,5 +426,44 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
     public function makeFilamentTranslatableContentDriver(): ?TranslatableContentDriver
     {
         return null;
+    }
+
+    public function resetTable(): void
+    {
+        $this->filamentResetTable();
+        $this->applyTurnScopeFilter();
+    }
+
+    protected function applyTurnScopeFilter(?string $value = null): void
+    {
+        $value ??= $this->determineTurnScopeValue();
+
+        data_set($this->tableFilters, 'turn_scope.value', $value);
+        $this->updatedTableFilters();
+    }
+
+    protected function determineTurnScopeValue(): string
+    {
+        if ($this->currentTurnIndex === self::ALL_TURNS_VALUE) {
+            return 'all';
+        }
+
+        return (string) $this->currentTurnIndex;
+    }
+
+    protected function makeTurnLabel(int $turnIndex): string
+    {
+        return 'Beurt '.($turnIndex + 1);
+    }
+
+    protected function getTurnColor(int $turnIndex): string
+    {
+        $paletteCount = count(self::TURN_COLOR_PALETTE);
+
+        if ($paletteCount === 0) {
+            return '#3b82f6';
+        }
+
+        return self::TURN_COLOR_PALETTE[$turnIndex % $paletteCount];
     }
 }

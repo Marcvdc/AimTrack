@@ -1,59 +1,121 @@
-<div class="flex flex-col gap-6">
-    <div class="flex flex-wrap justify-between gap-3 items-center">
-        <div class="flex gap-2 items-center">
-            <span class="text-sm text-gray-500">Beurt</span>
-            <select wire:model.live="currentTurnIndex" class="filament-forms-select-component">
-                @foreach ($turnOptions as $turn)
-                    <option value="{{ $turn }}">{{ $turn + 1 }}</option>
-                @endforeach
-            </select>
-            @if ($canEdit)
-                <button wire:click="addTurn" type="button" class="fi-btn fi-btn-size-sm fi-btn-color-primary">
-                    Nieuwe beurt
-                </button>
-            @endif
-        </div>
-        <div class="text-sm text-gray-600">
-            <span class="font-semibold">Totaal:</span>
-            {{ $summary['total_score'] ?? 0 }} punten · {{ $summary['shot_count'] ?? 0 }} schoten · Gemiddelde {{ number_format($summary['average_score'] ?? 0, 1) }}
-        </div>
-    </div>
-
-    <div
-        x-data="targetBoard({
+<div class="mt-6 space-y-6" x-data="{
+        deleteConfirmationMessage: '',
+        pendingDeleteShotId: null,
+        ...targetBoard({
             recordShot: (x, y) => $wire.recordShot(x, y),
             canEdit: @js($canEdit),
             rawMarkers: @entangle('markers').live,
             turns: @entangle('turnOptions').live,
             currentTurn: @entangle('currentTurnIndex').live,
-        })"
-        class="w-full flex flex-col lg:flex-row gap-6"
-    >
-        <div
-            class="relative w-full max-w-xl aspect-square bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl shadow-2xl overflow-hidden cursor-crosshair border border-gray-800/60"
-            x-ref="board"
-            wire:ignore
-            @click="
-                console.log('[SessionShotBoard] board click detected');
-                handleClick($event);
-            "
-        >
-            <canvas x-ref="canvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
-            <div
-                x-show="canEdit"
-                class="absolute inset-0 pointer-events-none"
-                x-init="console.log('[SessionShotBoard] click readiness overlay', { canEdit })"
-            ></div>
-        </div>
+            turnLegend: @entangle('turnLegend').live,
+            allTurnsValue: @js(\App\Livewire\SessionShotBoard::ALL_TURNS_VALUE),
+        })
+    }">
+    @php
+        $legendEntries = collect($turnLegend ?? [])->map(fn ($entry) => [
+            'label' => $entry['label'] ?? 'Beurt',
+            'color' => $entry['color'] ?? '#3b82f6',
+        ])->values()->all();
 
-        <div class="flex-1 space-y-4">
-            <div class="bg-white/80 dark:bg-gray-900/60 rounded-2xl shadow">
-                <div class="p-4 border-b border-gray-200 dark:border-gray-800">
-                    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-100">Schotenoverzicht</h3>
-                    <p class="text-xs text-gray-500">Gebruik de Filament-filters boven de tabel om een beurt of alle beurten te tonen.</p>
+    @endphp
+
+    <!-- Delete Confirmation Modal -->
+    <x-filament::modal id="delete-shot-modal">
+        <x-slot name="heading">
+            Schot verwijderen?
+        </x-slot>
+        
+        <div>
+            <p>Weet je zeker dat je dit schot wilt verwijderen?</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400" x-text="deleteConfirmationMessage"></p>
+        </div>
+        
+        <x-slot name="footer">
+            <x-filament::button
+                type="button"
+                color="danger"
+                wire:click="confirmDeleteShot"
+            >
+                Verwijderen
+            </x-filament::button>
+            <x-filament::button
+                type="button"
+                color="gray"
+                x-on:click="$dispatch('close-modal', { id: 'delete-shot-modal' })"
+            >
+                Annuleren
+            </x-filament::button>
+        </x-slot>
+    </x-filament::modal>
+
+    <!-- Beurt Selectie -->
+    <div class="mb-6 rounded-3xl border border-gray-200/70 bg-white/80 px-5 py-4 shadow-sm dark:border-gray-800/60 dark:bg-gray-900/60">
+        <div class="flex flex-col gap-2">
+            <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Beurt selectie</span>
+            <div class="relative">
+                <select wire:model.live="currentTurnIndex" class="rounded-2xl border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                    <option value="{{ \App\Livewire\SessionShotBoard::ALL_TURNS_VALUE }}">Alle beurten</option>
+                    @foreach ($turnOptions as $turn)
+                        <option value="{{ $turn }}">Beurt {{ $turn + 1 }}</option>
+                    @endforeach
+                </select>
+                @if ($canEdit)
+                    <x-filament::button
+                        type="button"
+                        size="sm"
+                        color="primary"
+                        icon="heroicon-m-plus"
+                        wire:click="addTurn"
+                        style="float: right;"
+                    >
+                        Nieuwe beurt
+                    </x-filament::button>
+                @endif
+                <div style="clear: both;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rounded-3xl border border-gray-200/70 bg-white/80 px-5 py-5 shadow-sm dark:border-gray-800/60 dark:bg-gray-900/60">
+        <div class="mt-6"
+            x-data="targetBoard({
+            recordShot: (x, y) => $wire.recordShot(x, y),
+            canEdit: @js($canEdit),
+            rawMarkers: @entangle('markers').live,
+            turns: @entangle('turnOptions').live,
+            currentTurn: @entangle('currentTurnIndex').live,
+            turnLegend: @entangle('turnLegend').live,
+            allTurnsValue: @js(\App\Livewire\SessionShotBoard::ALL_TURNS_VALUE),
+        })"
+            class="w-full flex flex-col lg:flex-row gap-6"
+            x-on:keydown.escape.window="closeContextMenu()"
+        >
+            <!-- Interactieve Roos -->
+            <div class="w-full max-w-xl space-y-4">
+                <div
+                    class="relative w-full aspect-square bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-800/60"
+                    x-ref="board"
+                    wire:ignore
+                >
+                    <canvas x-ref="canvas" class="absolute inset-0 w-full h-full" style="cursor: crosshair;"
+                    @click="handleCanvasClick($event)"
+                    @contextmenu.prevent="handleCanvasRightClick($event)"
+                ></canvas>
                 </div>
-                <div class="p-2">
-                    {{ $this->table }}
+            </div>
+
+            <!-- Doelgebied & Schoten -->
+            <div class="flex-1 space-y-4">
+                <div class="bg-white/80 dark:bg-gray-900/60 rounded-2xl shadow">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-800">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-100">Doelgebied & schoten</h3>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Beheer beurten en bekijk gedetailleerde schotinformatie. Gebruik de filters om specifieke beurten te tonen.</p>
+                    </div>
+                    <div class="p-2">
+                        {{ $this->table }}
+                    </div>
                 </div>
             </div>
         </div>
@@ -91,13 +153,25 @@
         const registerTargetBoard = () => {
             console.log('[SessionShotBoard] registerTargetBoard executed');
 
-            window.targetBoard = ({ recordShot, canEdit, rawMarkers, turns, currentTurn }) => ({
+            window.targetBoard = ({ recordShot, canEdit, rawMarkers, turns, currentTurn, turnLegend, allTurnsValue }) => ({
                 rawMarkers,
                 renderMarkers: [],
                 currentMarkers: [],
                 turns: Array.isArray(turns) ? [...turns] : [],
                 currentTurn: Number(currentTurn ?? 0),
+                turnLegend: Array.isArray(turnLegend) ? [...turnLegend] : [],
+                allTurnsValue: allTurnsValue ?? -1,
                 canEdit,
+                longPressTimeout: null,
+                longPressTarget: null,
+                longPressTriggered: false,
+                longPressDelay: 2000,
+                contextMenu: {
+                    open: false,
+                    x: 0,
+                    y: 0,
+                    marker: null,
+                },
                 init() {
                     console.log('[SessionShotBoard] targetBoard init', {
                         markersCount: this.renderMarkers?.length ?? 0,
@@ -112,6 +186,10 @@
                     this.$watch('turns', (value) => {
                         console.log('[SessionShotBoard] turns updated', value);
                         this.turns = Array.isArray(value) ? [...value] : [];
+                    });
+                    this.$watch('turnLegend', (value) => {
+                        console.log('[SessionShotBoard] turnLegend updated', value);
+                        this.turnLegend = Array.isArray(value) ? [...value] : [];
                     });
                     this.$watch('currentTurn', (value) => {
                         const normalizedValue = this.normalizeTurnValue(value);
@@ -251,19 +329,20 @@
                     }
 
                     this.currentMarkers.forEach((marker) => {
-                        const x = this.mapToBoard(marker.x ?? marker.left ?? 0.5) * size;
-                        const y = this.mapToBoard(marker.y ?? marker.top ?? 0.5) * size;
+                        // Use raw normalized coordinates directly (0-1 range) for canvas positioning
+                        const x = (marker.x ?? 0.5) * size;
+                        const y = (marker.y ?? 0.5) * size;
                         const radius = Math.max(4, size * 0.012);
 
                         ctx.save();
                         ctx.beginPath();
                         ctx.arc(x, y, radius, 0, Math.PI * 2);
-                        ctx.fillStyle = 'rgba(59,130,246,0.9)';
+                        ctx.fillStyle = marker.color ?? 'rgba(59,130,246,0.9)';
                         ctx.fill();
                         ctx.lineWidth = Math.max(2, size * 0.004);
                         ctx.strokeStyle = 'rgba(255,255,255,0.9)';
                         ctx.stroke();
-                        ctx.shadowColor = 'rgba(15,23,42,0.4)';
+                        ctx.shadowColor = (marker.color ?? 'rgba(15,23,42,0.4)').replace('1)', '0.4)');
                         ctx.shadowBlur = radius;
                         ctx.restore();
                     });
@@ -289,6 +368,10 @@
                     const markersForTurn = this.renderMarkers
                         .filter(Boolean)
                         .filter((marker) => {
+                            if (currentTurn === this.allTurnsValue) {
+                                return true;
+                            }
+
                             const markerTurn = Number(marker.turn_index ?? marker.turnIndex ?? marker.turn ?? null);
                             return ! Number.isNaN(markerTurn) && markerTurn === currentTurn;
                         });
@@ -301,6 +384,58 @@
                     });
 
                     this.currentMarkers = markersForTurn;
+                },
+                handleCanvasRightClick(event) {
+                    // Check if right-click is on a marker
+                    const clickedMarker = this.getMarkerAtPosition(event);
+                    
+                    if (clickedMarker) {
+                        // Set confirmation data and open modal
+                        this.$root.deleteConfirmationMessage = `Schot uit ${clickedMarker.turn_label || 'deze beurt'} verwijderen?`;
+                        this.$wire.set('pendingDeleteShotId', clickedMarker.id);
+                        this.$dispatch('open-modal', { id: 'delete-shot-modal' });
+                    }
+                },
+                handleCanvasClick(event) {
+                    // Check if click is on a marker
+                    const clickedMarker = this.getMarkerAtPosition(event);
+                    
+                    if (clickedMarker) {
+                        // Start long press for marker deletion
+                        this.startLongPress(clickedMarker);
+                        return;
+                    }
+                    
+                    // Otherwise, handle as normal shot registration
+                    this.handleClick(event);
+                },
+                getMarkerAtPosition(event) {
+                    if (! Array.isArray(this.currentMarkers) || this.currentMarkers.length === 0) {
+                        return null;
+                    }
+
+                    const canvas = this.$refs.canvas;
+                    const rect = canvas.getBoundingClientRect();
+                    const x = event.clientX - rect.left;
+                    const y = event.clientY - rect.top;
+                    
+                    // Check each marker to see if click is within bounds
+                    for (const marker of this.currentMarkers) {
+                        // Use raw normalized coordinates for marker position
+                        const markerX = (marker.x ?? 0.5) * rect.width;
+                        const markerY = (marker.y ?? 0.5) * rect.height;
+                        const markerRadius = 15; // Click radius for markers
+                        
+                        const distance = Math.sqrt(
+                            Math.pow(x - markerX, 2) + Math.pow(y - markerY, 2)
+                        );
+                        
+                        if (distance <= markerRadius) {
+                            return marker;
+                        }
+                    }
+                    
+                    return null;
                 },
                 handleClick(event) {
                     console.log('[SessionShotBoard] handleClick', {
@@ -318,17 +453,14 @@
                     const y = (event.clientY - rect.top) / rect.height;
                     const xNormalized = Math.min(Math.max(x, 0), 1);
                     const yNormalized = Math.min(Math.max(y, 0), 1);
-                    const backendX = this.mapToBackend(xNormalized);
-                    const backendY = this.mapToBackend(yNormalized);
 
                     console.log('[SessionShotBoard] normalized coordinates', {
                         xNormalized,
                         yNormalized,
-                        backendX,
-                        backendY,
                     });
 
-                    recordShot(backendX, backendY);
+                    // Send raw normalized coordinates directly to backend
+                    recordShot(xNormalized, yNormalized);
 
                     console.log('[SessionShotBoard] recordShot dispatched');
                 },
@@ -337,15 +469,135 @@
                         return null;
                     }
 
-                    const left = (marker.x ?? marker.left ?? 0) * 100;
-                    const top = (marker.y ?? marker.top ?? 0) * 100;
+                    const normalizeCoordinate = (value) => {
+                        if (typeof value !== 'number' || Number.isNaN(value)) {
+                            return 0.5;
+                        }
+
+                        return value > 1 ? value / 100 : value;
+                    };
+
+                    // Backend coordinates are already normalized (0-1 range), convert directly to percentages
+                    const boardX = normalizeCoordinate(marker.x ?? marker.left ?? 0.5) * 100;
+                    const boardY = normalizeCoordinate(marker.y ?? marker.top ?? 0.5) * 100;
 
                     return {
                         ...marker,
-                        left,
-                        top,
-                        idx: `${marker.id}-${index}-${left}-${top}`,
+                        left: boardX,
+                        top: boardY,
+                        idx: `${marker.id}-${index}-${boardX}-${boardY}`,
                     };
+                },
+                markerStyle(marker) {
+                    const size = 26;
+                    const color = marker.color ?? '#3b82f6';
+
+                    return `left: ${marker.left}%; top: ${marker.top}%; width: ${size}px; height: ${size}px; background-color: ${color}; border-color: ${color};`;
+                },
+                markerClasses(marker) {
+                    return this.currentTurn === this.allTurnsValue ? 'opacity-80' : 'opacity-100';
+                },
+                shouldDisplayMarker(marker) {
+                    if (this.currentTurn === this.allTurnsValue) {
+                        return true;
+                    }
+
+                    const markerTurn = Number(marker.turn_index ?? marker.turnIndex ?? marker.turn ?? null);
+
+                    return ! Number.isNaN(markerTurn) && markerTurn === this.currentTurn;
+                },
+                startLongPress(marker) {
+                    this.queueLongPress(marker);
+                },
+                startKeyLongPress(marker, event) {
+                    if (event?.repeat) {
+                        return;
+                    }
+
+                    this.queueLongPress(marker);
+                },
+                queueLongPress(marker) {
+                    if (! this.canEdit) {
+                        return;
+                    }
+
+                    this.cancelLongPress();
+                    this.closeContextMenu();
+                    this.longPressTarget = marker;
+                    this.longPressTriggered = false;
+                    this.longPressTimeout = setTimeout(() => {
+                        this.longPressTriggered = true;
+                        this.cancelLongPress({ keepTriggered: true });
+                        
+                        // Set confirmation data and open modal
+                        this.$root.deleteConfirmationMessage = `Schot uit ${marker.turn_label || 'deze beurt'} verwijderen?`;
+                        this.$wire.set('pendingDeleteShotId', marker.id);
+                        this.$dispatch('open-modal', { id: 'delete-shot-modal' });
+                    }, this.longPressDelay);
+                },
+                endLongPress(forceCancel = false) {
+                    if (this.longPressTriggered && ! forceCancel) {
+                        this.longPressTriggered = false;
+
+                        return;
+                    }
+
+                    this.cancelLongPress();
+                },
+                cancelLongPress(options = { keepTriggered: false }) {
+                    if (this.longPressTimeout) {
+                        clearTimeout(this.longPressTimeout);
+                    }
+
+                    this.longPressTimeout = null;
+
+                    if (! options.keepTriggered) {
+                        this.longPressTriggered = false;
+                    }
+
+                    this.longPressTarget = null;
+                },
+                openContextMenu(event, marker) {
+                    if (! this.canEdit || ! marker) {
+                        return;
+                    }
+
+                    this.cancelLongPress();
+
+                    const rect = this.$refs.board.getBoundingClientRect();
+                    const padding = 12;
+                    const menuWidth = 200;
+                    const menuHeight = 140;
+
+                    const relativeX = event.clientX - rect.left;
+                    const relativeY = event.clientY - rect.top;
+
+                    this.contextMenu.open = true;
+                    this.contextMenu.marker = marker;
+                    this.contextMenu.x = Math.min(Math.max(relativeX, padding), rect.width - menuWidth);
+                    this.contextMenu.y = Math.min(Math.max(relativeY, padding), rect.height - menuHeight);
+                },
+                closeContextMenu() {
+                    this.contextMenu.open = false;
+                    this.contextMenu.marker = null;
+                },
+                deleteMarker(marker, options = { requireConfirm: true }) {
+                    if (! this.canEdit || ! marker) {
+                        return;
+                    }
+
+                    if (options.requireConfirm !== false) {
+                        // Call Livewire method that shows Filament confirmation
+                        this.$wire.confirmDeleteShot(marker.id);
+                        this.longPressTriggered = false;
+                        this.closeContextMenu();
+                        return;
+                    }
+
+                    // Direct deletion without confirmation
+                    this.$wire.deleteShot(marker.id);
+                    this.longPressTriggered = false;
+                    this.closeContextMenu();
                 },
             });
         };
