@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\WeaponResource\Pages;
 
+use Filament\Actions\EditAction;
+use Filament\Actions\Action;
 use App\Filament\Resources\WeaponResource;
 use App\Jobs\GenerateWeaponInsightJob;
 use Filament\Actions;
@@ -15,9 +17,9 @@ class ViewWeapon extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make()
+            EditAction::make()
                 ->label('Bewerken'),
-            Actions\Action::make('generateAi')
+            Action::make('generateAi')
                 ->label('Genereer AI-inzichten nu')
                 ->icon('heroicon-m-sparkles')
                 ->color('primary')

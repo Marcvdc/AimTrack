@@ -9,11 +9,11 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
 - php - 8.4.17
-- filament/filament (FILAMENT) - v4
+- filament/filament (FILAMENT) - v5
 - laravel/framework (LARAVEL) - v12
 - laravel/pennant (PENNANT) - v1
 - laravel/prompts (PROMPTS) - v0
-- livewire/livewire (LIVEWIRE) - v3
+- livewire/livewire (LIVEWIRE) - v4
 - laravel/mcp (MCP) - v0
 - laravel/pint (PINT) - v1
 - pestphp/pest (PEST) - v4
@@ -234,41 +234,6 @@ protected function isAccessible(User $user, ?string $path = null): bool
     ->assertSeeLivewire(CreatePost::class);
 </code-snippet>
 
-=== livewire/v3 rules ===
-
-## Livewire 3
-
-### Key Changes From Livewire 2
-- These things changed in Livewire 3, but may not have been updated in this application. Verify this application's setup to ensure you conform with application conventions.
-    - Use `wire:model.live` for real-time updates, `wire:model` is now deferred by default.
-    - Components now use the `App\Livewire` namespace (not `App\Http\Livewire`).
-    - Use `$this->dispatch()` to dispatch events (not `emit` or `dispatchBrowserEvent`).
-    - Use the `components.layouts.app` view as the typical layout path (not `layouts.app`).
-
-### New Directives
-- `wire:show`, `wire:transition`, `wire:cloak`, `wire:offline`, `wire:target` are available for use. Use the documentation to find usage examples.
-
-### Alpine
-- Alpine is now included with Livewire; don't manually include Alpine.js.
-- Plugins included with Alpine: persist, intersect, collapse, and focus.
-
-### Lifecycle Hooks
-- You can listen for `livewire:init` to hook into Livewire initialization, and `fail.status === 419` for the page expiring:
-
-<code-snippet name="Livewire Init Hook Example" lang="js">
-document.addEventListener('livewire:init', function () {
-    Livewire.hook('request', ({ fail }) => {
-        if (fail && fail.status === 419) {
-            alert('Your session expired');
-        }
-    });
-
-    Livewire.hook('message.failed', (message, component) => {
-        console.error(message);
-    });
-});
-</code-snippet>
-
 === pint/core rules ===
 
 ## Laravel Pint Code Formatter
@@ -404,6 +369,7 @@ Select::make('type')
 TextInput::make('company_name')
     ->required()
     ->visible(fn (Get $get): bool => $get('type') === 'business'),
+
 </code-snippet>
 
 Use `state()` with a `Closure` to compute derived column values:
@@ -413,6 +379,7 @@ use Filament\Tables\Columns\TextColumn;
 
 TextColumn::make('full_name')
     ->state(fn (User $record): string => "{$record->first_name} {$record->last_name}"),
+
 </code-snippet>
 
 Actions encapsulate a button with optional modal form and logic:
@@ -426,6 +393,7 @@ Action::make('updateEmail')
         TextInput::make('email')->email()->required(),
     ])
     ->action(fn (array $data, User $record): void => $record->update($data)),
+
 </code-snippet>
 
 ### Testing
@@ -438,6 +406,7 @@ Authenticate before testing panel functionality. Filament uses Livewire, so use 
         ->searchTable($users->first()->name)
         ->assertCanSeeTableRecords($users->take(1))
         ->assertCanNotSeeTableRecords($users->skip(1));
+
 </code-snippet>
 
 <code-snippet name="Filament Create Resource Test" lang="php">
@@ -454,6 +423,7 @@ Authenticate before testing panel functionality. Filament uses Livewire, so use 
         'name' => 'Test',
         'email' => 'test@example.com',
     ]);
+
 </code-snippet>
 
 <code-snippet name="Testing Validation" lang="php">
@@ -468,6 +438,7 @@ Authenticate before testing panel functionality. Filament uses Livewire, so use 
             'email' => 'email',
         ])
         ->assertNotNotified();
+
 </code-snippet>
 
 <code-snippet name="Calling Actions" lang="php">
@@ -484,6 +455,7 @@ Authenticate before testing panel functionality. Filament uses Livewire, so use 
             'role' => 'admin',
         ])
         ->assertNotified();
+
 </code-snippet>
 
 ### Common Mistakes

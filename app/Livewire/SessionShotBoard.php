@@ -399,7 +399,7 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
                         }
                     }),
             ])
-            ->actions([
+            ->recordActions([
                 Action::make('deleteShot')
                     ->label('Verwijderen')
                     ->color('danger')

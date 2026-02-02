@@ -24,13 +24,13 @@ class ExportSessionsPage extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-arrow-down-tray';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-arrow-down-tray';
 
     protected static ?string $navigationLabel = 'Export sessies';
 
     protected static ?string $title = 'Export sessies';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Exports & rapportage';
+    protected static string | \UnitEnum | null $navigationGroup = 'Exports & rapportage';
 
     protected string $view = 'filament.pages.export-sessions-page';
 
@@ -48,7 +48,7 @@ class ExportSessionsPage extends Page implements HasForms
     public function form(Schema $schema): Schema
     {
         return $schema
-            ->schema([
+            ->components([
                 Section::make('Parameters')
                     ->schema([
                         DatePicker::make('from_date')

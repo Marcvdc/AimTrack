@@ -19,19 +19,28 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Collection;
-use UnitEnum;
+use Filament\Tables;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Actions\Actions;
+use Filament\Actions\Action as FormAction;
+use Filament\Actions\DeleteAction as TablesDeleteAction;
+use Filament\Schemas\Components\Actions as SchemaActions;
 
-class AiCoachPage extends Page implements HasForms
+class AiCoachPage extends Page implements HasForms, HasTable
 {
     use InteractsWithForms;
+    use InteractsWithTable;
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-sparkles';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-sparkles';
 
     protected static ?string $navigationLabel = 'AI-coach';
 
     protected static ?string $title = 'AI-coach';
 
-    protected static UnitEnum|string|null $navigationGroup = 'AI & inzichten';
+    protected static string | \UnitEnum | null $navigationGroup = 'AI & inzichten';
 
     protected string $view = 'filament.pages.ai-coach-page';
 
@@ -40,6 +49,8 @@ class AiCoachPage extends Page implements HasForms
     public ?string $answer = null;
 
     public Collection $history;
+
+    public ?string $currentAnswer = null;
 
     public static function shouldRegisterNavigation(): bool
     {
@@ -68,7 +79,7 @@ class AiCoachPage extends Page implements HasForms
     public function form(Schema $schema): Schema
     {
         return $schema
-            ->schema([
+            ->components([
                 Section::make('Stel je vraag')
                     ->description('De AI-coach gebruikt alleen jouw eigen logs als context en geeft geen vervanging voor erkende instructeurs of officiële regels.')
                     ->schema([
@@ -93,9 +104,69 @@ class AiCoachPage extends Page implements HasForms
                                     ->native(false),
                             ])
                             ->columns(3),
+                        
+                        SchemaActions::make([
+                            \Filament\Actions\Action::make('ask')
+                                ->label('Stel vraag aan AI-coach')
+                                ->action('handleAskQuestion')
+                                ->icon('heroicon-m-sparkles')
+                                ->color('primary')
+                                ->size('md'),
+                        ]),
                     ]),
             ])
             ->statePath('data');
+    }
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query(
+                CoachQuestion::query()
+                    ->with('weapon')
+                    ->where('user_id', auth()->id())
+                    ->latest('asked_at')
+            )
+            ->columns([
+                TextColumn::make('asked_at')
+                    ->label('Datum')
+                    ->dateTime('d-m-Y H:i')
+                    ->sortable()
+                    ->size('sm'),
+                TextColumn::make('question')
+                    ->label('Vraag')
+                    ->limit(80)
+                    ->searchable()
+                    ->wrap(),
+                TextColumn::make('weapon.name')
+                    ->label('Wapen')
+                    ->sortable()
+                    ->default('Alle wapens')
+                    ->badge()
+                    ->color('primary'),
+                TextColumn::make('answer')
+                    ->label('AI Antwoord')
+                    ->limit(100)
+                    ->markdown()
+                    ->searchable()
+                    ->wrap(),
+            ])
+            ->defaultPaginationPageOption(5)
+            ->paginated([5, 10, 25])
+            ->striped()
+            ->heading('Historie')
+            ->description('Jouw recente vragen en AI-antwoorden')
+            ->actions([
+                TablesDeleteAction::make('delete')
+                    ->label('Verwijder')
+                    ->icon('heroicon-o-trash')
+                    ->requiresConfirmation()
+                    ->modalHeading('Verwijder vraag')
+                    ->modalDescription('Weet je zeker dat je deze vraag en het AI-antwoord wilt verwijderen?')
+                    ->modalSubmitActionLabel('Verwijderen')
+                    ->modalCancelActionLabel('Annuleren')
+                    ->successNotificationTitle('Vraag verwijderd'),
+            ]);
     }
 
     public function submit(ShooterCoach $coach): void
@@ -149,14 +220,9 @@ class AiCoachPage extends Page implements HasForms
         $this->loadHistory();
     }
 
-    protected function getFormActions(): array
+    public function handleAskQuestion(): void
     {
-        return [
-            Action::make('ask')
-                ->label('Stel vraag aan AI-coach')
-                ->submit('submit')
-                ->icon('heroicon-m-sparkles'),
-        ];
+        $this->submit(app(\App\Services\Ai\ShooterCoach::class));
     }
 
     protected function weaponOptions(): Collection

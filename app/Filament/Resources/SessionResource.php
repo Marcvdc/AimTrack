@@ -2,6 +2,11 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\SessionResource\Pages\ListSessions;
+use App\Filament\Resources\SessionResource\Pages\CreateSession;
+use App\Filament\Resources\SessionResource\Pages\EditSession;
+use App\Filament\Resources\SessionResource\Pages\ViewSession;
+use App\Filament\Resources\SessionResource\Pages\ManageSessionShots;
 use App\Enums\Deviation;
 use App\Jobs\GenerateSessionReflectionJob;
 use App\Models\AmmoType;
@@ -42,7 +47,7 @@ class SessionResource extends Resource
 {
     protected static ?string $model = Session::class;
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-calendar-days';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-calendar-days';
 
     protected static ?string $navigationLabel = 'Sessies';
 
@@ -50,13 +55,13 @@ class SessionResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Sessies';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Dagboek';
+    protected static string | \UnitEnum | null $navigationGroup = 'Dagboek';
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->columns(1)
-            ->schema([
+            ->components([
                 Hidden::make('user_id')
                     ->default(fn () => auth()->id())
                     ->required()
@@ -289,7 +294,7 @@ class SessionResource extends Resource
             ->filters([
                 Filter::make('periode')
                     ->label('Periode')
-                    ->form([
+                    ->schema([
                         DatePicker::make('from')->label('Vanaf'),
                         DatePicker::make('until')->label('Tot'),
                     ])
@@ -302,7 +307,7 @@ class SessionResource extends Resource
                     ->label('Wapen')
                     ->relationship('sessionWeapons.weapon', 'name'),
             ])
-            ->actions([
+            ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
                 Action::make('generateAiReflection')
@@ -329,7 +334,7 @@ class SessionResource extends Resource
                             ->send();
                     }),
             ])
-            ->bulkActions([
+            ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
@@ -340,7 +345,7 @@ class SessionResource extends Resource
     {
         return $schema
             ->columns(1)
-            ->schema([
+            ->components([
                 Tabs::make('Details en reflectie')
                     ->contained(false)
                     ->tabs([
@@ -439,11 +444,11 @@ class SessionResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => SessionResource\Pages\ListSessions::route('/'),
-            'create' => SessionResource\Pages\CreateSession::route('/create'),
-            'edit' => SessionResource\Pages\EditSession::route('/{record}/edit'),
-            'view' => SessionResource\Pages\ViewSession::route('/{record}'),
-            'shots' => SessionResource\Pages\ManageSessionShots::route('/{record}/shots'),
+            'index' => ListSessions::route('/'),
+            'create' => CreateSession::route('/create'),
+            'edit' => EditSession::route('/{record}/edit'),
+            'view' => ViewSession::route('/{record}'),
+            'shots' => ManageSessionShots::route('/{record}/shots'),
         ];
     }
 

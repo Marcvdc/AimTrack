@@ -239,7 +239,7 @@ PROMPT);
                     $entry->weapon?->name ?? 'Onbekend wapen',
                     $entry->distance_m ?? '-',
                     $entry->rounds_fired ?? '-',
-                    $entry->deviation ?? '-',
+                    $entry->deviation?->value ?? '-',
                     Str::limit($entry->group_quality_text ?? '-', 80)
                 ))
                 ->filter()

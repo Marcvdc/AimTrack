@@ -34,3 +34,18 @@ auth.json
 public/css/
 public/js/
 public/fonts/
+
+# Database backups
+*.sql
+backup_*
+
+# Published config files
+config/livewire.php
+config/filament.php
+
+# Filament assets
+public/vendor/
+
+# IDE files
+.vscode/
+.idea/
