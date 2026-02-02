@@ -312,6 +312,7 @@ class SessionResource extends Resource
                 EditAction::make(),
                 Action::make('generateAiReflection')
                     ->label('Genereer AI-reflectie nu')
+                    ->tooltip('BETA')
                     ->icon('heroicon-m-sparkles')
                     ->requiresConfirmation()
                     ->action(function (Session $record): void {

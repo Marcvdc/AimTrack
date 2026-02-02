@@ -8,10 +8,13 @@ use App\Models\Session;
 use App\Models\SessionWeapon;
 use App\Models\User;
 use App\Models\Weapon;
+use App\Notifications\AiCoachFailureNotification;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -103,14 +106,7 @@ class ShooterCoach
                     'body' => $response->body(),
                 ]);
 
-                if (app()->bound('sentry')) {
-                    app('sentry')->captureMessage('AI API-call mislukt', [
-                        'level' => 'error',
-                        'extra' => [
-                            'status' => $response->status(),
-                        ],
-                    ]);
-                }
+                $this->maybeAlert('API-fout', ['status' => $response->status()]);
 
                 return 'Geen AI-antwoord beschikbaar (API-fout of timeout). Probeer het later opnieuw.';
             }
@@ -125,9 +121,7 @@ class ShooterCoach
                 'message' => $exception->getMessage(),
             ]);
 
-            if (app()->bound('sentry')) {
-                app('sentry')->captureException($exception);
-            }
+            $this->maybeAlert('Exception', ['exception' => $exception->getMessage()]);
 
             return 'Geen AI-antwoord beschikbaar (timeout of netwerkfout). Probeer het opnieuw of controleer de provider.';
         }
@@ -243,18 +237,16 @@ PROMPT);
                     Str::limit($entry->group_quality_text ?? '-', 80)
                 ))
                 ->filter()
-                ->values()
-                ->join('; ');
+                ->implode("\n");
 
             return sprintf(
-                '- %s @ %s (%s): %s | Reflectie: %s',
-                $session->date?->format('Y-m-d') ?? 'onbekende datum',
-                $session->range_name,
-                $session->location,
-                $weaponDetails ?: 'geen wapenregistraties',
-                Str::limit($session->manual_reflection ?? $session->notes_raw ?? '-', 120)
+                "Sessie %s (%s)\n%s\n%s",
+                $session->date->format('d-m-Y'),
+                $session->location ?? 'Onbekende locatie',
+                $weaponDetails,
+                $session->notes ? "Notities: " . Str::limit($session->notes, 200) : ''
             );
-        })->join("\n");
+        })->implode("\n\n");
 
         return "Recente sessies:\n{$sessionLines}";
     }
@@ -311,5 +303,21 @@ PROMPT);
     private function systemContext(): string
     {
         return 'Je bent een zorgvuldige AI-schietcoach. Weiger illegale of gevaarlijke instructies en focus op veiligheid, discipline en wettelijk toegestane adviezen.';
+    }
+
+    private function maybeAlert(string $reason, array $context = []): void
+    {
+        $threshold = config('ai.alert_failure_threshold', 3);
+        $cooldownMinutes = config('ai.alert_cooldown_minutes', 15);
+        $cacheKey = 'ai_failure_alert_sent_at';
+
+        $count = Cache::increment('ai_failure_count', 1, $cooldownMinutes * 60);
+        if ($count >= $threshold && ! Cache::has($cacheKey)) {
+            $email = config('ai.alert_email');
+            if ($email) {
+                Notification::route('mail', $email)->notify(new AiCoachFailureNotification($reason, $context));
+                Cache::put($cacheKey, now(), $cooldownMinutes * 60);
+            }
+        }
     }
 }

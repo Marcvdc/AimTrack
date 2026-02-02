@@ -11,6 +11,7 @@ class CoachQuestion extends Model
 
     protected $fillable = [
         'user_id',
+        'session_id',
         'weapon_id',
         'question',
         'answer',
