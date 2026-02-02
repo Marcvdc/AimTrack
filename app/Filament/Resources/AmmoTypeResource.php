@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\AmmoTypeResource\Pages\ListAmmoTypes;
+use App\Filament\Resources\AmmoTypeResource\Pages\CreateAmmoType;
+use App\Filament\Resources\AmmoTypeResource\Pages\EditAmmoType;
 use App\Models\AmmoType;
 use BackedEnum;
 use Filament\Forms\Components\Hidden;
@@ -19,7 +22,7 @@ class AmmoTypeResource extends Resource
 {
     protected static ?string $model = AmmoType::class;
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-sparkles';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-sparkles';
 
     protected static ?string $navigationLabel = 'Munitietypen';
 
@@ -27,12 +30,12 @@ class AmmoTypeResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Munitietypen';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Beheer';
+    protected static string | \UnitEnum | null $navigationGroup = 'Beheer';
 
     public static function form(Schema $schema): Schema
     {
         return $schema
-            ->schema([
+            ->components([
                 Hidden::make('user_id')
                     ->default(fn () => auth()->id())
                     ->required()
@@ -72,9 +75,9 @@ class AmmoTypeResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => AmmoTypeResource\Pages\ListAmmoTypes::route('/'),
-            'create' => AmmoTypeResource\Pages\CreateAmmoType::route('/create'),
-            'edit' => AmmoTypeResource\Pages\EditAmmoType::route('/{record}/edit'),
+            'index' => ListAmmoTypes::route('/'),
+            'create' => CreateAmmoType::route('/create'),
+            'edit' => EditAmmoType::route('/{record}/edit'),
         ];
     }
 

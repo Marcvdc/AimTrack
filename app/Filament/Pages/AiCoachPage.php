@@ -42,13 +42,13 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
 {
     use InteractsWithForms, InteractsWithTable, InteractsWithActions;
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-sparkles';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-sparkles';
 
     protected static ?string $navigationLabel = 'AI-coach (BETA)';
 
     protected static ?string $title = 'AI-coach (BETA)';
 
-    protected static UnitEnum|string|null $navigationGroup = 'AI & inzichten';
+    protected static string | \UnitEnum | null $navigationGroup = 'AI & inzichten';
 
     protected string $view = 'filament.pages.ai-coach-page';
 

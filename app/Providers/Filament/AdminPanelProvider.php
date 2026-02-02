@@ -2,6 +2,13 @@
 
 namespace App\Providers\Filament;
 
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Auth\Middleware\Authenticate;
 use App\Filament\Widgets\FailedJobsWidget;
 use Filament\Actions\Action;
 use Filament\Panel;
@@ -49,15 +56,15 @@ class AdminPanelProvider extends PanelProvider
             )
             ->middleware([
                 // Core Laravel stack; uitbreidbaar met locale middleware.
-                \Illuminate\Cookie\Middleware\EncryptCookies::class,
-                \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-                \Illuminate\Session\Middleware\StartSession::class,
-                \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-                \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
-                \Illuminate\Routing\Middleware\SubstituteBindings::class,
+                EncryptCookies::class,
+                AddQueuedCookiesToResponse::class,
+                StartSession::class,
+                ShareErrorsFromSession::class,
+                VerifyCsrfToken::class,
+                SubstituteBindings::class,
             ])
             ->authMiddleware([
-                \Illuminate\Auth\Middleware\Authenticate::class,
+                Authenticate::class,
             ])
             ->databaseTransactions()
             ->spa();

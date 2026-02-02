@@ -70,7 +70,7 @@ class SessionExportService
             fputcsv($handle, $columns);
 
             foreach ($sessions as $session) {
-                /** @var \Illuminate\Support\Collection $entries */
+                /** @var Collection $entries */
                 $entries = $session['entries'];
                 $shotsSummary = $session['shots_summary_text'];
 

@@ -16,9 +16,9 @@ it('renders landing page stats and knsa links from live data', function () {
     Session::factory()->create(['date' => $now->subDays(3)]);
     $oldSession = Session::factory()->create(['date' => $now->subMonth()->subDay()]);
 
-    SessionShot::factory()->for($session)->state(['score' => 8, 'ring' => 8, 'created_at' => $now])->create();
-    SessionShot::factory()->for($session)->state(['score' => 9, 'ring' => 9, 'created_at' => $now])->create();
-    SessionShot::factory()->for($session)->state(['score' => 10, 'ring' => 10, 'created_at' => $now])->create();
+    SessionShot::factory()->for($session)->state(['score' => 8, 'ring' => 8, 'turn_index' => 0, 'shot_index' => 0, 'created_at' => $now])->create();
+    SessionShot::factory()->for($session)->state(['score' => 9, 'ring' => 9, 'turn_index' => 0, 'shot_index' => 1, 'created_at' => $now])->create();
+    SessionShot::factory()->for($session)->state(['score' => 10, 'ring' => 10, 'turn_index' => 0, 'shot_index' => 2, 'created_at' => $now])->create();
 
     AiReflection::factory()->for($session)->state(['created_at' => $now])->create();
     AiReflection::factory()->for($oldSession)->state(['created_at' => $now])->create();

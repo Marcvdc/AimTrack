@@ -2,6 +2,11 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\WeaponResource\RelationManagers\SessionWeaponsRelationManager;
+use App\Filament\Resources\WeaponResource\Pages\ListWeapons;
+use App\Filament\Resources\WeaponResource\Pages\CreateWeapon;
+use App\Filament\Resources\WeaponResource\Pages\EditWeapon;
+use App\Filament\Resources\WeaponResource\Pages\ViewWeapon;
 use App\Enums\WeaponType;
 use App\Jobs\GenerateWeaponInsightJob;
 use App\Models\AmmoType;
@@ -36,7 +41,7 @@ class WeaponResource extends Resource
 {
     protected static ?string $model = Weapon::class;
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-bolt';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-bolt';
 
     protected static ?string $navigationLabel = 'Wapens';
 
@@ -44,12 +49,12 @@ class WeaponResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Wapens';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Beheer';
+    protected static string | \UnitEnum | null $navigationGroup = 'Beheer';
 
     public static function form(Schema $schema): Schema
     {
         return $schema
-            ->schema([
+            ->components([
                 Hidden::make('user_id')
                     ->default(fn () => auth()->id())
                     ->required()
@@ -166,7 +171,7 @@ class WeaponResource extends Resource
                         0 => 'Uit gebruik',
                     ]),
             ])
-            ->actions([
+            ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
                 Action::make('generateAiWeaponInsight')
@@ -193,7 +198,7 @@ class WeaponResource extends Resource
                             ->send();
                     }),
             ])
-            ->bulkActions([
+            ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
@@ -203,7 +208,7 @@ class WeaponResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema
-            ->schema([
+            ->components([
                 InfoSection::make('Wapen')
                     ->schema([
                         TextEntry::make('name')->label('Naam'),
@@ -245,17 +250,17 @@ class WeaponResource extends Resource
     public static function getRelations(): array
     {
         return [
-            WeaponResource\RelationManagers\SessionWeaponsRelationManager::class,
+            SessionWeaponsRelationManager::class,
         ];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => WeaponResource\Pages\ListWeapons::route('/'),
-            'create' => WeaponResource\Pages\CreateWeapon::route('/create'),
-            'edit' => WeaponResource\Pages\EditWeapon::route('/{record}/edit'),
-            'view' => WeaponResource\Pages\ViewWeapon::route('/{record}'),
+            'index' => ListWeapons::route('/'),
+            'create' => CreateWeapon::route('/create'),
+            'edit' => EditWeapon::route('/{record}/edit'),
+            'view' => ViewWeapon::route('/{record}'),
         ];
     }
 

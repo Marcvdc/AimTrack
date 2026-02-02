@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\AttachmentResource\Pages\ListAttachments;
 use App\Models\Attachment;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
@@ -21,7 +22,7 @@ class AttachmentResource extends Resource
 {
     protected static ?string $model = Attachment::class;
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-paper-clip';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-paper-clip';
 
     protected static ?string $navigationLabel = 'Bijlagen';
 
@@ -29,12 +30,12 @@ class AttachmentResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Bijlagen';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Dagboek';
+    protected static string | \UnitEnum | null $navigationGroup = 'Dagboek';
 
     public static function form(Schema $schema): Schema
     {
         return $schema
-            ->schema([
+            ->components([
                 TextInput::make('original_name')->label('Bestandsnaam')->disabled(),
                 TextInput::make('mime_type')->label('MIME-type')->disabled(),
                 TextInput::make('size')->label('Grootte (bytes)')->disabled(),
@@ -54,11 +55,11 @@ class AttachmentResource extends Resource
                 Filter::make('groot')->label('Groter dan 5MB')
                     ->query(fn (Builder $query) => $query->where('size', '>', 5 * 1024 * 1024)),
             ])
-            ->actions([
+            ->recordActions([
                 ViewAction::make(),
                 DeleteAction::make(),
             ])
-            ->bulkActions([
+            ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
@@ -68,7 +69,7 @@ class AttachmentResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => AttachmentResource\Pages\ListAttachments::route('/'),
+            'index' => ListAttachments::route('/'),
         ];
     }
 

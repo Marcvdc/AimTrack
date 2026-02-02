@@ -10,7 +10,7 @@
                 color="primary"
                 class="font-medium"
             >
-                de landing
+                de homepage
             </x-filament::link>
             geeft je in één oogopslag de belangrijkste highlights.
         </p>
