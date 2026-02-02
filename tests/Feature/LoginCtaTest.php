@@ -6,7 +6,7 @@ test('login page shows landing link copy', function (): void {
     $this->get(route('filament.admin.auth.login'))
         ->assertOk()
         ->assertSee('Nog even terugkijken?', escape: false)
-        ->assertSee('de landing', escape: false);
+        ->assertSee('homepage', escape: false);
 });
 
 test('login landing link points to welcome route', function (): void {

@@ -446,7 +446,7 @@
     <section class="section" aria-labelledby="addons">
         <div class="section-header">
             <h2 id="addons">Uitbreidingsopties</h2>
-            <p>Kies wat je zichtbaar wilt maken op de landing. Blokken zijn optioneel en kunnen later worden geactiveerd.</p>
+            <p>Kies wat je zichtbaar wilt maken op de homepage. Blokken zijn optioneel en kunnen later worden geactiveerd.</p>
         </div>
         <div class="card options-list">
             <div class="option-item">
