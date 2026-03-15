@@ -48,6 +48,7 @@ RUN mkdir -p /opt/artifacts/public-build \
        fi
 
 FROM base AS dev
+RUN groupadd -g 1000 appuser && useradd -u 1000 -g appuser -s /bin/bash -d /var/www/html appuser
 COPY composer.json composer.lock* ./
 RUN composer install --prefer-dist --no-progress --no-scripts
 COPY . .

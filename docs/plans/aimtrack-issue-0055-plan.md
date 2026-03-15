@@ -1,5 +1,5 @@
 # AimTrack Issue 0055 – Foto-naar-schoten conversie Plan
-Status: DRAFT
+Status: APPROVED
 Auteur: Cascade AI
 Datum: 2026-02-14
 Issue: GH-55 — "Via foto schoten bepalen op schotbord"
@@ -248,6 +248,7 @@ Dit helpt onderscheid maken tussen handmatige en gedetecteerde schoten.
 ---
 
 **Status wijzigingen:**
-- [ ] DRAFT → REVIEW (na eerste feedback)
-- [ ] REVIEW → APPROVED (na stakeholder goedkeuring)
-- [ ] APPROVED → IN PROGRESS (start implementatie)
+- [x] DRAFT → REVIEW (na eerste feedback)
+- [x] REVIEW → APPROVED (na stakeholder goedkeuring)
+- [x] APPROVED → IN PROGRESS (start implementatie)
+- [x] IN PROGRESS → COMPLETED (implementatie voltooid)

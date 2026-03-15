@@ -11,7 +11,8 @@
             allTurnsValue: @js(\App\Livewire\SessionShotBoard::ALL_TURNS_VALUE),
         })
     }">
-    @php
+    <div>
+        @php
         $legendEntries = collect($turnLegend ?? [])->map(fn ($entry) => [
             'label' => $entry['label'] ?? 'Beurt',
             'color' => $entry['color'] ?? '#3b82f6',
@@ -55,18 +56,30 @@
                 <div class="flex items-center justify-between">
                     <span class="text-sm font-semibold text-gray-700 dark:text-gray-100">Beurt selectie</span>
                     @if ($canEdit)
-
-
                      <x-slot name="afterHeader">
-                         <x-filament::button
-                            type="button"
-                            size="sm"
-                            color="primary"
-                            icon="heroicon-m-plus"
-                            wire:click="addTurn"
-                        >
-                            Nieuwe beurt
-                        </x-filament::button>
+                         <div class="flex space-x-2">
+                            <x-filament::button
+                                type="button"
+                                size="sm"
+                                color="primary"
+                                icon="heroicon-m-plus"
+                                wire:click="addTurn"
+                            >
+                                Nieuwe beurt
+                            </x-filament::button>
+                            
+                            @if ($currentTurnIndex !== \App\Livewire\SessionShotBoard::ALL_TURNS_VALUE)
+                                <x-filament::button
+                                    type="button"
+                                    size="sm"
+                                    color="success"
+                                    icon="heroicon-m-photo"
+                                    wire:click="openPhotoUploadModal"
+                                >
+                                    Foto uploaden
+                                </x-filament::button>
+                            @endif
+                         </div>
                     </x-slot>
                        
                     @endif
@@ -137,8 +150,199 @@
             </div>
         </div>
     </div>
-</div>
 
+    <!-- Photo Upload Modal -->
+    <x-filament::modal
+        id="photo-upload-modal"
+        width="2xl"
+        x-data="{
+            showPreview: false,
+            previewUrl: null,
+            isDragging: false,
+            selectedFile: null,
+            uploading: false,
+
+            handleFileSelect(event) {
+                const file = event.target.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    this.selectedFile = file;
+                    this.showPreviewImage(file);
+                }
+            },
+
+            handleDrop(event) {
+                this.isDragging = false;
+                const files = event.dataTransfer.files;
+                if (files.length > 0) {
+                    const file = files[0];
+                    if (file.type.startsWith('image/')) {
+                        this.$refs.photoInput.files = files;
+                        this.selectedFile = file;
+                        this.showPreviewImage(file);
+                    }
+                }
+            },
+
+            showPreviewImage(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.previewUrl = e.target.result;
+                    this.showPreview = true;
+                };
+                reader.readAsDataURL(file);
+            },
+
+            async handleUpload() {
+                if (!this.selectedFile) return;
+
+                this.uploading = true;
+
+                // Use Livewire's upload API
+                    this.$wire.upload('photo', this.selectedFile,
+                        (uploadedFilename) => {
+                            // Upload finished successfully, now process
+                            this.$wire.uploadPhoto().then(() => {
+                                // Reset state after upload completes
+                                this.uploading = false;
+                                this.resetPreview();
+                            }).catch((error) => {
+                                console.error('Upload processing failed:', error);
+                                this.uploading = false;
+                            });
+                        },
+                        (event) => {
+                            // Upload progress (optional)
+                            // console.log('Upload progress:', Math.round(event.detail.progress));
+                        },
+                        (error) => {
+                            // Upload failed
+                            console.error('Upload failed:', error);
+                            this.uploading = false;
+                        }
+                    );
+                },
+
+                resetPreview() {
+                    this.showPreview = false;
+                    this.previewUrl = null;
+                    this.selectedFile = null;
+                    this.uploading = false;
+                    if (this.$refs.photoInput) {
+                        this.$refs.photoInput.value = '';
+                    }
+                }
+        }"
+        @open-modal.window="if ($event.detail.id === 'photo-upload-modal') resetPreview()"
+        @close-modal.window="if ($event.detail.id === 'photo-upload-modal') resetPreview()"
+        @photo-upload-complete.window="uploading = false; resetPreview()"
+        wire:ignore.self
+    >
+        <x-slot name="heading">
+            Foto uploaden
+        </x-slot>
+
+        <div class="space-y-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                    Foto van schotbord
+                </label>
+
+                <!-- Preview Area (shows when file is selected) -->
+                <div x-show="showPreview" x-cloak class="mb-4">
+                    <div class="relative border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                        <img :src="previewUrl"
+                             alt="Preview"
+                             class="w-full h-64 object-contain bg-gray-100 dark:bg-gray-800">
+                        <button
+                            type="button"
+                            @click="showPreview = false; previewUrl = null; $refs.photoInput.value = ''; $wire.set('photo', null)"
+                            class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dropzone Area (shows when no file is selected) -->
+                <div x-show="!showPreview" x-cloak>
+                    <div
+                        @dragover.prevent="isDragging = true"
+                        @dragleave.prevent="isDragging = false"
+                        @drop.prevent="handleDrop($event)"
+                        @click="$refs.photoInput.click()"
+                        :class="isDragging ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800'"
+                        class="border-2 border-dashed rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
+
+                        <div class="space-y-3">
+                            <!-- Upload Icon -->
+                            <div class="mx-auto w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                                <svg class="h-8 w-8 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                            </div>
+
+                            <div class="text-sm text-gray-600 dark:text-gray-300">
+                                <span class="font-semibold text-blue-600 dark:text-blue-400">Klik om een foto te uploaden</span>
+                                <br>
+                                <span>of sleep een foto hierheen</span>
+                            </div>
+
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                PNG, JPG, JPEG tot 10MB
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hidden file input -->
+                <input
+                    type="file"
+                    x-ref="photoInput"
+                    @change="handleFileSelect($event)"
+                    accept="image/jpeg,image/jpg,image/png"
+                    class="hidden">
+
+                @error('photo')
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Upload een foto van het schotbord voor Beurt {{ $this->currentTurnIndex + 1 }}.
+                    Maximaal 10MB. Ondersteunde formaten: JPEG, PNG.
+                </p>
+            </div>
+        </div>
+        
+        <x-slot name="footer">
+            <x-filament::button
+                type="button"
+                color="gray"
+                x-on:click="$dispatch('close-modal', { id: 'photo-upload-modal' }); resetPreview()"
+            >
+                Annuleren
+            </x-filament::button>
+
+            <x-filament::button
+                type="button"
+                x-on:click="handleUpload()"
+                x-bind:disabled="!selectedFile || uploading"
+                color="primary"
+            >
+                <template x-if="uploading">
+                    <span class="flex items-center">
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Bezig met uploaden...
+                    </span>
+                </template>
+                <template x-if="!uploading">
+                    <span>Uploaden</span>
+                </template>
+            </x-filament::button>
+        </x-slot>
+    </x-filament::modal>
+</div>
 @pushOnce('scripts')
 <script>
     (() => {

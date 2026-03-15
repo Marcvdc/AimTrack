@@ -2,12 +2,14 @@
 
 namespace App\Livewire;
 
+use App\Jobs\AnalyzeTurnPhotoJob;
 use App\Models\Session;
 use App\Models\SessionShot;
 use App\Services\Sessions\SessionShotService;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
@@ -65,6 +67,11 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
     public bool $canEdit = false;
 
     public ?int $pendingDeleteShotId = null;
+
+    /** @var array<int> */
+    public array $selectedShots = [];
+
+    public $photo = null;
 
     protected SessionShotService $shotService;
 
@@ -150,6 +157,75 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
         ]);
     }
 
+    public function mountPhotoUploadAction(): void
+    {
+        $this->mountAction('uploadPhoto');
+    }
+
+    public function openPhotoUploadModal(): void
+    {
+        $this->dispatch('open-modal', id: 'photo-upload-modal');
+    }
+
+    public function uploadPhoto(): void
+    {
+        if ($this->currentTurnIndex === self::ALL_TURNS_VALUE) {
+            Notification::make()
+                ->title('Selecteer eerst een specifieke beurt')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        if (! $this->photo) {
+            Notification::make()
+                ->title('Geen foto geselecteerd')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $this->validate([
+            'photo' => 'required|image|max:10240', // 10MB max
+        ]);
+
+        // Store to private disk for processing
+        $privatePath = $this->photo->store('session-photos', 'private');
+
+        // Dispatch the job to analyze the photo
+        AnalyzeTurnPhotoJob::dispatch(
+            $this->session,
+            $this->currentTurnIndex,
+            $privatePath
+        );
+
+        Notification::make()
+            ->title('Foto wordt verwerkt')
+            ->body('De foto wordt geanalyseerd. Gedetecteerde schoten verschijnen binnenkort.')
+            ->success()
+            ->send();
+
+        // Refresh data after a short delay to allow processing
+        $this->dispatch('shots::refresh');
+
+        Log::info('[SessionShotBoard] photo uploaded for analysis', [
+            'session_id' => $this->session->id,
+            'turn_index' => $this->currentTurnIndex,
+            'photo_path' => $privatePath,
+        ]);
+
+        // Reset after successful upload
+        $this->photo = null;
+
+        // Dispatch event to notify frontend
+        $this->dispatch('photo-upload-complete');
+
+        // Close modal
+        $this->dispatch('close-modal', id: 'photo-upload-modal');
+    }
+
     public function recordShot(float $xNormalized, float $yNormalized): void
     {
         if (! $this->canEdit) {
@@ -218,9 +294,33 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
 
         $this->deleteShot($this->pendingDeleteShotId);
         $this->pendingDeleteShotId = null;
-        
+
         // Close the modal
         $this->dispatch('close-modal', id: 'delete-shot-modal');
+    }
+
+    public function bulkDeleteShots(): void
+    {
+        if (! $this->canEdit || empty($this->selectedShots)) {
+            return;
+        }
+
+        $shots = $this->session->shots()
+            ->whereIn('id', $this->selectedShots)
+            ->get();
+
+        foreach ($shots as $shot) {
+            $this->shotService->deleteShot($shot);
+        }
+
+        Notification::make()
+            ->title(count($this->selectedShots).' schotten verwijderd.')
+            ->success()
+            ->send();
+
+        $this->selectedShots = [];
+        $this->refreshData();
+        $this->resetTable();
     }
 
     #[On('shots::refresh')]
@@ -347,10 +447,49 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
             ->paginated(15)
             ->paginationPageOptions([10, 15, 25, 50])
             ->defaultSort('turn_index')
+            ->selectable()
+            ->actions([
+                Action::make('deleteShot')
+                    ->label('Verwijderen')
+                    ->color('danger')
+                    ->icon('heroicon-m-trash')
+                    ->requiresConfirmation()
+                    ->action(fn (SessionShot $record) => $this->deleteShot($record->id)),
+            ])
+            ->bulkActions([
+                BulkAction::make('bulkDelete')
+                    ->label('Verwijderen')
+                    ->color('danger')
+                    ->icon('heroicon-m-trash')
+                    ->requiresConfirmation()
+                    ->deselectRecordsAfterCompletion()
+                    ->action(function (Collection $records) {
+                        if ($records->isNotEmpty()) {
+                            $this->selectedShots = $records->pluck('id')->toArray();
+                            $this->bulkDeleteShots();
+                        }
+                    }),
+            ])
             ->columns([
                 TextColumn::make('id')
                     ->label('#')
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('source')
+                    ->label('Bron')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'manual' => 'primary',
+                        'photo_detected' => 'success',
+                        'photo_corrected' => 'warning',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'manual' => 'Handmatig',
+                        'photo_detected' => 'Foto',
+                        'photo_corrected' => 'Foto+',
+                        default => $state,
+                    })
+                    ->toggleable(),
                 TextColumn::make('turn_index')
                     ->label('Beurt')
                     ->formatStateUsing(fn (?int $state) => 'Beurt '.(($state ?? 0) + 1))
@@ -373,6 +512,10 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
                         Sum::make()->label('Totaal'),
                         Average::make()->label('Gemiddelde')->formatStateUsing(fn ($state) => number_format((float) $state, 2)),
                     ]),
+                TextColumn::make('metadata.confidence')
+                    ->label('Zekerheid')
+                    ->formatStateUsing(fn ($state) => $state ? round($state * 100, 1).'%' : '—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->label('Tijd')
                     ->dateTime('H:i')
@@ -398,15 +541,14 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
                             $query->where('turn_index', (int) $value);
                         }
                     }),
-            ])
-            ->recordActions([
-                Action::make('deleteShot')
-                    ->label('Verwijderen')
-                    ->color('danger')
-                    ->icon('heroicon-m-trash')
-                    ->visible(fn () => $this->canEdit)
-                    ->requiresConfirmation()
-                    ->action(fn (SessionShot $record) => $this->deleteShot($record->id)),
+                SelectFilter::make('source')
+                    ->label('Bron')
+                    ->options([
+                        'manual' => 'Handmatig',
+                        'photo_detected' => 'Foto',
+                        'photo_corrected' => 'Foto gecorrigeerd',
+                    ])
+                    ->native(false),
             ])
             ->emptyStateHeading('Nog geen schoten geregistreerd')
             ->recordUrl(null);
@@ -465,5 +607,21 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
         }
 
         return self::TURN_COLOR_PALETTE[$turnIndex % $paletteCount];
+    }
+
+    protected function getTableRecordsPerPageSelectOptions(): array
+    {
+        return [10, 15, 25, 50];
+    }
+
+    public function getTableSelectedRecords(): array
+    {
+        return $this->selectedShots;
+    }
+
+    public function setTableSelectedRecords(array $records): void
+    {
+        $this->selectedShots = $records;
+        $this->resetTable();
     }
 }

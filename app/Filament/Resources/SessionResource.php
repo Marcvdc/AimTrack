@@ -6,7 +6,6 @@ use App\Filament\Resources\SessionResource\Pages\ListSessions;
 use App\Filament\Resources\SessionResource\Pages\CreateSession;
 use App\Filament\Resources\SessionResource\Pages\EditSession;
 use App\Filament\Resources\SessionResource\Pages\ViewSession;
-use App\Filament\Resources\SessionResource\Pages\ManageSessionShots;
 use App\Enums\Deviation;
 use App\Jobs\GenerateSessionReflectionJob;
 use App\Models\AmmoType;
@@ -67,7 +66,11 @@ class SessionResource extends Resource
                     ->required()
                     ->dehydrated(fn ($state) => filled($state)),
 
-                InfoSection::make('Sessie')
+                Tabs::make('SessionTabs')
+                    ->tabs([
+                        Tab::make('Details')
+                            ->schema([
+                                InfoSection::make('Sessie')
                     ->description('Basisgegevens van de sessie')
                     ->columns(2)
                     ->schema([
@@ -203,55 +206,58 @@ class SessionResource extends Resource
                         // Eventueel uitbreiden met munitie-voorraad check of scorevelden.
                     ]),
 
-                InfoSection::make('Bijlagen')
-                    ->description('Upload foto’s of PDF’s als context')
-                    ->schema([
-                        Repeater::make('attachments')
-                            ->label('Bijlagen')
-                            ->relationship()
-                            ->schema([
-                                FileUpload::make('path')
-                                    ->label('Bestand')
-                                    ->required()
-                                    ->maxSize(20480)
-                                    ->directory('attachments')
-                                    ->preserveFilenames()
-                                    ->downloadable()
-                                    ->openable()
-                                    ->getUploadedFileNameForStorageUsing(fn (TemporaryUploadedFile $file): string => $file->getClientOriginalName())
-                                    ->afterStateUpdated(function ($state, callable $set): void {
-                                        if (! $state) {
-                                            return;
-                                        }
+                                InfoSection::make('Bijlagen')
+                                    ->description('Upload foto\'s of PDF\'s als context')
+                                    ->schema([
+                                        Repeater::make('attachments')
+                                            ->label('Bijlagen')
+                                            ->relationship()
+                                            ->schema([
+                                                FileUpload::make('path')
+                                                    ->label('Bestand')
+                                                    ->required()
+                                                    ->maxSize(20480)
+                                                    ->directory('attachments')
+                                                    ->preserveFilenames()
+                                                    ->downloadable()
+                                                    ->openable()
+                                                    ->getUploadedFileNameForStorageUsing(fn (TemporaryUploadedFile $file): string => $file->getClientOriginalName())
+                                                    ->afterStateUpdated(function ($state, callable $set): void {
+                                                        if (! $state) {
+                                                            return;
+                                                        }
 
-                                        $file = is_array($state) ? end($state) : $state;
+                                                        $file = is_array($state) ? end($state) : $state;
 
-                                        if (! $file instanceof TemporaryUploadedFile) {
-                                            return;
-                                        }
+                                                        if (! $file instanceof TemporaryUploadedFile) {
+                                                            return;
+                                                        }
 
-                                        $set('original_name', $file->getClientOriginalName());
-                                        $set('mime_type', $file->getMimeType());
-                                        $set('size', $file->getSize());
-                                    }),
-                                Hidden::make('original_name')
-                                    ->dehydrated()
-                                    ->required(),
-                                Hidden::make('mime_type')
-                                    ->dehydrated()
-                                    ->required(),
-                                Hidden::make('size')
-                                    ->dehydrated()
-                                    ->required(),
-                            ])
-                            ->columns(2)
-                            ->orderable(false)
-                            ->itemLabel(fn (array $state): string => $state['original_name'] ?? 'Bijlage')
-                            ->addActionLabel('Bijlage toevoegen'),
-                        // Extra tuning: validatie op toegestane mime-types of max grootte.
-                    ])
-                    ->collapsed(),
+                                                        $set('original_name', $file->getClientOriginalName());
+                                                        $set('mime_type', $file->getMimeType());
+                                                        $set('size', $file->getSize());
+                                                    }),
+                                                Hidden::make('original_name')
+                                                    ->dehydrated()
+                                                    ->required(),
+                                                Hidden::make('mime_type')
+                                                    ->dehydrated()
+                                                    ->required(),
+                                                Hidden::make('size')
+                                                    ->dehydrated()
+                                                    ->required(),
+                                            ])
+                                            ->columns(2)
+                                            ->orderable(false)
+                                            ->itemLabel(fn (array $state): string => $state['original_name'] ?? 'Bijlage')
+                                            ->addActionLabel('Bijlage toevoegen'),
+                                        // Extra tuning: validatie op toegestane mime-types of max grootte.
+                                    ])
+                                    ->collapsed(),
+                            ]),
 
+
+                    ]),
             ]);
     }
 
@@ -347,95 +353,101 @@ class SessionResource extends Resource
         return $schema
             ->columns(1)
             ->components([
-                Tabs::make('Details en reflectie')
-                    ->contained(false)
-                    ->tabs([
-                        Tab::make('Details')
-                            ->columns(1)
-                            ->schema([
-                                InfoSection::make('Sessie')
-                                    ->contained(false)
-                                    ->description('Eigen invoer')
+                InfoSection::make()
+                    ->schema([
+                        Tabs::make('Details en reflectie')
+                            ->contained(false)
+                            ->tabs([
+                                Tab::make('Details')
+                                    ->columns(1)
                                     ->schema([
-                                        TextEntry::make('date')->label('Datum')->date(),
-                                        TextEntry::make('range_name')->label('Baan/vereniging'),
-                                        TextEntry::make('location')->label('Locatie'),
-                                        TextEntry::make('notes_raw')
-                                            ->label('Notities (ruw)')
-                                            ->markdown(),
-                                        TextEntry::make('manual_reflection')
-                                            ->label('Handmatige reflectie (gebruiker)')
-                                            ->markdown(),
-                                    ]),
-                                InfoSection::make('Sessiewapens')
-                                    ->contained(false)
-                                    ->schema([
-                                        RepeatableEntry::make('sessionWeapons')
+                                        InfoSection::make('Sessie')
+                                            ->contained(false)
+                                            ->description('Eigen invoer')
                                             ->schema([
-                                                TextEntry::make('weapon.name')->label('Wapen'),
-                                                TextEntry::make('distance_m')->label('Afstand (m)'),
-                                                TextEntry::make('rounds_fired')->label('Patronen'),
-                                                TextEntry::make('ammo_type')->label('Munitie'),
-                                                TextEntry::make('group_quality_text')->label('Groepering'),
-                                                TextEntry::make('deviation')->label('Afwijking'),
-                                                TextEntry::make('flyers_count')->label('Flyers'),
-                                            ])
-                                            ->columns(3),
-                                    ]),
-                                InfoSection::make('Bijlagen')
-                                    ->contained(false)
-                                    ->schema([
-                                        RepeatableEntry::make('attachments')
+                                                TextEntry::make('date')->label('Datum')->date(),
+                                                TextEntry::make('range_name')->label('Baan/vereniging'),
+                                                TextEntry::make('location')->label('Locatie'),
+                                                TextEntry::make('notes_raw')
+                                                    ->label('Notities (ruw)')
+                                                    ->markdown(),
+                                                TextEntry::make('manual_reflection')
+                                                    ->label('Handmatige reflectie (gebruiker)')
+                                                    ->markdown(),
+                                            ]),
+                                        InfoSection::make('Sessiewapens')
+                                            ->contained(false)
                                             ->schema([
-                                                TextEntry::make('original_name')->label('Bestand'),
-                                                TextEntry::make('mime_type')->label('MIME'),
-                                                TextEntry::make('size')->label('Grootte (bytes)'),
-                                            ])
-                                            ->visible(fn (Session $record) => $record->attachments()->exists())
-                                            ->columns(3),
+                                                RepeatableEntry::make('sessionWeapons')
+                                                    ->schema([
+                                                        TextEntry::make('weapon.name')->label('Wapen'),
+                                                        TextEntry::make('distance_m')->label('Afstand (m)'),
+                                                        TextEntry::make('rounds_fired')->label('Patronen'),
+                                                        TextEntry::make('ammo_type')->label('Munitie'),
+                                                        TextEntry::make('group_quality_text')->label('Groepering'),
+                                                        TextEntry::make('deviation')->label('Afwijking'),
+                                                        TextEntry::make('flyers_count')->label('Flyers'),
+                                                    ])
+                                                    ->columns(3),
+                                            ]),
+                                        InfoSection::make('Bijlagen')
+                                            ->contained(false)
+                                            ->schema([
+                                                RepeatableEntry::make('attachments')
+                                                    ->schema([
+                                                        TextEntry::make('original_name')->label('Bestand'),
+                                                        TextEntry::make('mime_type')->label('MIME'),
+                                                        TextEntry::make('size')->label('Grootte (bytes)'),
+                                                    ])
+                                                    ->visible(fn (Session $record) => $record->attachments()->exists())
+                                                    ->columns(3),
+                                            ]),
                                     ]),
-                            ]),
-                        Tab::make('Schoten')
-                            ->columns(1)
-                            ->schema([
-                                InfoSection::make('Interactieve roos & schoten per beurt')
-                                    ->contained(false)
-                                    ->description('Leg schoten vast per beurt en zie direct de totals. Beschikbaar tijdens het bewerken.')
+                                Tab::make('Schoten')
+                                    ->columns(1)
                                     ->schema([
-                                        ViewComponent::make('filament.sessions.session-shot-board-panel')
-                                            ->viewData(fn (?Session $record = null) => [
-                                                'readOnly' => true,
-                                                'record' => $record,
-                                            ])
-                                            ->key(fn (?Session $record) => 'session-shot-board-form-'.($record?->getKey() ?? 'new')),
+                                        InfoSection::make('Schoten bekijken en bewerken')
+                                            ->contained(false)
+                                            ->description('Gebruik de speciale schotenpagina voor een interactieve roos en volledige controle.')
+                                            ->schema([
+                                                TextEntry::make('shots_summary')
+                                                    ->label('Totaal schoten')
+                                                    ->state(fn (Session $record) => $record->shots()->count().' schoten geregistreerd'),
+                                                TextEntry::make('shots_link')
+                                                    ->label('')
+                                                    ->state(fn (Session $record) => '→ Ga naar de schotenpagina om schoten te bekijken en bewerken')
+                                                    ->url(fn (Session $record) => route('sessions.shots', ['session' => $record]))
+                                                    ->color('primary')
+                                                    ->openUrlInNewTab(),
+                                            ]),
                                     ]),
-                            ]),
-                        Tab::make('AI-reflectie')
-                            ->visible(fn (): bool => static::features()->aiEnabled())
-                            ->columns(1)
-                            ->schema([
-                                InfoSection::make('Reflectie door AI')
-                                    ->contained(false)
-                                    ->description('Automatisch gegenereerd; gebruik ter inspiratie, blijf kritisch en veilig schieten.')
+                                Tab::make('AI-reflectie')
+                                    ->visible(fn (): bool => static::features()->aiEnabled())
+                                    ->columns(1)
                                     ->schema([
-                                        TextEntry::make('aiReflection.summary')
-                                            ->label('Samenvatting')
-                                            ->icon('heroicon-o-sparkles')
-                                            ->placeholder('Nog niet beschikbaar'),
-                                        TextEntry::make('aiReflection.positives')
-                                            ->label('Wat ging goed')
-                                            ->bulleted()
-                                            ->icon('heroicon-o-sparkles')
-                                            ->placeholder('Nog niet beschikbaar'),
-                                        TextEntry::make('aiReflection.improvements')
-                                            ->label('Verbeterpunten')
-                                            ->bulleted()
-                                            ->icon('heroicon-o-sparkles')
-                                            ->placeholder('Nog niet beschikbaar'),
-                                        TextEntry::make('aiReflection.next_focus')
-                                            ->label('Focus voor volgende keer')
-                                            ->icon('heroicon-o-sparkles')
-                                            ->placeholder('Nog niet beschikbaar'),
+                                        InfoSection::make('Reflectie door AI')
+                                            ->contained(false)
+                                            ->description('Automatisch gegenereerd; gebruik ter inspiratie, blijf kritisch en veilig schieten.')
+                                            ->schema([
+                                                TextEntry::make('aiReflection.summary')
+                                                    ->label('Samenvatting')
+                                                    ->icon('heroicon-o-sparkles')
+                                                    ->placeholder('Nog niet beschikbaar'),
+                                                TextEntry::make('aiReflection.positives')
+                                                    ->label('Wat ging goed')
+                                                    ->bulleted()
+                                                    ->icon('heroicon-o-sparkles')
+                                                    ->placeholder('Nog niet beschikbaar'),
+                                                TextEntry::make('aiReflection.improvements')
+                                                    ->label('Verbeterpunten')
+                                                    ->bulleted()
+                                                    ->icon('heroicon-o-sparkles')
+                                                    ->placeholder('Nog niet beschikbaar'),
+                                                TextEntry::make('aiReflection.next_focus')
+                                                    ->label('Focus voor volgende keer')
+                                                    ->icon('heroicon-o-sparkles')
+                                                    ->placeholder('Nog niet beschikbaar'),
+                                            ]),
                                     ]),
                             ]),
                     ]),
@@ -449,7 +461,7 @@ class SessionResource extends Resource
             'create' => CreateSession::route('/create'),
             'edit' => EditSession::route('/{record}/edit'),
             'view' => ViewSession::route('/{record}'),
-            'shots' => ManageSessionShots::route('/{record}/shots'),
+            'shots' => \App\Filament\Resources\SessionResource\Pages\ManageSessionShots::route('/{record}/shots'),
         ];
     }
 

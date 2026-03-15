@@ -11,7 +11,7 @@ services:
     volumes:
       - ./:/var/www/html
     environment:
-      APP_FORCE_HTTPS: "true"
+      APP_FORCE_HTTPS: "false"
       TRUSTED_PROXIES: 172.16.0.0/12,127.0.0.1/32
       MAIL_MAILER: smtp
       MAIL_HOST: mailpit
@@ -23,21 +23,26 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       QUEUE_CONNECTION: database
+      IMAGE_PROCESSOR_URL: http://python-service:8000
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - aimtrack
 
   web:
     image: nginx:stable-alpine
     container_name: aimtrack_web
     restart: unless-stopped
     ports:
-      - "18080:80"
+      - "18081:80"
     volumes:
       - ./:/var/www/html
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - app
+    networks:
+      - aimtrack
 
   db:
     image: postgres:16
@@ -57,6 +62,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - aimtrack
 
   queue:
     user: "${UID}:${GID}"
@@ -69,7 +76,7 @@ services:
     volumes:
       - ./:/var/www/html
     environment:
-      APP_FORCE_HTTPS: "true"
+      APP_FORCE_HTTPS: "false"
       TRUSTED_PROXIES: 172.16.0.0/12,127.0.0.1/32
       MAIL_MAILER: smtp
       MAIL_HOST: mailpit
@@ -81,8 +88,12 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       QUEUE_CONNECTION: database
+      IMAGE_PROCESSOR_URL: http://python-service:8000
     depends_on:
       - db
+      - python-service
+    networks:
+      - aimtrack
 
   mailpit:
     image: axllent/mailpit:latest
@@ -91,9 +102,32 @@ services:
     ports:
       - "8025:8025"   # Web UI
       - "1025:1025"   # SMTP
+    networks:
+      - aimtrack
+
+  python-service:
+    build:
+      context: ./python-service
+      dockerfile: Dockerfile
+    container_name: aimtrack_python_service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./python-service:/app
+    depends_on:
+      - db
+    networks:
+      - aimtrack
 
 volumes:
   db_data:
+    external: true
+    name: aimtrack_db_data
+
+networks:
+  aimtrack:
+    driver: bridge
 
 # Gebruik:
 #   Start stack: docker compose up -d

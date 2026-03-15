@@ -1,4 +1,4 @@
-<x-filament::page>
+<x-filament-panels::page>
     @php
         $totalShots = $record->shots()->count();
         $totalPoints = $record->shots()->sum('score');
@@ -90,4 +90,4 @@
     </div>
 
     @include('filament.sessions.session-shot-board-panel', ['record' => $record])
-</x-filament::page>
+</x-filament-panels::page>

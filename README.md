@@ -4,6 +4,7 @@ AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer s
 
 ## Kernfeatures
 - **Sessies**: datum, baan/vereniging, locatie, tijden, notities, attachments en meerdere wapen × afstand entries.
+- **Schotregistratie**: interactieve schotroos + foto-naar-schoten conversie via AI.
 - **Reflectie**: handmatige reflectie + AI-reflectie (samenvatting, went_well, needs_improvement, next_focus).
 - **Wapenbeheer**: wapens met type/kaliber/serienummer/opslag; inzicht in gebruik per sessie.
 - **AI-coach**: vrije vragen op basis van eigen sessies/wapens.
@@ -15,6 +16,7 @@ AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer s
 - Filament 4 + Livewire 3
 - Database: PostgreSQL (default) of MySQL
 - Queue: database driver (queue-worker container)
+- Image Processing: Python FastAPI + OpenCV (microservice)
 
 ## Snel starten (Docker + WSL)
 1. Kopieer `.env.local.example` naar `.env.local` (niet committen) en vul waarden in.  
@@ -32,12 +34,20 @@ AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer s
 - AI-calls verlopen via queue-jobs (`GenerateSessionReflectionJob`, `GenerateWeaponInsightJob`). Zorg dat de `queue` container draait.
 - Prompts bevatten NL-disclaimers; AI-output is adviserend en vervangt geen veiligheidsregels of instructeurs.
 
+## Foto-naar-schotten conversie
+- Upload foto's van schotborden per beurt via de "Schotten registreren" pagina.
+- De Python microservice analyseert foto's met OpenCV en detecteert kogel-inslagen.
+- Schotten worden automatisch toegevoegd aan de sessie met `source: photo_detected`.
+- Configureer `IMAGE_PROCESSOR_URL` in `.env` (standaard: `http://aimtrack_python_service:8000`).
+- De Python service wordt automatisch gestart met `docker compose up -d`.
+- Gedetecteerde schoten worden automatisch omgezet naar genormaliseerde coördinaten.
+
 ## Export
 Gebruik de Filament **Export**-pagina om CSV of PDF te downloaden. Periode is verplicht; wapenselectie optioneel. Download bevat een disclaimer dat de gebruiker zelf verantwoordelijk blijft voor actuele WM-4-eisen.
 
 ## Documentatie
 - Techniek: `docs/architecture.md`, `docs/ai.md`, `docs/export.md`, `docs/infra.md`, `docs/operations.md`, `docs/security.md`
-- Gebruiker: `docs/user/quickstart.md`, `docs/user/sessions.md`, `docs/user/weapons.md`, `docs/user/export.md`, `docs/user/ai-coach.md`
+- Gebruiker: `docs/user/quickstart.md`, `docs/user/sessions.md`, `docs/user/weapons.md`, `docs/user/export.md`, `docs/user/ai-coach.md`, `docs/user/photo-analysis.md`
 - Overige plannen: `docs/PLAN.md`, `docs/BACKUPS.md`, `docs/PROD_HARDENING.md`
 
 ## Security & Responsible Disclosure
