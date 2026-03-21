@@ -605,4 +605,36 @@ Authenticate before testing panel functionality. Filament uses Livewire, so use 
 **Recent breaking changes to Filament:**
 - File visibility is `private` by default. Use `->visibility('public')` for public access.
 - `Grid`, `Section`, and `Fieldset` no longer span all columns by default.
+=== github-agent rules ===
+
+# GitHub Agent Operations
+
+## GITHUB AGENT MODE
+When operating via GitHub Actions (@claude mentions), the agent follows a streamlined process:
+- Direct implementation without PLAN-FIRST requirements
+- Focus on small, atomic changes that can be safely automated
+- Automatic branch creation and PR generation
+- Iterative refinement via PR comments
+
+## GITHUB AGENT RULES
+- Always create descriptive branch names: `feature/issue-66-description` or `fix/issue-67-bug`
+- Implement changes in small, testable increments
+- Add appropriate tests for all new functionality
+- Use existing code patterns and conventions
+- Never commit secrets or sensitive data
+- Link PRs to issues with "Closes #<number>" format
+- Include clear PR descriptions with implementation notes
+
+## GITHUB AGENT EXAMPLES
+- `@claude add email validation for user registration`
+- `@claude fix the weapon export CSV formatting issue`
+- `@claude create a feature test for session creation`
+- `@claude refactor this service to follow our architecture patterns`
+
+## QUALITY GATES
+- All tests must pass before PR creation
+- Code must follow PSR-12 and project style guide
+- No breaking changes without explicit request
+- Documentation updates for public API changes
+
 </laravel-boost-guidelines>
