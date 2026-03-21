@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AdminLogoutController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\SessionShotBoardController;
 use App\Services\Export\SessionExportService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -30,3 +31,5 @@ Route::get('/exports/sessions/download', function (Request $request, SessionExpo
 })->middleware(['auth'])->name('exports.sessions.download');
 
 Route::get('/health', HealthController::class)->name('health');
+
+Route::get('/sessions/{session}/shots', SessionShotBoardController::class)->name('sessions.shots')->middleware('auth');

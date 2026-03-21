@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class SessionShotBoard extends Component implements HasActions, HasSchemas, HasTable
 {
@@ -36,6 +37,7 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
     use InteractsWithTable {
         InteractsWithTable::resetTable as protected filamentResetTable;
     }
+    use WithFileUploads;
 
     public const ALL_TURNS_VALUE = -1;
 
