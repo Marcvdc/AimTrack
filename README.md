@@ -38,6 +38,7 @@ Gebruik de Filament **Export**-pagina om CSV of PDF te downloaden. Periode is ve
 ## Documentatie
 - Techniek: `docs/architecture.md`, `docs/ai.md`, `docs/export.md`, `docs/infra.md`, `docs/operations.md`, `docs/security.md`
 - Gebruiker: `docs/user/quickstart.md`, `docs/user/sessions.md`, `docs/user/weapons.md`, `docs/user/export.md`, `docs/user/ai-coach.md`
+- AI Agents: `docs/ai-agents.md` - Automated development with AI agents
 - Overige plannen: `docs/PLAN.md`, `docs/BACKUPS.md`, `docs/PROD_HARDENING.md`
 
 ## Security & Responsible Disclosure
@@ -50,6 +51,27 @@ Gebruik de Filament **Export**-pagina om CSV of PDF te downloaden. Periode is ve
 - Lint: `composer lint` (Laravel Pint).
 - Tests: `composer test` (Pest/phpunit).
 - Houd NL-labels aan in Filament en gebruik queue voor AI-taken.
+
+## AI Agents
+AimTrack supports automated development via AI agents:
+
+### GitHub Agent
+- Gebruik `@claude` in issues om automatisch pull requests te laten genereren
+- Agent analyseert de issue, implementeert de wijziging en creeërt een PR
+- Werkt volgens projectconventies en voegt automatisch tests toe
+- Zie `docs/ai-agents.md` voor gedetailleerde instructies
+
+Voorbeeld:
+```markdown
+## Add Session Export Feature
+@claude please add a CSV export feature for shooting sessions...
+```
+
+### Local Agent Environments
+- Creëer geïsoleerde ontwikkel-omgevingen: `./scripts/clone-for-agent.sh agent-name`
+- Elke agent heeft eigen Docker containers en git workspace
+- Ideaal voor testing en development door AI agents
+- Zie `docs/ai-agents.md` voor setup instructies
 
 ## Local Dev (WSL)
 - Vereisten: Windows 11, WSL2 (Ubuntu 22.04 aanbevolen), Docker Desktop met WSL-integratie, Node/npm alleen wanneer je Vite-assets bouwt.
