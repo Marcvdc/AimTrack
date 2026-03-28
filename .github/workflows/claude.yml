@@ -122,7 +122,7 @@ jobs:
             - Use Dutch for user-facing text, English for code comments
           claude_args: |
             --max-turns 10 
-            --allowedTools mcp__github__create_pull_request,mcp__github__create_comment,mcp__github__update_issue
+            --allowedTools Bash,Edit
             --model sonnet
 
       - name: Update Issue Status
@@ -130,6 +130,44 @@ jobs:
         run: |
           echo "🤖 Claude Code Agent processing completed for issue #${{ github.event.issue.number }}"
           echo "📋 Check the Actions tab for detailed logs"
+
+      - name: Create Pull Request
+        if: github.event_name == 'issues' || github.event_name == 'issue_comment'
+        run: |
+          # Check if there are changes to commit
+          if git diff --quiet; then
+            echo "No changes made by Claude agent"
+          else
+            # Create branch and PR
+            BRANCH_NAME="claude/issue-${{ github.event.issue.number }}"
+            git config --global user.name "claude[bot]"
+            git config --global user.email "claude@users.noreply.github.com"
+            
+            git checkout -b $BRANCH_NAME
+            git add .
+            git commit -m "Implement changes for issue #${{ github.event.issue.number }}"
+            git push origin $BRANCH_NAME
+            
+            # Create PR using GitHub CLI
+            gh pr create \
+              --title "Implementation for issue #${{ github.event.issue.number }}" \
+              --body "This PR implements the changes requested in issue #${{ github.event.issue.number }}.
+
+            🤖 **Automated by Claude Code Agent**
+            - Issue: #${{ github.event.issue.number }}
+            - Branch: $BRANCH_NAME
+            - Auto-generated based on issue requirements
+
+            ## Changes Made
+            [Claude agent will describe changes here]
+
+            ## Testing
+            - [ ] Code follows project standards
+            - [ ] Tests pass
+            - [ ] Ready for review" \
+              --base main \
+              --head $BRANCH_NAME
+          fi
 
       - name: Update PR Status  
         if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review_comment'
