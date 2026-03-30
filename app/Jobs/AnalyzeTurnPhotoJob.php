@@ -85,15 +85,31 @@ class AnalyzeTurnPhotoJob implements ShouldQueue
             // Create SessionShot records for detected shots
             foreach ($data['shots'] as $index => $shot) {
                 try {
-                    // Convert from Python's [-1, 1] coordinate system to [0, 1] coordinate system
-                    // Python uses center = (0, 0), we use center = (0.5, 0.5)
-                    $xNormalized = ($shot['x'] + 1) / 2; // -1..1 -> 0..1
-                    $yNormalized = ($shot['y'] + 1) / 2; // -1..1 -> 0..1
+                    // Python gives coordinates in [-1, 1] range where:
+                    // - (0, 0) = center of detected target
+                    // - ±1 = edge of target (ring 1)
+                    //
+                    // We need to convert to canvas space [0, 1] where:
+                    // - (0.5, 0.5) = center of canvas
+                    // - Target has radius of 0.46 (TARGET_RADIUS_RATIO)
+                    //
+                    // Formula: canvas_coord = 0.5 + (target_coord * 0.46)
+                    $targetRadiusRatio = 0.46;
 
-                    // Calculate distance from center (0.5, 0.5) in [0, 1] space
-                    $xFromCenter = $xNormalized - 0.5;
-                    $yFromCenter = $yNormalized - 0.5;
-                    $distanceFromCenter = sqrt($xFromCenter ** 2 + $yFromCenter ** 2);
+                    $xCanvas = 0.5 + ($shot['x'] * $targetRadiusRatio);
+                    $yCanvas = 0.5 + ($shot['y'] * $targetRadiusRatio);
+
+                    // Clamp to [0, 1] range (shots outside target may be > 1 or < 0)
+                    $xNormalized = max(0, min(1, $xCanvas));
+                    $yNormalized = max(0, min(1, $yCanvas));
+
+                    // Calculate distance from center in target space (not canvas space)
+                    // This gives us the actual distance for ring calculation
+                    $distanceFromCenter = sqrt($shot['x'] ** 2 + $shot['y'] ** 2);
+
+                    // For ring calculation, use the original target space coordinates
+                    $xFromCenter = $shot['x'];
+                    $yFromCenter = $shot['y'];
 
                     SessionShot::create([
                         'session_id' => $this->session->id,

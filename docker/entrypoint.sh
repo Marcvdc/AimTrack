@@ -6,6 +6,10 @@ cd /var/www/html
 mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
+# Fix storage permissions for container user and make logging directories writable
+chown -R $(id -u):$(id -g) storage/ bootstrap/cache/
+chmod 777 storage/logs/ storage/framework/sessions/
+
 if [ -f .env ]; then
     if ! grep -Eq '^APP_KEY=.+$' .env; then
         echo "[entrypoint] APP_KEY ontbreekt of is leeg in .env; genereer application key" >&2
