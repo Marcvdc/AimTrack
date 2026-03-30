@@ -5,50 +5,42 @@ namespace App\Filament\Pages;
 use App\Models\CoachQuestion;
 use App\Models\CoachSession;
 use App\Models\Weapon;
-use App\Services\Ai\ShooterCoach;
 use App\Support\Features\AimtrackFeatureToggle;
-use BackedEnum;
 use Carbon\Carbon;
 use Filament\Actions\Action;
+use Filament\Actions\Action as FilamentAction;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Fieldset;
-use Filament\Forms\Components\Actions as FormActions;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Grid as FormGrid;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Grid as SchemaGrid;
 use Filament\Schemas\Components\Actions as SchemaActions;
+use Filament\Schemas\Components\Grid as SchemaGrid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Actions\Action as FilamentAction;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\RateLimiter;
-use UnitEnum;
 
-class AiCoachPage extends Page implements HasForms, HasTable, HasActions
+class AiCoachPage extends Page implements HasActions, HasForms, HasTable
 {
-    use InteractsWithForms, InteractsWithTable, InteractsWithActions;
+    use InteractsWithActions, InteractsWithForms, InteractsWithTable;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-sparkles';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-sparkles';
 
     protected static ?string $navigationLabel = 'AI-coach (BETA)';
 
     protected static ?string $title = 'AI-coach (BETA)';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'AI & inzichten';
+    protected static string|\UnitEnum|null $navigationGroup = 'AI & inzichten';
 
     protected string $view = 'filament.pages.ai-coach-page';
 
@@ -82,6 +74,11 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
 
     public string $contextInfo = 'Alle wapens · 01-01-2026 → nu';
 
+    public static function canAccess(): bool
+    {
+        return static::features()->aiEnabled();
+    }
+
     public static function shouldRegisterNavigation(): bool
     {
         return static::features()->aiEnabled() && parent::shouldRegisterNavigation();
@@ -93,7 +90,7 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
         $this->loadHistory();
         $this->startNewSession();
         $this->applyFilters();
-        
+
         // Synchroniseer filterWeapon met data.weapon_id
         $this->filterWeapon = $this->data['weapon_id'] ?? null;
     }
@@ -118,21 +115,22 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
                                 ->action('startNewSession')
                                 ->color('primary'),
                         ]),
-                        
+
                         Placeholder::make('context_info')
                             ->content("ℹ Context: {$this->contextInfo}")
                             ->hidden(fn () => $this->contextInfo === 'Alle wapens · 01-01-2026 → nu'),
-                        
+
                         Placeholder::make('chat_history')
                             ->content(function () {
-                                if ($this->currentSession->isEmpty() && !$this->answer) {
+                                if ($this->currentSession->isEmpty() && ! $this->answer) {
                                     return '🤖 **AI-coach:** Welkom! Stel je vraag over training, techniek of logs.';
                                 }
+
                                 return '';
                             })
                             ->markdown()
-                            ->hidden(fn () => !$this->currentSession->isEmpty() || !empty($this->answer)),
-                        
+                            ->hidden(fn () => ! $this->currentSession->isEmpty() || ! empty($this->answer)),
+
                         Placeholder::make('current_session')
                             ->content(function () {
                                 $content = '';
@@ -141,21 +139,21 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
                                     $content .= "🤖 **AI-coach:** {$item->answer}\n\n";
                                     $content .= "---\n\n";
                                 }
+
                                 return $content;
                             })
                             ->markdown()
                             ->hidden(fn () => $this->currentSession->isEmpty()),
-                        
+
                         Placeholder::make('current_answer')
                             ->content(fn () => "🤖 **AI-coach:** {$this->answer}")
                             ->markdown()
                             ->hidden(fn () => empty($this->answer)),
-                        
+
                         Placeholder::make('typing')
                             ->content('🤖 AI is aan het typen...')
-                            ->hidden(fn () => !$this->isProcessing),
+                            ->hidden(fn () => ! $this->isProcessing),
                     ]),
-                
 
                 // Input Form met filters
                 Section::make('Stel je vraag')
@@ -168,19 +166,19 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
                                     ->placeholder('Alle wapens')
                                     ->live()
                                     ->afterStateUpdated(fn () => $this->applyFilters()),
-                                
+
                                 Select::make('filterPeriod')
                                     ->label('Periode')
                                     ->options([
                                         'today' => 'Vandaag',
-                                        'week' => 'Deze week', 
+                                        'week' => 'Deze week',
                                         'month' => 'Deze maand',
                                         'custom' => 'Custom',
                                     ])
                                     ->placeholder('Alle periodes')
                                     ->live()
                                     ->afterStateUpdated(fn () => $this->applyFilters()),
-                                
+
                                 TextInput::make('filterFromDate')
                                     ->label('Vanaf datum')
                                     ->type('date')
@@ -188,7 +186,7 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
                                     ->visible(fn ($get) => $get('filterPeriod') === 'custom')
                                     ->afterStateUpdated(fn () => $this->applyFilters()),
                             ]),
-                        
+
                         SchemaGrid::make(2)
                             ->schema([
                                 TextInput::make('filterToDate')
@@ -197,21 +195,21 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
                                     ->live()
                                     ->visible(fn ($get) => $get('filterPeriod') === 'custom')
                                     ->afterStateUpdated(fn () => $this->applyFilters()),
-                                
+
                                 Textarea::make('data.question')
                                     ->label('Vraag')
                                     ->placeholder('Typ je vraag...')
                                     ->required()
                                     ->rows(2),
                             ]),
-                        
+
                         SchemaActions::make([
                             Action::make('clearFilters')
                                 ->label('Reset filters')
                                 ->icon('heroicon-o-x-mark')
                                 ->action('clearFilters')
                                 ->color('gray'),
-                            
+
                             Action::make('submit')
                                 ->label('Verstuur')
                                 ->icon('heroicon-o-paper-airplane')
@@ -230,31 +228,32 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
         }
 
         $html = '<div class="space-y-3">';
-        
+
         foreach ($this->history->take(5) as $item) {
             $html .= '<div class="rounded-md border border-gray-100 bg-gray-50 p-3">';
             $html .= '<div class="flex items-center justify-between text-xs text-gray-500">';
-            $html .= '<span>' . $item->asked_at->format('d-m-Y H:i') . '</span>';
+            $html .= '<span>'.$item->asked_at->format('d-m-Y H:i').'</span>';
             if ($item->weapon) {
-                $html .= '<span class="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700">' . $item->weapon->name . '</span>';
+                $html .= '<span class="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700">'.$item->weapon->name.'</span>';
             } else {
                 $html .= '<span class="text-gray-500">Alle wapens</span>';
             }
             $html .= '</div>';
             $html .= '<p class="mt-2 text-sm font-semibold text-gray-800">Vraag (gebruiker)</p>';
-            $html .= '<p class="text-sm text-gray-700">' . Str::limit($item->question, 100) . '</p>';
+            $html .= '<p class="text-sm text-gray-700">'.Str::limit($item->question, 100).'</p>';
             $html .= '<p class="mt-2 text-sm font-semibold text-indigo-800">AI-antwoord</p>';
-            $html .= '<p class="text-sm text-gray-700">' . Str::limit($item->answer, 150) . '</p>';
+            $html .= '<p class="text-sm text-gray-700">'.Str::limit($item->answer, 150).'</p>';
             $html .= '</div>';
         }
-        
+
         $html .= '</div>';
+
         return $html;
     }
 
     protected function getAnswerHtml(): string
     {
-        if (!$this->answer) {
+        if (! $this->answer) {
             return '';
         }
 
@@ -278,7 +277,7 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
                     
                     <div class="bg-white rounded-lg p-4 border border-indigo-100">
                         <div class="prose prose-sm max-w-none">
-                            <p class="text-gray-800 leading-relaxed whitespace-pre-line">' . $this->answer . '</p>
+                            <p class="text-gray-800 leading-relaxed whitespace-pre-line">'.$this->answer.'</p>
                         </div>
                     </div>
                     
@@ -291,7 +290,6 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
                 </div>';
     }
 
-    
     protected function getFormActions(): array
     {
         return [];
@@ -300,23 +298,24 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
     public function submit(): void
     {
         $this->isProcessing = true;
-        
+
         $state = $this->form->getState();
-        
+
         $executed = RateLimiter::attempt(
-            'ai-coach-question:' . auth()->id(),
+            'ai-coach-question:'.auth()->id(),
             3,
             fn () => $this->askQuestion($state)
         );
 
-        if (!$executed) {
+        if (! $executed) {
             Notification::make()
                 ->title('Te veel vragen')
                 ->body('Je mag maximaal 3 vragen per uur stellen.')
                 ->warning()
                 ->send();
-                
+
             $this->isProcessing = false;
+
             return;
         }
 
@@ -333,10 +332,10 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
         $this->filterPeriod = null;
         $this->filterFromDate = null;
         $this->filterToDate = null;
-        
+
         // Reset ook de form data
         $this->data['weapon_id'] = null;
-        
+
         $this->applyFilters();
     }
 
@@ -344,7 +343,7 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
     {
         // Synchroniseer filterWeapon met data.weapon_id
         $this->filterWeapon = $this->data['weapon_id'] ?? null;
-        
+
         $query = CoachQuestion::query()
             ->with('weapon')
             ->where('user_id', auth()->id())
@@ -357,7 +356,7 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
             $query->whereBetween('asked_at', [now()->startOfWeek(), now()->endOfWeek()]);
         } elseif ($this->filterPeriod === 'month') {
             $query->whereMonth('asked_at', now()->month)
-                  ->whereYear('asked_at', now()->year);
+                ->whereYear('asked_at', now()->year);
         }
 
         // Apply weapon filter
@@ -381,7 +380,7 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
     protected function updateContextInfo(): void
     {
         $context = [];
-        
+
         // Weapon context
         if ($this->filterWeapon) {
             $weapon = Weapon::find($this->filterWeapon);
@@ -389,7 +388,7 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
         } else {
             $context[] = 'Alle wapens';
         }
-        
+
         // Date context
         if ($this->filterPeriod === 'today') {
             $context[] = 'Vandaag';
@@ -398,13 +397,13 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
         } elseif ($this->filterPeriod === 'month') {
             $context[] = 'Deze maand';
         } elseif ($this->filterFromDate && $this->filterToDate) {
-            $context[] = Carbon::parse($this->filterFromDate)->format('d-m-Y') . ' → ' . Carbon::parse($this->filterToDate)->format('d-m-Y');
+            $context[] = Carbon::parse($this->filterFromDate)->format('d-m-Y').' → '.Carbon::parse($this->filterToDate)->format('d-m-Y');
         } elseif ($this->filterFromDate) {
-            $context[] = Carbon::parse($this->filterFromDate)->format('d-m-Y') . ' → nu';
+            $context[] = Carbon::parse($this->filterFromDate)->format('d-m-Y').' → nu';
         } else {
             $context[] = '01-01-2026 → nu';
         }
-        
+
         $this->contextInfo = implode(' · ', $context);
     }
 
@@ -456,6 +455,7 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
             ->map(function ($session) {
                 $session->started_at = \Carbon\Carbon::parse($session->started_at);
                 $session->last_activity = \Carbon\Carbon::parse($session->last_activity);
+
                 return $session;
             });
     }
@@ -474,17 +474,17 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
                     ->label('Eerste vraag')
                     ->limit(50)
                     ->searchable(),
-                
+
                 TextColumn::make('message_count')
                     ->label('Berichten')
                     ->numeric()
                     ->sortable(),
-                
+
                 TextColumn::make('started_at')
                     ->label('Gestart')
                     ->dateTime('d-m-Y H:i')
                     ->sortable(),
-                
+
                 TextColumn::make('last_activity')
                     ->label('Laatste activiteit')
                     ->dateTime('d-m-Y H:i')
@@ -511,7 +511,7 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
     public function viewFullAnswer(int $questionId): void
     {
         $question = CoachQuestion::findOrFail($questionId);
-        
+
         // Hier zou je een modal kunnen tonen of de pagina kunnen updaten
         // Voor nu tonen we een notificatie met de volledige vraag
         Notification::make()
@@ -542,7 +542,7 @@ class AiCoachPage extends Page implements HasForms, HasTable, HasActions
 
         $limit = config('ai.daily_question_limit', 10);
         $decayMinutes = config('ai.daily_question_decay_minutes', 1440);
-        $key = 'ai-coach-questions:' . $user->id;
+        $key = 'ai-coach-questions:'.$user->id;
 
         if (RateLimiter::tooManyAttempts($key, $limit, $decayMinutes)) {
             $availableIn = RateLimiter::availableIn($key);

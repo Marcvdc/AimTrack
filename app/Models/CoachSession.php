@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class CoachSession extends Model
 {
     protected $table = 'coach_questions';
-    
+
     protected $primaryKey = 'session_id';
-    
+
     public $incrementing = false;
-    
+
     protected $fillable = [
         'session_id',
         'started_at',
@@ -19,18 +19,18 @@ class CoachSession extends Model
         'last_activity',
         'first_question',
     ];
-    
+
     protected $casts = [
         'started_at' => 'datetime',
         'last_activity' => 'datetime',
         'message_count' => 'integer',
     ];
-    
+
     public function getKeyName()
     {
         return 'session_id';
     }
-    
+
     public function scopeForUser($query, $userId)
     {
         return $query->where('user_id', $userId)
@@ -44,7 +44,7 @@ class CoachSession extends Model
             ')
             ->groupBy('session_id');
     }
-    
+
     public function scopeExcludeCurrent($query, $sessionId)
     {
         return $query->when($sessionId, fn ($q) => $q->where('session_id', '!=', $sessionId));

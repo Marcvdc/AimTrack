@@ -244,7 +244,7 @@ PROMPT);
                 $session->date->format('d-m-Y'),
                 $session->location ?? 'Onbekende locatie',
                 $weaponDetails,
-                $session->notes ? "Notities: " . Str::limit($session->notes, 200) : ''
+                $session->notes ? 'Notities: '.Str::limit($session->notes, 200) : ''
             );
         })->implode("\n\n");
 
