@@ -2,11 +2,10 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\LocationResource\Pages\ListLocations;
 use App\Filament\Resources\LocationResource\Pages\CreateLocation;
 use App\Filament\Resources\LocationResource\Pages\EditLocation;
+use App\Filament\Resources\LocationResource\Pages\ListLocations;
 use App\Models\Location;
-use BackedEnum;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -19,13 +18,12 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use UnitEnum;
 
 class LocationResource extends Resource
 {
     protected static ?string $model = Location::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-map-pin';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-map-pin';
 
     protected static ?string $navigationLabel = 'Locaties';
 
@@ -33,7 +31,7 @@ class LocationResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Locaties';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Beheer';
+    protected static string|\UnitEnum|null $navigationGroup = 'Beheer';
 
     public static function form(Schema $schema): Schema
     {

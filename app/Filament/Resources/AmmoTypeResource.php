@@ -2,11 +2,10 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\AmmoTypeResource\Pages\ListAmmoTypes;
 use App\Filament\Resources\AmmoTypeResource\Pages\CreateAmmoType;
 use App\Filament\Resources\AmmoTypeResource\Pages\EditAmmoType;
+use App\Filament\Resources\AmmoTypeResource\Pages\ListAmmoTypes;
 use App\Models\AmmoType;
-use BackedEnum;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -16,13 +15,12 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use UnitEnum;
 
 class AmmoTypeResource extends Resource
 {
     protected static ?string $model = AmmoType::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-sparkles';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-sparkles';
 
     protected static ?string $navigationLabel = 'Munitietypen';
 
@@ -30,7 +28,7 @@ class AmmoTypeResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Munitietypen';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Beheer';
+    protected static string|\UnitEnum|null $navigationGroup = 'Beheer';
 
     public static function form(Schema $schema): Schema
     {

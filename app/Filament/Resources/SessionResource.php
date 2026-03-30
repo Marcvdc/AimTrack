@@ -2,18 +2,17 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\SessionResource\Pages\ListSessions;
+use App\Enums\Deviation;
 use App\Filament\Resources\SessionResource\Pages\CreateSession;
 use App\Filament\Resources\SessionResource\Pages\EditSession;
-use App\Filament\Resources\SessionResource\Pages\ViewSession;
+use App\Filament\Resources\SessionResource\Pages\ListSessions;
 use App\Filament\Resources\SessionResource\Pages\ManageSessionShots;
-use App\Enums\Deviation;
+use App\Filament\Resources\SessionResource\Pages\ViewSession;
 use App\Jobs\GenerateSessionReflectionJob;
 use App\Models\AmmoType;
 use App\Models\Location;
 use App\Models\Session;
 use App\Support\Features\AimtrackFeatureToggle;
-use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -41,13 +40,12 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
-use UnitEnum;
 
 class SessionResource extends Resource
 {
     protected static ?string $model = Session::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-calendar-days';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calendar-days';
 
     protected static ?string $navigationLabel = 'Sessies';
 
@@ -55,7 +53,7 @@ class SessionResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Sessies';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Dagboek';
+    protected static string|\UnitEnum|null $navigationGroup = 'Dagboek';
 
     public static function form(Schema $schema): Schema
     {

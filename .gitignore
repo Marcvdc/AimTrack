@@ -49,3 +49,4 @@ public/vendor/
 # IDE files
 .vscode/
 .idea/
+database/database.sqlite
