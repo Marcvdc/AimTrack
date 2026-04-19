@@ -49,3 +49,12 @@ public/vendor/
 # IDE files
 .vscode/
 .idea/
+
+# Python service
+**/__pycache__/
+python-service/.coverage
+python-service/.coverage.*
+python-service/htmlcov/
+
+# Calibratie-output (gegenereerde PNG's, niet in repo)
+storage/app/calibrated_*.png
