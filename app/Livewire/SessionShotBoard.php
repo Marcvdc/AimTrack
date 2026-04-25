@@ -61,7 +61,7 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
     public array $summary = [];
 
     /** @var array<int, int> */
-    public array $turnOptions = [0];
+    public array $turnOptions = [];
 
     /** @var array<int, array<string, string>> */
     public array $turnLegend = [];
@@ -151,6 +151,9 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
         $this->turnOptions[] = $next;
         $this->turnOptions = array_values(array_unique($this->turnOptions));
         $this->currentTurnIndex = $next;
+
+        // Persist so the turn survives a page refresh (even before any shots exist)
+        $this->session->increment('turn_count');
 
         Log::info('[SessionShotBoard] added turn', [
             'session_id' => $this->session->id,
@@ -382,8 +385,12 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
             ->unique()
             ->values();
 
+        // Build the full list of persisted turns from turn_count (0-based indices)
+        $persistedTurns = range(0, max(0, $this->session->turn_count - 1));
+
         $this->turnOptions = collect($this->turnOptions)
             ->merge($dbTurns)
+            ->merge($persistedTurns)
             ->unique()
             ->sort()
             ->values()

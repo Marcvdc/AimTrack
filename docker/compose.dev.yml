@@ -60,6 +60,24 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      python-service:
+        condition: service_healthy
+
+  python-service:
+    build:
+      context: ../python-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${PYTHON_SERVICE_PORT:-8000}:8000"
+    volumes:
+      - ../python-service:/app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   mailpit:
     image: axllent/mailpit:latest

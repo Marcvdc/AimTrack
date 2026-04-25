@@ -3,540 +3,352 @@ from fastapi.middleware.cors import CORSMiddleware
 import cv2
 import numpy as np
 from typing import List, Dict, Any
-import json
 import uvicorn
-from PIL import Image
-import io
-from skimage.feature import local_binary_pattern
 
-app = FastAPI(title="AimTrack Image Processing Service", version="1.0.0")
+app = FastAPI(title="AimTrack Image Processing Service", version="2.0.0")
 
-# Enable CORS for Laravel frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-class ShotDetectionResult:
-    def __init__(self, x: float, y: float, confidence: float):
-        self.x = x
-        self.y = y
-        self.confidence = confidence
+# ─── Target detection ────────────────────────────────────────────────────────
 
-def analyze_texture_features(gray_region: np.ndarray) -> float:
+def detect_target_area(gray: np.ndarray) -> tuple[int, int, int]:
     """
-    Analyze texture to distinguish bullet holes from stickers.
-    Bullet holes have rough, irregular edges with depth shadows.
-    Stickers have smooth, uniform surfaces with sharp edges.
+    Detect the ISSF target circle.
 
-    Returns: texture score (0-1), higher = more likely a bullet hole
+    Strategy (in order of reliability for typical AimTrack photos):
+      1. Distance transform per enclosed dark connected component: the inscribed
+         circle of the bullseye is robust against asymmetric extensions (text,
+         tape, bullet-hole nicks). Components touching the image border are
+         skipped so the cardboard backing doesn't win.
+      2. Fall back to Hough-circle voting for partial targets where the bullseye
+         is cut off.
+      3. Last resort: image centre.
     """
-    if gray_region.size == 0 or gray_region.shape[0] < 3 or gray_region.shape[1] < 3:
-        return 0.0
+    h, w = gray.shape
+    min_dim = min(h, w)
 
-    try:
-        # Local Binary Pattern for texture analysis
-        # Bullet holes have higher texture variance due to torn paper edges
-        lbp = local_binary_pattern(gray_region, P=8, R=1, method='uniform')
-        lbp_variance = np.var(lbp)
+    # ── 1. Distance transform per enclosed dark component ─────────────────
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    _, binary = cv2.threshold(blurred, 90, 255, cv2.THRESH_BINARY_INV)
 
-        # Normalize variance to 0-1 range (empirically tuned)
-        texture_score = min(lbp_variance / 50.0, 1.0)
+    # Mend small gaps inside the bullseye (bullet holes punched through)
+    kernel = np.ones((3, 3), np.uint8)
+    binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
 
-        return texture_score
-    except Exception as e:
-        print(f"DEBUG: Texture analysis failed: {e}")
-        return 0.0
+    # Find every dark connected region. The cardboard background and the
+    # bullseye are both dark, but only the bullseye is fully enclosed by the
+    # lighter target paper — the cardboard touches the image edges.
+    n_labels, labels, stats, _ = cv2.connectedComponentsWithStats(binary, connectivity=8)
 
-def analyze_edge_characteristics(gray_region: np.ndarray) -> float:
-    """
-    Analyze edge sharpness to distinguish holes from stickers.
-    Bullet holes have gradual, blurred edges with shadows.
-    Stickers have sharp, well-defined edges.
+    min_area = (min_dim ** 2) * 0.005
+    max_area = h * w * 0.5
 
-    Returns: edge score (0-1), higher = more likely a bullet hole
-    """
-    if gray_region.size == 0 or gray_region.shape[0] < 5 or gray_region.shape[1] < 5:
-        return 0.0
+    best_radius = 0.0
+    best_center: tuple[int, int] | None = None
 
-    try:
-        # Apply edge detection
-        edges = cv2.Canny(gray_region, 30, 100)
+    for label_id in range(1, n_labels):
+        bx, by, bw, bh, area = stats[label_id]
 
-        # Count edge pixels
-        edge_pixel_count = np.sum(edges > 0)
-        total_pixels = gray_region.shape[0] * gray_region.shape[1]
-        edge_density = edge_pixel_count / total_pixels
-
-        # Bullet holes have moderate edge density (not too sharp, not too smooth)
-        # Stickers have high edge density (very sharp boundaries)
-        # Optimal range for bullet holes: 0.05 - 0.25
-        if 0.05 <= edge_density <= 0.25:
-            edge_score = 1.0
-        elif edge_density < 0.05:
-            # Too smooth, likely background noise
-            edge_score = 0.3
-        else:
-            # Too sharp, likely a sticker
-            edge_score = max(0.0, 1.0 - (edge_density - 0.25) * 2)
-
-        return edge_score
-    except Exception as e:
-        print(f"DEBUG: Edge analysis failed: {e}")
-        return 0.5
-
-def analyze_shadow_pattern(gray_image: np.ndarray, x: int, y: int, radius: int) -> float:
-    """
-    Detect shadow patterns characteristic of bullet holes.
-    Real holes create depth shadows with gradual intensity gradients.
-    Stickers are flat and don't create natural shadows.
-
-    Returns: shadow score (0-1), higher = more likely a bullet hole
-    """
-    h, w = gray_image.shape
-
-    # Safety bounds
-    x1 = max(0, int(x - radius * 1.5))
-    x2 = min(w, int(x + radius * 1.5))
-    y1 = max(0, int(y - radius * 1.5))
-    y2 = min(h, int(y + radius * 1.5))
-
-    if x2 - x1 < 5 or y2 - y1 < 5:
-        return 0.0
-
-    try:
-        region = gray_image[y1:y2, x1:x2]
-
-        # Calculate gradient magnitude to detect shadow transitions
-        grad_x = cv2.Sobel(region, cv2.CV_64F, 1, 0, ksize=3)
-        grad_y = cv2.Sobel(region, cv2.CV_64F, 0, 1, ksize=3)
-        gradient_magnitude = np.sqrt(grad_x**2 + grad_y**2)
-
-        # Bullet holes have moderate, gradual gradients (shadows)
-        # Stickers have high, sharp gradients (edges)
-        avg_gradient = np.mean(gradient_magnitude)
-
-        # Check for intensity variation (depth creates shadows = darker areas)
-        intensity_std = np.std(region)
-
-        # Bullet holes have:
-        # - Moderate gradient (10-40 range)
-        # - Good intensity variation (std > 15)
-        gradient_score = 1.0 if 10 <= avg_gradient <= 40 else 0.5
-        intensity_score = min(intensity_std / 30.0, 1.0)
-
-        shadow_score = (gradient_score * 0.6 + intensity_score * 0.4)
-
-        return shadow_score
-    except Exception as e:
-        print(f"DEBUG: Shadow analysis failed: {e}")
-        return 0.5
-
-def calculate_hole_likelihood(
-    gray_image: np.ndarray,
-    contour: np.ndarray,
-    x: int,
-    y: int,
-    area: float,
-    circularity: float
-) -> float:
-    """
-    Calculate the likelihood that a detected dark spot is a bullet hole
-    using multiple analysis techniques.
-
-    Returns: combined score (0-1), higher = more likely a real bullet hole
-    """
-    # Extract region around the contour
-    rect = cv2.boundingRect(contour)
-    x_rect, y_rect, w_rect, h_rect = rect
-
-    # Add padding for context
-    padding = max(5, int(max(w_rect, h_rect) * 0.3))
-    x1 = max(0, x_rect - padding)
-    y1 = max(0, y_rect - padding)
-    x2 = min(gray_image.shape[1], x_rect + w_rect + padding)
-    y2 = min(gray_image.shape[0], y_rect + h_rect + padding)
-
-    region = gray_image[y1:y2, x1:x2]
-
-    # Get radius estimate from area
-    radius = int(np.sqrt(area / np.pi))
-
-    # Run all analyses
-    texture_score = analyze_texture_features(region)
-    edge_score = analyze_edge_characteristics(region)
-    shadow_score = analyze_shadow_pattern(gray_image, int(x), int(y), radius)
-
-    # Basic shape score (from existing circularity)
-    shape_score = min(circularity / 0.8, 1.0)  # Normalize circularity
-
-    # Weighted combination
-    # Texture is most important (40%), then shadow (25%), edge (20%), shape (15%)
-    combined_score = (
-        0.40 * texture_score +
-        0.25 * shadow_score +
-        0.20 * edge_score +
-        0.15 * shape_score
-    )
-
-    return combined_score
-
-def detect_target_area(gray_image: np.ndarray) -> tuple:
-    """
-    Detect the target area by finding the dark circular region (black target).
-    Returns (center_x, center_y, radius) where radius represents the full target area.
-    """
-    height, width = gray_image.shape
-
-    # First, try to find the black circle using thresholding
-    # The black target should be significantly darker than the beige background
-    _, binary = cv2.threshold(gray_image, 100, 255, cv2.THRESH_BINARY_INV)
-
-    # Find contours of dark regions
-    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # Find the largest circular contour (likely the black target)
-    best_circle = None
-    best_score = 0
-
-    for contour in contours:
-        area = cv2.contourArea(contour)
-
-        # Must be a significant portion of the image (at least 5%)
-        min_area = (min(height, width) ** 2) * 0.05
-        if area < min_area:
+        if bx == 0 or by == 0 or bx + bw >= w or by + bh >= h:
+            continue
+        if area < min_area or area > max_area:
             continue
 
-        # Check circularity
+        mask = (labels == label_id).astype(np.uint8) * 255
+        local_dist = cv2.distanceTransform(mask, cv2.DIST_L2, 5)
+        _, local_max, _, local_loc = cv2.minMaxLoc(local_dist)
+
+        if local_max > best_radius:
+            best_radius = float(local_max)
+            best_center = (int(local_loc[0]), int(local_loc[1]))
+
+    min_r = min_dim * 0.05
+    max_r = min_dim * 0.50
+
+    if best_center is not None and min_r <= best_radius <= max_r:
+        cx, cy = best_center
+        full_r = int(best_radius / 0.60)
+        print(
+            f"DEBUG: Target via enclosed-blob distance transform → ({cx}, {cy}) "
+            f"r_black={int(best_radius)} r_full={full_r}"
+        )
+        return (cx, cy, full_r)
+
+    print(
+        f"DEBUG: no enclosed dark blob with valid radius "
+        f"(best={best_radius:.0f}, allowed {min_r:.0f}–{max_r:.0f}); "
+        "falling back to Hough"
+    )
+
+    # ── 2. Hough fallback for partial targets ─────────────────────────────
+    blurred_h = cv2.GaussianBlur(gray, (9, 9), 2)
+    circles = cv2.HoughCircles(
+        blurred_h,
+        cv2.HOUGH_GRADIENT,
+        dp=1,
+        minDist=int(min_dim * 0.1),
+        param1=60,
+        param2=28,
+        minRadius=int(min_dim * 0.05),
+        maxRadius=int(min_dim * 0.65),
+    )
+
+    if circles is not None:
+        circles = np.round(circles[0]).astype(int)
+        issf_ratios = [0.60, 0.45, 0.30, 0.20, 0.10]
+        centre_votes: list[tuple[int, int, int]] = []
+
+        for cx, cy, r in circles:
+            for ratio in issf_ratios:
+                full_r = int(r / ratio)
+                if full_r > min_dim:
+                    continue
+                centre_votes.append((cx, cy, full_r))
+
+        if centre_votes:
+            best = _best_vote_cluster(centre_votes, tolerance=int(min_dim * 0.08))
+            if best:
+                cx, cy, full_r = best
+                print(f"DEBUG: Target via Hough voting → ({cx}, {cy}) r={full_r}")
+                return (cx, cy, full_r)
+
+    # ── 3. Last resort: image centre ──────────────────────────────────────
+    cx, cy = w // 2, h // 2
+    full_r = int(min_dim * 0.46)
+    print(f"DEBUG: Target fallback to image centre ({cx}, {cy}) r={full_r}")
+    return (cx, cy, full_r)
+
+
+def _best_vote_cluster(
+    votes: list[tuple[int, int, int]],
+    tolerance: int,
+) -> tuple[int, int, int] | None:
+    if not votes:
+        return None
+
+    best_count = 0
+    best_vote = votes[0]
+
+    for v in votes:
+        vx, vy, vr = v
+        neighbours = [
+            u for u in votes
+            if abs(u[0] - vx) < tolerance and abs(u[1] - vy) < tolerance
+        ]
+        if len(neighbours) > best_count:
+            best_count = len(neighbours)
+            avg_x = int(np.mean([u[0] for u in neighbours]))
+            avg_y = int(np.mean([u[1] for u in neighbours]))
+            avg_r = int(np.mean([u[2] for u in neighbours]))
+            best_vote = (avg_x, avg_y, avg_r)
+
+    return best_vote
+
+
+# ─── Shot (bullet hole) detection ────────────────────────────────────────────
+
+def _is_sticker(
+    gray: np.ndarray,
+    cx: int,
+    cy: int,
+    contour: np.ndarray,
+    area: float,
+    circularity: float,
+) -> bool:
+    rect = cv2.boundingRect(contour)
+    x0, y0, rw, rh = rect
+    pad = max(3, int(max(rw, rh) * 0.15))
+    x1 = max(0, x0 - pad)
+    y1 = max(0, y0 - pad)
+    x2 = min(gray.shape[1], x0 + rw + pad)
+    y2 = min(gray.shape[0], y0 + rh + pad)
+    region = gray[y1:y2, x1:x2]
+
+    if region.size == 0:
+        return False
+
+    mean_intensity = float(np.mean(region))
+    std_intensity = float(np.std(region))
+
+    if mean_intensity < 55 and std_intensity < 12:
+        return True
+    if circularity > 0.82 and area > 400:
+        return True
+
+    return False
+
+
+def _donut_score(
+    gray: np.ndarray,
+    cx: int,
+    cy: int,
+    radius: float,
+) -> float:
+    """
+    Bullet hole signature: strong contrast between centre and surrounding ring.
+      In light areas: lighter centre (light through hole) → positive score.
+      In dark areas (black bullseye): darker centre, lighter ring → negative.
+    Stickers are uniform → score near zero.
+    """
+    h, w = gray.shape
+    inner_r = max(1, int(radius * 0.35))
+    outer_r = max(inner_r + 2, int(radius * 0.85))
+
+    mask_inner = np.zeros((h, w), dtype=np.uint8)
+    mask_ring = np.zeros((h, w), dtype=np.uint8)
+
+    cv2.circle(mask_inner, (cx, cy), inner_r, 255, -1)
+    cv2.circle(mask_ring, (cx, cy), outer_r, 255, -1)
+    cv2.circle(mask_ring, (cx, cy), inner_r, 0, -1)
+
+    inner_pixels = gray[mask_inner == 255]
+    ring_pixels = gray[mask_ring == 255]
+
+    if inner_pixels.size == 0 or ring_pixels.size == 0:
+        return 0.0
+
+    return float(np.mean(inner_pixels)) - float(np.mean(ring_pixels))
+
+
+def detect_bullet_holes(image_data: bytes) -> List[Dict[str, Any]]:
+    nparr = np.frombuffer(image_data, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if img is None:
+        raise HTTPException(status_code=400, detail="Invalid image format")
+
+    h, w = img.shape[:2]
+    print(f"DEBUG: Image {w}×{h}")
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    target_cx, target_cy, target_r = detect_target_area(gray)
+
+    image_area = h * w
+    min_area = image_area * 0.000015
+    max_area = image_area * 0.0005
+
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    _, otsu = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    _, fixed = cv2.threshold(blurred, 80, 255, cv2.THRESH_BINARY_INV)
+    combined = cv2.bitwise_and(otsu, fixed)
+
+    kernel_open = np.ones((2, 2), np.uint8)
+    kernel_close = np.ones((3, 3), np.uint8)
+    combined = cv2.morphologyEx(combined, cv2.MORPH_OPEN, kernel_open)
+    combined = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, kernel_close)
+
+    contours, _ = cv2.findContours(combined, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    print(f"DEBUG: {len(contours)} raw contours")
+
+    shots: List[Dict[str, Any]] = []
+
+    for idx, contour in enumerate(contours):
+        area = cv2.contourArea(contour)
+        if area < min_area or area > max_area:
+            continue
+
+        M = cv2.moments(contour)
+        if M["m00"] == 0:
+            continue
+        cx = M["m10"] / M["m00"]
+        cy = M["m01"] / M["m00"]
+
         perimeter = cv2.arcLength(contour, True)
         if perimeter == 0:
             continue
-
-        circularity = 4 * np.pi * area / (perimeter * perimeter)
-
-        # Must be reasonably circular
-        if circularity < 0.6:
+        circularity = 4 * np.pi * area / (perimeter ** 2)
+        if circularity < 0.35:
             continue
 
-        # Get the minimum enclosing circle
-        (x, y), radius = cv2.minEnclosingCircle(contour)
+        hull = cv2.convexHull(contour)
+        hull_area = cv2.contourArea(hull)
+        solidity = area / hull_area if hull_area > 0 else 0
+        if solidity < 0.55:
+            continue
 
-        # Score based on area and circularity
-        score = area * circularity
+        _, _, bw, bh = cv2.boundingRect(contour)
+        aspect = bw / bh if bh > 0 else 0
+        if aspect < 0.4 or aspect > 2.5:
+            continue
 
-        if score > best_score:
-            best_score = score
-            best_circle = (int(x), int(y), int(radius))
+        if _is_sticker(gray, int(cx), int(cy), contour, area, circularity):
+            print(f"DEBUG: contour {idx} rejected as sticker (area={area:.0f}, circ={circularity:.2f})")
+            continue
 
-    if best_circle:
-        center_x, center_y, radius = best_circle
+        radius_est = np.sqrt(area / np.pi)
+        ds = _donut_score(gray, int(cx), int(cy), radius_est)
 
-        # The detected circle is the black target (rings 7-10)
-        # We need to scale up to include the beige rings (1-6)
-        # Based on ISSF target specifications:
-        # - Rings 7-10 (black area) occupy ~60% of total radius
-        # - Rings 1-6 (beige area) are the outer 40%
-        # Therefore: black_radius / full_radius ≈ 0.6
-        # So multiply radius by (1 / 0.6) ≈ 1.67
-        full_radius = int(radius * 1.67)
+        if abs(ds) < 8.0:
+            print(f"DEBUG: contour {idx} rejected (donut_score={ds:.1f}, |ds|<8)")
+            continue
 
-        print(f"DEBUG: Black target detected at ({center_x}, {center_y}) with radius {radius}")
-        print(f"DEBUG: Scaled to full target radius: {full_radius} (scale factor: 1.67)")
-        print(f"DEBUG: Image size: {width}x{height}, full radius is {full_radius/min(width,height)*100:.1f}% of image")
+        x_norm = (cx - target_cx) / target_r
+        y_norm = (cy - target_cy) / target_r
 
-        return (center_x, center_y, full_radius)
+        dist = np.sqrt(x_norm ** 2 + y_norm ** 2)
+        if dist > 1.30:
+            print(f"DEBUG: contour {idx} rejected – outside target (dist={dist:.2f})")
+            continue
 
-    # Fallback: try Hough Circle detection
-    edges = cv2.Canny(gray_image, 30, 100)
-    circles = cv2.HoughCircles(
-        edges,
-        cv2.HOUGH_GRADIENT,
-        dp=1,
-        minDist=height // 2,
-        param1=50,
-        param2=30,
-        minRadius=int(min(height, width) * 0.2),
-        maxRadius=int(min(height, width) * 0.7)
-    )
+        donut_norm = min(abs(ds) / 40.0, 1.0)
+        confidence = round(0.4 * min(circularity / 0.9, 1.0) + 0.6 * donut_norm, 3)
 
-    if circles is not None and len(circles[0]) > 0:
-        # Take the largest circle
-        largest = max(circles[0], key=lambda c: c[2])
-        center_x, center_y, radius = int(largest[0]), int(largest[1]), int(largest[2])
-        print(f"DEBUG: Hough circle detected at ({center_x}, {center_y}) with radius {radius}")
-        return (center_x, center_y, radius)
+        print(
+            f"DEBUG: contour {idx} ACCEPTED x_norm={x_norm:.3f} y_norm={y_norm:.3f} "
+            f"area={area:.0f} circ={circularity:.2f} ds={ds:.1f} conf={confidence}"
+        )
 
-    # Last resort: use image center
-    center_x, center_y = width // 2, height // 2
-    radius = int(min(height, width) * 0.46)
-    print(f"DEBUG: No target detected, using image center ({center_x}, {center_y}) with radius {radius}")
-    return (center_x, center_y, radius)
+        shots.append({"x": round(x_norm, 3), "y": round(y_norm, 3), "confidence": confidence})
 
-def detect_bullet_holes(image_data: bytes) -> List[Dict[str, Any]]:
-    """
-    Detect bullet holes specifically designed for target shooting.
-    Uses dark spot detection with shape filtering to find bullet holes.
-    Coordinates are normalized relative to the detected target circle.
-    """
-    print("DEBUG: detect_bullet_holes function called!")
+    shots.sort(key=lambda s: s["confidence"], reverse=True)
+    shots = shots[:12]
+    print(f"DEBUG: Final shot count: {len(shots)}")
+    return shots
 
-    try:
-        # Convert bytes to numpy array
-        nparr = np.frombuffer(image_data, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-        if img is None:
-            raise HTTPException(status_code=400, detail="Invalid image format")
-
-        print(f"DEBUG: Image shape: {img.shape}")
-        
-        # Convert to grayscale
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-        # Detect the target area first
-        target_center_x, target_center_y, target_radius = detect_target_area(gray)
-
-        # Apply moderate blur to reduce noise but keep bullet hole details
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        
-        # Use Otsu's thresholding for automatic threshold selection
-        _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        
-        # Additional high threshold to catch only very dark spots
-        _, dark_thresh = cv2.threshold(blurred, 70, 255, cv2.THRESH_BINARY_INV)
-        
-        # Combine both thresholds
-        combined = cv2.bitwise_and(thresh, dark_thresh)
-        
-        # Remove small noise but keep bullet holes
-        kernel = np.ones((2,2), np.uint8)
-        combined = cv2.morphologyEx(combined, cv2.MORPH_OPEN, kernel)
-        
-        # Fill small gaps in bullet holes
-        kernel = np.ones((3,3), np.uint8)
-        combined = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, kernel)
-        
-        # Find contours
-        contours, _ = cv2.findContours(combined, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
-        print(f"DEBUG: Found {len(contours)} contours with bullet hole detection")
-        
-        detected_shots = []
-
-        for idx, contour in enumerate(contours):
-            area = cv2.contourArea(contour)
-
-            # Bullet holes are typically 15-300 pixels
-            if area < 15 or area > 300:
-                if idx < 15:
-                    print(f"DEBUG: Contour {idx}: area={area} (rejected - out of range)")
-                continue
-
-            # Get center point
-            M = cv2.moments(contour)
-            if M["m00"] == 0:
-                continue
-
-            x = M["m10"] / M["m00"]
-            y = M["m01"] / M["m00"]
-
-            # Circularity check - bullet holes should be reasonably circular
-            perimeter = cv2.arcLength(contour, True)
-            if perimeter == 0:
-                continue
-
-            circularity = 4 * np.pi * area / (perimeter * perimeter)
-
-            # Bullet holes should have decent circularity
-            if circularity < 0.4:
-                if idx < 15:
-                    print(f"DEBUG: Contour {idx}: circularity={circularity} (rejected)")
-                continue
-
-            # Solidity check - bullet holes should be solid
-            hull = cv2.convexHull(contour)
-            hull_area = cv2.contourArea(hull)
-            solidity = float(area) / hull_area if hull_area > 0 else 0
-
-            if solidity < 0.6:
-                if idx < 15:
-                    print(f"DEBUG: Contour {idx}: solidity={solidity} (rejected)")
-                continue
-
-            # Additional check: aspect ratio of bounding box
-            _, _, w_rect, h_rect = cv2.boundingRect(contour)
-            aspect_ratio = float(w_rect) / h_rect if h_rect > 0 else 0
-
-            # Bullet holes should have roughly square bounding box
-            if aspect_ratio < 0.5 or aspect_ratio > 2.0:
-                if idx < 15:
-                    print(f"DEBUG: Contour {idx}: aspect_ratio={aspect_ratio} (rejected)")
-                continue
-
-            # NEW: Calculate likelihood that this is a real bullet hole (not a sticker)
-            hole_likelihood = calculate_hole_likelihood(
-                gray_image=gray,
-                contour=contour,
-                x=int(x),
-                y=int(y),
-                area=area,
-                circularity=circularity
-            )
-
-            # Require minimum likelihood threshold to filter out stickers
-            LIKELIHOOD_THRESHOLD = 0.35  # Tunable: higher = stricter filtering
-            if hole_likelihood < LIKELIHOOD_THRESHOLD:
-                if idx < 15:
-                    print(f"DEBUG: Contour {idx}: hole_likelihood={hole_likelihood:.3f} (rejected - likely sticker)")
-                continue
-
-            # Normalize coordinates to -1 to 1 range relative to the detected target circle
-            # This ensures shots are positioned correctly even if the photo includes area outside the target
-            x_norm = (x - target_center_x) / target_radius
-            y_norm = (y - target_center_y) / target_radius
-
-            # Debug: log the coordinates and distances
-            distance_from_center = np.sqrt(x_norm**2 + y_norm**2)
-            if idx < 15:
-                print(f"DEBUG: Contour {idx} ACCEPTED: raw_x={x:.1f}, raw_y={y:.1f}, center=({target_center_x}, {target_center_y}), radius={target_radius}, x_norm={x_norm:.3f}, y_norm={y_norm:.3f}, dist={distance_from_center:.3f}, area={area:.1f}, circularity={circularity:.3f}, hole_likelihood={hole_likelihood:.3f}")
-
-            detected_shots.append({
-                "x": round(x_norm, 3),
-                "y": round(y_norm, 3),
-                "confidence": round(hole_likelihood, 3)  # Use hole_likelihood instead of circularity
-            })
-
-        # Limit to maximum 12 shots (reasonable for a target)
-        detected_shots = detected_shots[:12]
-        
-        print(f"DEBUG: Final detected shots count: {len(detected_shots)}")
-        
-        # Sort by confidence (highest first)
-        detected_shots.sort(key=lambda x: x["confidence"], reverse=True)
-        
-        return detected_shots
-        
-    except Exception as e:
-        print(f"DEBUG: Exception in detect_bullet_holes: {e}")
-        raise HTTPException(status_code=500, detail=f"Image processing failed: {str(e)}")
+# ─── Endpoints ────────────────────────────────────────────────────────────────
 
 @app.post("/api/v1/analyze-target-v2")
 async def analyze_target_v2(file: UploadFile = File(...)):
-    """
-    Analyze a target image and detect bullet holes with conservative limits.
-    Returns maximum 10 shots to prevent overwhelming the system.
-
-    Args:
-        file: Image file to analyze
-
-    Returns:
-        JSON response with detected shots (max 10)
-    """
-    print("DEBUG: V2 endpoint called!")
-    print(f"DEBUG: File name: {file.filename}, content type: {file.content_type}")
-
-    # Validate file type
-    if not file.content_type or not file.content_type.startswith('image/'):
+    if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
-
-    # Read file content
     image_data = await file.read()
-    print(f"DEBUG: Image data size: {len(image_data)} bytes")
+    shots = detect_bullet_holes(image_data)
+    limited = shots[:10]
+    return {"success": True, "shots": limited, "total_detected": len(limited)}
 
-    # Detect bullet holes
-    detected_shots = detect_bullet_holes(image_data)
-
-    print(f"DEBUG: Detected {len(detected_shots)} shots before limiting")
-
-    # Limit to maximum 10 shots for safety
-    limited_shots = detected_shots[:10]
-
-    print(f"DEBUG: Returning {len(limited_shots)} shots")
-
-    return {
-        "success": True,
-        "shots": limited_shots,
-        "total_detected": len(limited_shots)
-    }
 
 @app.post("/api/v1/analyze-target")
 async def analyze_target(file: UploadFile = File(...)):
-    """
-    Analyze a target image and detect bullet holes.
-    
-    Args:
-        file: Image file to analyze
-        
-    Returns:
-        JSON response with detected shots
-    """
-    print("DEBUG: Starting analysis...")
-    
-    # Validate file type
-    if not file.content_type or not file.content_type.startswith('image/'):
+    if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
-    
-    # Read file content
     image_data = await file.read()
-    
-    print(f"DEBUG: Image data size: {len(image_data)} bytes")
-    
-    # Detect bullet holes
-    detected_shots = detect_bullet_holes(image_data)
-    
-    print(f"DEBUG: Detected {len(detected_shots)} shots before filtering")
-    
-    # Log detected shots for debugging
-    print(f"Detected {len(detected_shots)} shots:")
-    for i, shot in enumerate(detected_shots[:10]):  # Log first 10 shots
-        print(f"  Shot {i+1}: x={shot['x']}, y={shot['y']}, confidence={shot['confidence']}")
-    if len(detected_shots) > 10:
-        print(f"  ... and {len(detected_shots) - 10} more shots")
-    
-    # Also save to a debug file
-    with open("/tmp/debug_shots.json", "w") as f:
-        import json
-        json.dump({
-            "total_detected": len(detected_shots),
-            "shots": detected_shots[:20]  # Save first 20 for analysis
-        }, f, indent=2)
-    
-    return {
-        "success": True,
-        "shots": detected_shots,
-        "total_detected": len(detected_shots)
-    }
+    shots = detect_bullet_holes(image_data)
+    return {"success": True, "shots": shots, "total_detected": len(shots)}
+
 
 @app.get("/api/v1/health")
 async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy", "service": "aimtrack-image-processor"}
+    return {"status": "healthy", "service": "aimtrack-image-processor", "version": "2.0.0"}
 
-@app.get("/api/v1/debug")
-async def debug_info():
-    """Debug endpoint to show latest detection results"""
-    try:
-        with open("/tmp/debug_shots.json", "r") as f:
-            import json
-            data = json.load(f)
-        return data
-    except:
-        return {"error": "No debug data available"}
 
 @app.get("/")
 async def root():
-    """Root endpoint"""
     return {
         "message": "AimTrack Image Processing Service",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "endpoints": {
             "analyze_target": "/api/v1/analyze-target",
-            "health": "/api/v1/health"
-        }
+            "analyze_target_v2": "/api/v1/analyze-target-v2",
+            "health": "/api/v1/health",
+        },
     }
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

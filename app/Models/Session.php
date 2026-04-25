@@ -18,10 +18,12 @@ class Session extends Model
         'range_location_id',
         'notes_raw',
         'manual_reflection',
+        'turn_count',
     ];
 
     protected $casts = [
         'date' => 'date',
+        'turn_count' => 'integer',
     ];
 
     public function user()
