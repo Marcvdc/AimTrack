@@ -10,6 +10,8 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Auth\Middleware\Authenticate;
 use App\Filament\Widgets\FailedJobsWidget;
+use App\Support\Features\AimtrackFeatureToggle;
+use EslamRedaDiv\FilamentCopilot\FilamentCopilotPlugin;
 use Filament\Actions\Action;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -65,6 +67,14 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+            ])
+            ->plugins([
+                FilamentCopilotPlugin::make()
+                    ->provider('openai')
+                    ->model('gpt-4o')
+                    ->rateLimitEnabled()
+                    ->memoryEnabled()
+                    ->authorizeUsing(fn (): bool => app(AimtrackFeatureToggle::class)->aiEnabled()),
             ])
             ->databaseTransactions()
             ->spa();
