@@ -120,5 +120,7 @@ class DatabaseSeeder extends Seeder
         $this->command->info('   • Ammo Types: '.AmmoType::count());
         $this->command->info('   • Sessions: '.Session::count());
         $this->command->info('   • Shots: '.SessionShot::count());
+
+        $this->call([DevSeeder::class]);
     }
 }
