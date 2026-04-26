@@ -44,11 +44,6 @@ class Weapon extends Model
         return $this->hasOne(AiWeaponInsight::class);
     }
 
-    public function coachQuestions()
-    {
-        return $this->hasMany(CoachQuestion::class);
-    }
-
     public function storageLocation()
     {
         return $this->belongsTo(Location::class, 'storage_location_id');
