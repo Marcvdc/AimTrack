@@ -2,18 +2,19 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\WeaponResource\RelationManagers\SessionWeaponsRelationManager;
-use App\Filament\Resources\WeaponResource\Pages\ListWeapons;
+use App\Enums\WeaponType;
+use App\Filament\Copilot\Tools\WeaponLookupTool;
 use App\Filament\Resources\WeaponResource\Pages\CreateWeapon;
 use App\Filament\Resources\WeaponResource\Pages\EditWeapon;
+use App\Filament\Resources\WeaponResource\Pages\ListWeapons;
 use App\Filament\Resources\WeaponResource\Pages\ViewWeapon;
-use App\Enums\WeaponType;
+use App\Filament\Resources\WeaponResource\RelationManagers\SessionWeaponsRelationManager;
 use App\Jobs\GenerateWeaponInsightJob;
 use App\Models\AmmoType;
 use App\Models\Location;
 use App\Models\Weapon;
 use App\Support\Features\AimtrackFeatureToggle;
-use BackedEnum;
+use EslamRedaDiv\FilamentCopilot\Contracts\CopilotResource as CopilotResourceContract;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -35,13 +36,12 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use UnitEnum;
 
-class WeaponResource extends Resource
+class WeaponResource extends Resource implements CopilotResourceContract
 {
     protected static ?string $model = Weapon::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-bolt';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-bolt';
 
     protected static ?string $navigationLabel = 'Wapens';
 
@@ -49,7 +49,7 @@ class WeaponResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Wapens';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Beheer';
+    protected static string|\UnitEnum|null $navigationGroup = 'Beheer';
 
     public static function form(Schema $schema): Schema
     {
@@ -273,5 +273,17 @@ class WeaponResource extends Resource
     protected static function features(): AimtrackFeatureToggle
     {
         return app(AimtrackFeatureToggle::class);
+    }
+
+    public static function copilotResourceDescription(): ?string
+    {
+        return 'Wapens van de schutter, met type, kaliber en eventueel AI-inzicht. Filter altijd op de eigenaar.';
+    }
+
+    public static function copilotTools(): array
+    {
+        return [
+            new WeaponLookupTool,
+        ];
     }
 }

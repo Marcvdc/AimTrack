@@ -2,18 +2,19 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\SessionResource\Pages\ListSessions;
+use App\Enums\Deviation;
+use App\Filament\Copilot\Tools\SessionLookupTool;
 use App\Filament\Resources\SessionResource\Pages\CreateSession;
 use App\Filament\Resources\SessionResource\Pages\EditSession;
-use App\Filament\Resources\SessionResource\Pages\ViewSession;
+use App\Filament\Resources\SessionResource\Pages\ListSessions;
 use App\Filament\Resources\SessionResource\Pages\ManageSessionShots;
-use App\Enums\Deviation;
+use App\Filament\Resources\SessionResource\Pages\ViewSession;
 use App\Jobs\GenerateSessionReflectionJob;
 use App\Models\AmmoType;
 use App\Models\Location;
 use App\Models\Session;
 use App\Support\Features\AimtrackFeatureToggle;
-use BackedEnum;
+use EslamRedaDiv\FilamentCopilot\Contracts\CopilotResource as CopilotResourceContract;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -41,13 +42,12 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
-use UnitEnum;
 
-class SessionResource extends Resource
+class SessionResource extends Resource implements CopilotResourceContract
 {
     protected static ?string $model = Session::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-calendar-days';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calendar-days';
 
     protected static ?string $navigationLabel = 'Sessies';
 
@@ -55,7 +55,7 @@ class SessionResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Sessies';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Dagboek';
+    protected static string|\UnitEnum|null $navigationGroup = 'Dagboek';
 
     public static function form(Schema $schema): Schema
     {
@@ -462,5 +462,17 @@ class SessionResource extends Resource
     {
         return parent::getEloquentQuery()
             ->where('user_id', auth()->id());
+    }
+
+    public static function copilotResourceDescription(): ?string
+    {
+        return 'Schiet-sessies van de schutter, inclusief wapenregels, schoten en eventuele AI-reflectie. Filter altijd op de eigenaar.';
+    }
+
+    public static function copilotTools(): array
+    {
+        return [
+            new SessionLookupTool,
+        ];
     }
 }
