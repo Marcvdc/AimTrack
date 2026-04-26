@@ -54,6 +54,8 @@ Je levert geen ontwerp, code of tests voordat het PLAN de status APPROVED heeft.
 15. API Model zonder timeout configuratie → STOP + timeout toevoegen
 16. API Model zonder retry logic voor mutaties → STOP + retry implementatie
 17. Nieuwe code in legacy style zonder @legacy tag en ADR → STOP + architectuur compliance
+18. Werk (plan-files, code, scratch) in de hoofdrepo (`aimtrack/`, branch `main`) → STOP + verplaats naar de juiste worktree. Hoofdrepo is alleen voor main-sync. Zie [`.ai/guidelines/parallel-worktrees.md`](.ai/guidelines/parallel-worktrees.md).
+19. `worktree-setup.sh` aangeroepen met achterlopende lokale `main` → STOP + `git pull --ff-only` in hoofdrepo, dan opnieuw. Anders splitst de worktree van een verouderde basis en mist gemergde dependencies.
 
 ## PHASE 0 – TASK ASSESSMENT (altijd eerst uitvoeren)
 1. Classificeer de input:
