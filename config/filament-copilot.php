@@ -133,6 +133,8 @@ return [
     | Each entry should be a class name that extends BaseTool.
     */
 
-    'global_tools' => [],
+    'global_tools' => [
+        \App\Filament\Copilot\Tools\ShooterContextTool::class,
+    ],
 
 ];
