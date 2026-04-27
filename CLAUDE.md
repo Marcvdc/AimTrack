@@ -1,4 +1,114 @@
 <laravel-boost-guidelines>
+=== .ai/parallel-worktrees rules ===
+
+# Parallelle ontwikkeling via Git Worktrees
+
+## Wanneer
+
+Gebruik een aparte worktree zodra je een feature wilt ontwikkelen terwijl een andere stack (`aimtrack_dev` of een andere worktree) actief blijft. Denk aan:
+
+- Parallelle Jira-tickets / feature branches
+- Migratie-trajecten die de hoofd-dev niet mogen blokkeren
+- Browser testen van een nieuwe feature naast een werkende baseline
+
+Niet gebruiken voor: hotfix op de huidige branch, kleine refactor in de huidige stack.
+
+## Hoe — altijd via het setup script
+
+```bash
+./scripts/worktree-setup.sh <feature-naam> [offset]
+```
+
+Het script:
+1. Maakt `../aimtrack-<feature>` aan met branch `feature/<feature>`
+2. Kopieert `.env.local` (Laravel-config) naar de worktree
+3. Maakt een **aparte** `.env` in de worktree project root met de docker-compose overrides (`COMPOSE_PROJECT_NAME`, poorten)
+4. Print de URL's en cleanup-instructies
+
+Vervolgens:
+
+```bash
+cd ../aimtrack-<feature>
+docker compose --env-file .env -f docker/compose.dev.yml up -d
+docker compose --env-file .env -f docker/compose.dev.yml exec app php artisan migrate --seed
+```
+
+**Cruciaal**: gebruik altijd `--env-file .env`. Docker Compose leest `.env.local` niet, en zonder de flag worden alle compose-variabelen genegeerd. Dat heeft als bijwerking dat de containers de hoofd-dev project name (`aimtrack_dev`) en default poorten (8080, 5432, ...) gebruiken — waardoor je hoofd-dev stack wordt overschreven.
+
+## Verboden
+
+- **Niet** de root `docker-compose.yml` gebruiken voor parallelle stacks — heeft hardcoded `container_name` en geeft conflicten. Altijd `-f docker/compose.dev.yml`.
+- **Niet** `--env-file` weglaten in compose commands — zonder die flag mount de worktree per ongeluk de hoofd-dev stack.
+- **Niet** handmatig worktrees aanmaken zonder het script — dan loopt de poort-administratie en `.env`-isolatie uit de pas.
+- **Niet** dezelfde branch in twee worktrees checkouten (Git verbiedt dit, maar zelf opletten).
+
+## Cleanup
+
+```bash
+cd ../aimtrack-<feature>
+docker compose --env-file .env -f docker/compose.dev.yml down -v
+cd -
+git worktree remove ../aimtrack-<feature>
+git branch -d feature/<feature>   # alleen na merge
+```
+
+Vergeet de registry hieronder niet bij te werken.
+
+## Registry van actieve worktrees
+
+| Feature | Branch | Pad | Web | DB | Mailpit | Python | Status |
+|---|---|---|---|---|---|---|---|
+| _hoofd-dev_ | _huidige_ | `aimtrack/` | 8080 | 5432 | 8025 | 8000 | actief |
+| copilot | feature/copilot | `aimtrack-copilot/` | 19080 | 15433 | 19025 | 19000 | actief (Filament Copilot migratie) |
+
+Update deze tabel bij setup en cleanup — zo weet iedereen direct welke poort bij welke stack hoort.
+
+## Cross-machine borging
+
+Dit guideline bestand is in git, dus elke developer en elke Claude sessie volgt dezelfde aanpak. MEMORY.md is **niet** geschikt — die is per-machine en zou niet meereizen.
+
+=== .ai/aimtrack-context rules ===
+
+# AimTrack Project Context
+
+## Domain
+AimTrack is een shooting training en coaching applicatie voor schutters en coaches.
+Gebruikers kunnen trainingssessies bijhouden met verschillende wapens en ontvangen AI-gebaseerde coaching feedback.
+
+## Key Models
+- **Session**: Trainingssessies met schoten en statistieken
+- **Weapon**: Verschillende wapentypes (pistool, geweer, etc.)
+- **User**: Schutters en coaches
+- **SessionShot**: Individuele schoten binnen een sessie
+- **AiReflection**: AI coaching feedback en analyses
+
+## Important Conventions
+- Gebruik Nederlands voor user-facing tekst
+- Volg bestaande Filament resource patterns
+- AI features gebruiken feature flags via Laravel Pennant
+- Logging voor feature flags blijft in applicatie logs (geen Sentry)
+- Optionele mail notificaties zijn toegestaan
+
+## Architecture Notes
+- Type A (Eloquent) architectuur - voornamelijk database-gebaseerd
+- Filament voor admin interface
+- Livewire voor interactive components
+- Laravel Pennant voor feature management
+- Pest voor testing
+
+## Business Rules
+- Elke sessie moet minimaal één schot bevatten
+- AI coaching is optioneel en via feature flag
+- Weapons hebben specifieke validatie per type
+- Users kunnen zowel schutter als coach zijn
+
+## File Structure Patterns
+- Models: `app/Models/`
+- Filament Resources: `app/Filament/Resources/`
+- Services: `app/Services/`
+- Tests: `tests/Feature/` en `tests/Unit/`
+- Documentation: `docs/AimTrack/`
+
 === .ai/core-workflow rules ===
 
 # Core Workflow Guidelines
@@ -93,48 +203,6 @@ Geen enkel ontwerp, code of test verlaat BUILD MODE tenzij:
 - Documentatie en ADR's up-to-date
 - Commit expliciet goedgekeurd en correct gelogd
 
-=== .ai/aimtrack-context rules ===
-
-# AimTrack Project Context
-
-## Domain
-AimTrack is een shooting training en coaching applicatie voor schutters en coaches.
-Gebruikers kunnen trainingssessies bijhouden met verschillende wapens en ontvangen AI-gebaseerde coaching feedback.
-
-## Key Models
-- **Session**: Trainingssessies met schoten en statistieken
-- **Weapon**: Verschillende wapentypes (pistool, geweer, etc.)
-- **User**: Schutters en coaches
-- **SessionShot**: Individuele schoten binnen een sessie
-- **AiReflection**: AI coaching feedback en analyses
-
-## Important Conventions
-- Gebruik Nederlands voor user-facing tekst
-- Volg bestaande Filament resource patterns
-- AI features gebruiken feature flags via Laravel Pennant
-- Logging voor feature flags blijft in applicatie logs (geen Sentry)
-- Optionele mail notificaties zijn toegestaan
-
-## Architecture Notes
-- Type A (Eloquent) architectuur - voornamelijk database-gebaseerd
-- Filament voor admin interface
-- Livewire voor interactive components
-- Laravel Pennant voor feature management
-- Pest voor testing
-
-## Business Rules
-- Elke sessie moet minimaal één schot bevatten
-- AI coaching is optioneel en via feature flag
-- Weapons hebben specifieke validatie per type
-- Users kunnen zowel schutter als coach zijn
-
-## File Structure Patterns
-- Models: `app/Models/`
-- Filament Resources: `app/Filament/Resources/`
-- Services: `app/Services/`
-- Tests: `tests/Feature/` en `tests/Unit/`
-- Documentation: `docs/AimTrack/`
-
 === foundation rules ===
 
 # Laravel Boost Guidelines
@@ -144,7 +212,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 ## Foundational Context
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.4.17
+- php - 8.4.20
 - filament/filament (FILAMENT) - v5
 - laravel/framework (LARAVEL) - v12
 - laravel/pennant (PENNANT) - v1
@@ -477,22 +545,21 @@ $pages->assertNoJavascriptErrors()->assertNoConsoleLogs();
 
 ## Filament
 
-- Filament is used by this application. Follow existing conventions for how and where it's implemented.
-- Filament is a Server-Driven UI (SDUI) framework for Laravel that lets you define user interfaces in PHP using structured configuration objects. Built on Livewire, Alpine.js, and Tailwind CSS.
-- Use the `search-docs` tool for official documentation on Artisan commands, code examples, testing, relationships, and idiomatic practices.
+- Filament is a Laravel UI framework built on Livewire, Alpine.js, and Tailwind CSS. UIs are defined in PHP via fluent, chainable components. Follow existing conventions in this app.
+- Use the `search-docs` tool for official documentation on Artisan commands, code examples, testing, relationships, and idiomatic practices. If `search-docs` is unavailable, refer to https://filamentphp.com/docs.
 
 ### Artisan
 
-- Use Filament-specific Artisan commands to create files. Find them with `list-artisan-commands` or `php artisan --help`.
-- Inspect required options and always pass `--no-interaction`.
+- Always use Filament-specific Artisan commands to create files. Find available commands with the `list-artisan-commands` tool, or run `php artisan --help`.
+- Inspect required options before running, and always pass `--no-interaction`.
 
 ### Patterns
 
-Use static `make()` methods to initialize components. Most configuration methods accept a `Closure` for dynamic values.
+Always use static `make()` methods to initialize components. Most configuration methods accept a `Closure` for dynamic values.
 
 Use `Get $get` to read other form field values for conditional logic:
 
-<code-snippet name="Conditional form field" lang="php">
+<code-snippet name="Conditional form field visibility" lang="php">
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Utilities\Get;
@@ -508,9 +575,65 @@ TextInput::make('company_name')
 
 </code-snippet>
 
+Use `Set $set` inside `->afterStateUpdated()` on a `->live()` field to mutate another field reactively. Prefer `->live(onBlur: true)` on text inputs to avoid per-keystroke updates:
+
+<code-snippet name="Reactive field update" lang="php">
+use Filament\Schemas\Components\Utilities\Set;
+use Illuminate\Support\Str;
+
+TextInput::make('title')
+    ->required()
+    ->live(onBlur: true)
+    ->afterStateUpdated(fn (Set $set, ?string $state) => $set(
+        'slug',
+        Str::slug($state ?? ''),
+    )),
+
+TextInput::make('slug')
+    ->required(),
+
+</code-snippet>
+
+Compose layout by nesting `Section` and `Grid`. Children need explicit `->columnSpan()` or `->columnSpanFull()`:
+
+<code-snippet name="Section and Grid layout" lang="php">
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+
+Section::make('Details')
+    ->schema([
+        Grid::make(2)->schema([
+            TextInput::make('first_name')
+                ->columnSpan(1),
+            TextInput::make('last_name')
+                ->columnSpan(1),
+            TextInput::make('bio')
+                ->columnSpanFull(),
+        ]),
+    ]),
+
+</code-snippet>
+
+Use `Repeater` for inline `HasMany` management. `->relationship()` with no args binds to the relationship matching the field name:
+
+<code-snippet name="Repeater for HasMany" lang="php">
+use Filament\Forms\Components\Repeater;
+
+Repeater::make('qualifications')
+    ->relationship()
+    ->schema([
+        TextInput::make('institution')
+            ->required(),
+        TextInput::make('qualification')
+            ->required(),
+    ])
+    ->columns(2),
+
+</code-snippet>
+
 Use `state()` with a `Closure` to compute derived column values:
 
-<code-snippet name="Computed table column" lang="php">
+<code-snippet name="Computed table column value" lang="php">
 use Filament\Tables\Columns\TextColumn;
 
 TextColumn::make('full_name')
@@ -518,125 +641,139 @@ TextColumn::make('full_name')
 
 </code-snippet>
 
-Actions encapsulate a button with optional modal form and logic:
+Use `SelectFilter` for enum or relationship filters, and `Filter` with a `->query()` closure for custom logic:
+
+<code-snippet name="Table filters" lang="php">
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Database\Eloquent\Builder;
+
+SelectFilter::make('status')
+    ->options(UserStatus::class),
+
+SelectFilter::make('author')
+    ->relationship('author', 'name'),
+
+Filter::make('verified')
+    ->query(fn (Builder $query) => $query->whereNotNull('email_verified_at')),
+
+</code-snippet>
+
+Actions are buttons that encapsulate optional modal forms and behavior:
 
 <code-snippet name="Action with modal form" lang="php">
 use Filament\Actions\Action;
-use Filament\Forms\Components\TextInput;
 
 Action::make('updateEmail')
-    ->form([
-        TextInput::make('email')->email()->required(),
+    ->schema([
+        TextInput::make('email')
+            ->email()
+            ->required(),
     ])
-    ->action(fn (array $data, User $record): void => $record->update($data)),
+    ->action(fn (array $data, User $record) => $record->update($data)),
 
 </code-snippet>
 
 ### Testing
 
-Authenticate before testing panel functionality. Filament uses Livewire, so use `livewire()` or `Livewire::test()`:
+Testing setup (requires `pestphp/pest-plugin-livewire` in `composer.json`):
 
-<code-snippet name="Filament Table Test" lang="php">
-    livewire(ListUsers::class)
-        ->assertCanSeeTableRecords($users)
-        ->searchTable($users->first()->name)
-        ->assertCanSeeTableRecords($users->take(1))
-        ->assertCanNotSeeTableRecords($users->skip(1));
+- Always call `$this->actingAs(User::factory()->create())` before testing panel functionality.
+- For edit pages, pass `['record' => $user->id]`, use `->call('save')` (not `->call('create')`), and do not assert `->assertRedirect()` (edit pages do not redirect after save).
+
+<code-snippet name="Table test" lang="php">
+use function Pest\Livewire\livewire;
+
+livewire(ListUsers::class)
+    ->assertCanSeeTableRecords($users)
+    ->searchTable($users->first()->name)
+    ->assertCanSeeTableRecords($users->take(1))
+    ->assertCanNotSeeTableRecords($users->skip(1));
 
 </code-snippet>
 
-<code-snippet name="Filament Create Resource Test" lang="php">
-    livewire(CreateUser::class)
-        ->fillForm([
-            'name' => 'Test',
-            'email' => 'test@example.com',
-        ])
-        ->call('create')
-        ->assertNotified()
-        ->assertRedirect();
+<code-snippet name="Create resource test" lang="php">
+use function Pest\Laravel\assertDatabaseHas;
 
-    assertDatabaseHas(User::class, [
+livewire(CreateUser::class)
+    ->fillForm([
         'name' => 'Test',
         'email' => 'test@example.com',
-    ]);
+    ])
+    ->call('create')
+    ->assertNotified()
+    ->assertHasNoFormErrors()
+    ->assertRedirect();
+
+assertDatabaseHas(User::class, [
+    'name' => 'Test',
+    'email' => 'test@example.com',
+]);
 
 </code-snippet>
 
-<code-snippet name="Testing Validation" lang="php">
-    livewire(CreateUser::class)
-        ->fillForm([
-            'name' => null,
-            'email' => 'invalid-email',
-        ])
-        ->call('create')
-        ->assertHasFormErrors([
-            'name' => 'required',
-            'email' => 'email',
-        ])
-        ->assertNotNotified();
+<code-snippet name="Edit resource test" lang="php">
+livewire(EditUser::class, ['record' => $user->id])
+    ->fillForm(['name' => 'Updated'])
+    ->call('save')
+    ->assertNotified()
+    ->assertHasNoFormErrors();
+
+assertDatabaseHas(User::class, [
+    'id' => $user->id,
+    'name' => 'Updated',
+]);
 
 </code-snippet>
 
-<code-snippet name="Calling Actions" lang="php">
-    use Filament\Actions\DeleteAction;
-    use Filament\Actions\Testing\TestAction;
-
-    livewire(EditUser::class, ['record' => $user->id])
-        ->callAction(DeleteAction::class)
-        ->assertNotified()
-        ->assertRedirect();
-
-    livewire(ListUsers::class)
-        ->callAction(TestAction::make('promote')->table($user), [
-            'role' => 'admin',
-        ])
-        ->assertNotified();
+<code-snippet name="Testing validation" lang="php">
+livewire(CreateUser::class)
+    ->fillForm([
+        'name' => null,
+        'email' => 'invalid-email',
+    ])
+    ->call('create')
+    ->assertHasFormErrors([
+        'name' => 'required',
+        'email' => 'email',
+    ])
+    ->assertNotNotified();
 
 </code-snippet>
+
+Use `->callAction(DeleteAction::class)` for page actions, or `->callAction(TestAction::make('name')->table($record))` for table actions:
+
+<code-snippet name="Calling actions" lang="php">
+use Filament\Actions\Testing\TestAction;
+
+livewire(ListUsers::class)
+    ->callAction(TestAction::make('promote')->table($user), [
+        'role' => 'admin',
+    ])
+    ->assertNotified();
+
+</code-snippet>
+
+### Correct Namespaces
+
+- Form fields (`TextInput`, `Select`, `Repeater`, etc.): `Filament\Forms\Components\`
+- Infolist entries (`TextEntry`, `IconEntry`, etc.): `Filament\Infolists\Components\`
+- Layout components (`Grid`, `Section`, `Fieldset`, `Tabs`, `Wizard`, etc.): `Filament\Schemas\Components\`
+- Schema utilities (`Get`, `Set`, etc.): `Filament\Schemas\Components\Utilities\`
+- Table columns (`TextColumn`, `IconColumn`, etc.): `Filament\Tables\Columns\`
+- Table filters (`SelectFilter`, `Filter`, etc.): `Filament\Tables\Filters\`
+- Actions (`DeleteAction`, `CreateAction`, etc.): `Filament\Actions\`. Never use `Filament\Tables\Actions\`, `Filament\Forms\Actions\`, or any other sub-namespace for actions.
+- Icons: `Filament\Support\Icons\Heroicon` enum (e.g., `Heroicon::PencilSquare`)
 
 ### Common Mistakes
 
-**Commonly Incorrect Namespaces:**
-- Form fields (TextInput, Select, etc.): `Filament\Forms\Components\`
-- Infolist entries (for read-only views) (TextEntry, IconEntry, etc.): `Filament\Infolists\Components\`
-- Layout components (Grid, Section, Fieldset, Tabs, Wizard, etc.): `Filament\Schemas\Components\`
-- Schema utilities (Get, Set, etc.): `Filament\Schemas\Components\Utilities\`
-- Actions: `Filament\Actions\` (no `Filament\Tables\Actions\` etc.)
-- Icons: `Filament\Support\Icons\Heroicon` enum (e.g., `Heroicon::PencilSquare`)
-
-**Recent breaking changes to Filament:**
-- File visibility is `private` by default. Use `->visibility('public')` for public access.
-- `Grid`, `Section`, and `Fieldset` no longer span all columns by default.
-=== github-agent rules ===
-
-# GitHub Agent Operations
-
-## GITHUB AGENT MODE
-When operating via GitHub Actions (@claude mentions), the agent follows a streamlined process:
-- Direct implementation without PLAN-FIRST requirements
-- Focus on small, atomic changes that can be safely automated
-- Automatic branch creation and PR generation
-- Iterative refinement via PR comments
-
-## GITHUB AGENT RULES
-- Always create descriptive branch names: `feature/issue-66-description` or `fix/issue-67-bug`
-- Implement changes in small, testable increments
-- Add appropriate tests for all new functionality
-- Use existing code patterns and conventions
-- Never commit secrets or sensitive data
-- Link PRs to issues with "Closes #<number>" format
-- Include clear PR descriptions with implementation notes
-
-## GITHUB AGENT EXAMPLES
-- `@claude add email validation for user registration`
-- `@claude fix the weapon export CSV formatting issue`
-- `@claude create a feature test for session creation`
-- `@claude refactor this service to follow our architecture patterns`
-
-## QUALITY GATES
-- All tests must pass before PR creation
-- Code must follow PSR-12 and project style guide
-- No breaking changes without explicit request
-- Documentation updates for public API changes
-
+- **Never assume public file visibility.** File visibility is `private` by default. Always use `->visibility('public')` when public access is needed.
+- **Never assume full-width layout.** `Grid`, `Section`, `Fieldset`, and `Repeater` do not span all columns by default.
+- **Use `Select::make('author_id')->relationship('author', 'name')` for BelongsTo fields.** `BelongsToSelect` does not exist in v4.
+- **`Repeater` uses `->schema()`, not `->fields()`.**
+- **Never add `->dehydrated(false)` to fields that need to be saved.** It strips the value from form state before `->action()` or the save handler runs. Only use it for helper/UI-only fields.
+- **Use correct property types when overriding `Page`, `Resource`, and `Widget` properties.** These properties have union types or changed modifiers that must be preserved:
+  - `$navigationIcon`: `protected static string | BackedEnum | null` (not `?string`)
+  - `$navigationGroup`: `protected static string | UnitEnum | null` (not `?string`)
+  - `$view`: `protected string` (not `protected static string`) on `Page` and `Widget` classes
 </laravel-boost-guidelines>

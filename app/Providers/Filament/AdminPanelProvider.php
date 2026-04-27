@@ -10,6 +10,8 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Auth\Middleware\Authenticate;
 use App\Filament\Widgets\FailedJobsWidget;
+use App\Support\Features\AimtrackFeatureToggle;
+use EslamRedaDiv\FilamentCopilot\FilamentCopilotPlugin;
 use Filament\Actions\Action;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -54,6 +56,14 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
                 fn (): string => view('filament.auth.login-extras')->render(),
             )
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => <<<'HTML'
+                    <style>
+                        .copilot-chat-widget { max-width: min(1024px, 70vw) !important; }
+                    </style>
+                HTML,
+            )
             ->middleware([
                 // Core Laravel stack; uitbreidbaar met locale middleware.
                 EncryptCookies::class,
@@ -65,6 +75,14 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+            ])
+            ->plugins([
+                FilamentCopilotPlugin::make()
+                    ->provider('anthropic')
+                    ->model('claude-haiku-4-5-20251001')
+                    ->rateLimitEnabled()
+                    ->memoryEnabled()
+                    ->authorizeUsing(fn (): bool => app(AimtrackFeatureToggle::class)->aiEnabled()),
             ])
             ->databaseTransactions()
             ->spa();
