@@ -56,6 +56,14 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
                 fn (): string => view('filament.auth.login-extras')->render(),
             )
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => <<<'HTML'
+                    <style>
+                        .copilot-chat-widget { max-width: min(1024px, 70vw) !important; }
+                    </style>
+                HTML,
+            )
             ->middleware([
                 // Core Laravel stack; uitbreidbaar met locale middleware.
                 EncryptCookies::class,
@@ -70,8 +78,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 FilamentCopilotPlugin::make()
-                    ->provider('openai')
-                    ->model('gpt-4o')
+                    ->provider('anthropic')
+                    ->model('claude-haiku-4-5-20251001')
                     ->rateLimitEnabled()
                     ->memoryEnabled()
                     ->authorizeUsing(fn (): bool => app(AimtrackFeatureToggle::class)->aiEnabled()),
