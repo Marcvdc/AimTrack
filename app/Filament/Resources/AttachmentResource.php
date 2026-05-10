@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\AttachmentResource\Pages\ListAttachments;
 use App\Models\Attachment;
-use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -16,13 +15,12 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use UnitEnum;
 
 class AttachmentResource extends Resource
 {
     protected static ?string $model = Attachment::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-paper-clip';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-paper-clip';
 
     protected static ?string $navigationLabel = 'Bijlagen';
 
@@ -30,7 +28,7 @@ class AttachmentResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Bijlagen';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Dagboek';
+    protected static string|\UnitEnum|null $navigationGroup = 'Dagboek';
 
     public static function form(Schema $schema): Schema
     {
