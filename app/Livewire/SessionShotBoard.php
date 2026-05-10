@@ -5,9 +5,9 @@ namespace App\Livewire;
 use App\Models\Session;
 use App\Models\SessionShot;
 use App\Services\Sessions\SessionShotService;
+use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
@@ -218,7 +218,7 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
 
         $this->deleteShot($this->pendingDeleteShotId);
         $this->pendingDeleteShotId = null;
-        
+
         // Close the modal
         $this->dispatch('close-modal', id: 'delete-shot-modal');
     }

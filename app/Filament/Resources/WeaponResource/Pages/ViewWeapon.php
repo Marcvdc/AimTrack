@@ -2,11 +2,10 @@
 
 namespace App\Filament\Resources\WeaponResource\Pages;
 
-use Filament\Actions\EditAction;
-use Filament\Actions\Action;
 use App\Filament\Resources\WeaponResource;
 use App\Jobs\GenerateWeaponInsightJob;
-use Filament\Actions;
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 
