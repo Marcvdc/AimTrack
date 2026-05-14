@@ -16,6 +16,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
@@ -31,9 +32,13 @@ class AdminPanelProvider extends PanelProvider
             ->passwordReset()
             ->registration()
             ->profile()
-            ->brandLogo(new HtmlString('<img src="/test.svg" alt="AimTrack" class="h-8">'))
-            ->darkModeBrandLogo(new HtmlString('<img src="/test.svg" alt="AimTrack" class="h-8" style="filter: invert(1);">'))
-            ->favicon('/test.svg')
+            ->brandLogo(fn (): HtmlString => new HtmlString(
+                Blade::render('<x-aimtrack.wordmark size="28" />')
+            ))
+            ->darkModeBrandLogo(fn (): HtmlString => new HtmlString(
+                Blade::render('<x-aimtrack.wordmark size="28" />')
+            ))
+            ->favicon(asset('img/aimtrack-logo.svg'))
             ->colors([
                 'primary' => Color::hex('#64f4b3'),
             ])

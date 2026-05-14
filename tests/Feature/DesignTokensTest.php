@@ -34,6 +34,15 @@ test('aimtrack tokens stylesheet defines all ten color tokens', function (): voi
         ->toContain('--at-cta-text:');
 });
 
+test('admin login page renders the AimTrack wordmark as brand logo', function (): void {
+    $response = $this->get('/admin/login');
+
+    $response->assertOk();
+    $response->assertSee('aria-label="AimTrack"', escape: false);
+    $response->assertSee('Track</span>', escape: false);
+    $response->assertSee('aimtrack-logo.svg', escape: false);
+});
+
 test('aimtrack tokens stylesheet defines spacing and radius scales', function (): void {
     $css = file_get_contents(resource_path('css/aimtrack-tokens.css'));
 

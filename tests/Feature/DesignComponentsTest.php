@@ -180,3 +180,25 @@ test('monogram-stamp absolute positions itself when corner is top-right', functi
         ->toContain('top: -10px')
         ->toContain('right: 16px');
 });
+
+test('wordmark renders Aim/Track text with logo mask and accent split', function (): void {
+    $html = Blade::render('<x-aimtrack.wordmark />');
+
+    expect($html)
+        ->toContain('aria-label="AimTrack"')
+        ->toContain('Aim')
+        ->toContain('Track</span>')
+        ->toContain('var(--at-text)')
+        ->toContain('var(--at-accent)')
+        ->toContain('aimtrack-logo.svg')
+        ->toContain('mask:');
+});
+
+test('wordmark scales gap and text-size with the size prop', function (): void {
+    $html = Blade::render('<x-aimtrack.wordmark size="40" />');
+
+    expect($html)
+        ->toContain('width: 40px')
+        ->toContain('height: 40px')
+        ->toContain('gap: 12.8px');
+});
