@@ -16,6 +16,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
@@ -31,11 +32,15 @@ class AdminPanelProvider extends PanelProvider
             ->passwordReset()
             ->registration()
             ->profile()
-            ->brandLogo(new HtmlString('<img src="/test.svg" alt="AimTrack" class="h-8">'))
-            ->darkModeBrandLogo(new HtmlString('<img src="/test.svg" alt="AimTrack" class="h-8" style="filter: invert(1);">'))
-            ->favicon('/test.svg')
+            ->brandLogo(fn (): HtmlString => new HtmlString(
+                Blade::render('<x-aimtrack.wordmark size="28" />')
+            ))
+            ->darkModeBrandLogo(fn (): HtmlString => new HtmlString(
+                Blade::render('<x-aimtrack.wordmark size="28" />')
+            ))
+            ->favicon(asset('img/aimtrack-logo.svg'))
             ->colors([
-                'primary' => Color::Indigo,
+                'primary' => Color::hex('#64f4b3'),
             ])
             ->font('Inter')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
@@ -55,6 +60,10 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
                 fn (): string => view('filament.auth.login-extras')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => $this->aimTrackDesignAssets(),
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
@@ -86,5 +95,26 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->databaseTransactions()
             ->spa();
+    }
+
+    /**
+     * Inject design-token CSS variables (Signal Mint dark) and webfont links
+     * into the Filament admin panel <head>. Source of truth lives at
+     * resources/css/aimtrack-tokens.css and the design handoff under
+     * .ai/design-handoff/project/design-tokens.jsx.
+     */
+    private function aimTrackDesignAssets(): string
+    {
+        $tokensPath = resource_path('css/aimtrack-tokens.css');
+        $tokensCss = is_file($tokensPath) ? (string) file_get_contents($tokensPath) : '';
+
+        return <<<HTML
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <style id="aimtrack-tokens">
+            {$tokensCss}
+            </style>
+            HTML;
     }
 }
