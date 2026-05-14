@@ -1,7 +1,8 @@
 ---
-status: DRAFT
+status: COMPLETED
 created: 2026-05-14
-approved: null
+approved: 2026-05-14
+completed: 2026-05-14
 author: Claude (Opus 4.7)
 jira: GH#82
 worktree: aimtrack-design-foundation (feature/design-foundation)
@@ -9,7 +10,27 @@ worktree: aimtrack-design-foundation (feature/design-foundation)
 
 # PLAN: Issue #82 · Fase 0 — Design Foundation
 
-## Status: DRAFT — wacht op gebruiker-akkoord vóór BUILD
+## Status: COMPLETED
+
+Alle 10 AC's gerealiseerd. 26 design-tests groen (121 assertions). Branch
+`feature/design-foundation` klaar voor PR-review.
+
+### Afwijkingen van het oorspronkelijke PLAN
+
+1. **Geen Vite / Tailwind theme-entry**. De app heeft geen Vite/npm-setup,
+   en dat toevoegen zou een dependency-change zijn (CLAUDE.md verbiedt dat
+   zonder akkoord). Tokens worden in plaats daarvan via een HEAD_END render
+   hook in `AdminPanelProvider` inline geïnjecteerd — zelfde patroon als
+   de bestaande `.copilot-chat-widget` style hook.
+2. **Geen Pest browser-test (AC8)**. Vereist `pest-plugin-browser` als nieuwe
+   dev-dep + Chromium binary. In plaats daarvan dekken 26 feature-tests via
+   `Blade::render` en `$this->get('/admin/login')` de inhoudelijke
+   eis (tokens, fonts, wordmark in HTML, panel boot zonder exception).
+   Visuele controle handmatig gedaan via `curl http://localhost:19084/admin/login`.
+3. **Pre-existing test failure niet opgelost**: `tests/Feature/LogoutTest.php`
+   faalt met CSRF-token-mismatch. Stash-verificatie bevestigt dat dit ook
+   op de baseline-feature-branch faalt zonder mijn changes — bestaand
+   probleem geïntroduceerd via #81. Buiten scope van dit issue.
 
 ## Samenvatting
 

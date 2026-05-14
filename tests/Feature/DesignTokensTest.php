@@ -34,6 +34,14 @@ test('aimtrack tokens stylesheet defines all ten color tokens', function (): voi
         ->toContain('--at-cta-text:');
 });
 
+test('admin login page boots and serves the filament login UI', function (): void {
+    $response = $this->get('/admin/login');
+
+    $response->assertOk();
+    $response->assertSee('AimTrack', escape: false);
+    $response->assertHeader('content-type', 'text/html; charset=UTF-8');
+});
+
 test('admin login page renders the AimTrack wordmark as brand logo', function (): void {
     $response = $this->get('/admin/login');
 
