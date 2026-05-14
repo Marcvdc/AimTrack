@@ -78,6 +78,7 @@ Vergeet de registry hieronder niet bij te werken.
 |---|---|---|---|---|---|---|---|
 | _hoofd-dev_ | _huidige_ | `aimtrack/` | 8080 | 5432 | 8025 | 8000 | actief |
 | copilot | feature/copilot | `aimtrack-copilot/` | 19080 | 15433 | 19025 | 19000 | actief (Filament Copilot migratie) |
+| design-foundation | feature/design-foundation | `aimtrack-design-foundation/` | 19084 | 15436 | 19029 | 19004 | actief (issue #82 · Fase 0 foundation) |
 
 Update deze tabel bij setup en cleanup — zo weet iedereen direct welke poort bij welke stack hoort.
 
