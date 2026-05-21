@@ -280,15 +280,25 @@ class SessionResource extends Resource implements CopilotResourceContract
                     ->badge()
                     ->toggleable(),
                 TextColumn::make('totalRounds')
-                    ->label('Aantal schoten')
+                    ->label('Schoten')
                     ->state(fn (Session $record) => $record->sessionWeapons->sum('rounds_fired'))
                     ->sortable(),
+                TextColumn::make('totalScore')
+                    ->label('Score')
+                    ->state(fn (Session $record): int => (int) $record->shots()->sum('score'))
+                    ->color(fn ($state): string => ((int) $state) > 0 ? 'success' : 'gray')
+                    ->weight('semibold'),
+                TextColumn::make('reflectionStatus')
+                    ->label('Status')
+                    ->state(fn (Session $record): string => $record->aiReflection()->exists() ? 'AI' : 'open')
+                    ->badge()
+                    ->color(fn (string $state): string => $state === 'AI' ? 'success' : 'warning'),
                 TextColumn::make('aiReflection.summary')
                     ->label('AI-reflectie')
                     ->icon('heroicon-m-sparkles')
                     ->limit(40)
                     ->placeholder('Nog niet gegenereerd')
-                    ->toggleable()
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->visible(fn (): bool => static::features()->aiEnabled()),
             ])
             ->filters([
