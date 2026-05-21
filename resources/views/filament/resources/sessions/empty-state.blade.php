@@ -31,14 +31,9 @@
                 </svg>
                 Eerste sessie loggen
             </a>
-            <button
-                type="button"
-                wire:click="seedDemoData"
-                data-testid="sessions-empty-demo"
-                style="padding: 10px 18px; border-radius: 8px; border: 1px solid var(--at-line); background: transparent; color: var(--at-text); font-size: 13px; cursor: pointer;"
-            >
-                Demo-data inladen
-            </button>
+            <span data-testid="sessions-empty-demo">
+                {{ $this->seedDemoDataAction }}
+            </span>
         </x-slot:actions>
 
         <x-slot:extra>

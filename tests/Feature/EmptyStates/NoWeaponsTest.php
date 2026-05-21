@@ -57,7 +57,7 @@ test('weapons empty state exposes both CTAs and links to weapon-create', functio
     $response->assertSee('Voeg wapen toe', escape: false);
     $response->assertSee(WeaponResource::getUrl('create'), escape: false);
     $response->assertSee('Demo-data inladen', escape: false);
-    $response->assertSee('wire:click="seedDemoData"', escape: false);
+    $response->assertSee('data-testid="seed-demo-data-trigger"', escape: false);
 });
 
 test('weapons list hides empty state when user has at least one weapon', function (): void {
@@ -143,11 +143,13 @@ test('CreateWeapon ensures matching AmmoType row exists after template prefill',
     expect(AmmoType::query()->where('user_id', $user->id)->where('caliber', '4.5 mm')->exists())->toBeTrue();
 });
 
-test('seedDemoData placeholder on ListWeapons emits an info notification', function (): void {
+test('seedDemoDataAction on ListWeapons seeds 3 weapons for the current user', function (): void {
     $user = User::factory()->create();
     $this->actingAs($user);
 
     Livewire::test(ListWeapons::class)
-        ->call('seedDemoData')
-        ->assertDispatched('notificationsSent');
+        ->callAction('seedDemoData');
+
+    expect($user->weapons()->count())->toBe(3)
+        ->and($user->fresh()->demo_data_seeded_at)->not->toBeNull();
 });

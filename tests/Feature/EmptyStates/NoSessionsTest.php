@@ -29,7 +29,7 @@ test('sessions empty state exposes both CTAs', function (): void {
     $response->assertSee('Eerste sessie loggen', escape: false);
     $response->assertSee(SessionResource::getUrl('create'), escape: false);
     $response->assertSee('Demo-data inladen', escape: false);
-    $response->assertSee('wire:click="seedDemoData"', escape: false);
+    $response->assertSee('data-testid="seed-demo-data-trigger"', escape: false);
 });
 
 test('sessions empty state renders the paper-logbook tip card', function (): void {
@@ -68,11 +68,13 @@ test('sessions empty state is scoped per user — another user with data does no
     $response->assertSee('data-testid="sessions-empty-state"', escape: false);
 });
 
-test('seedDemoData placeholder on ListSessions emits an info notification', function (): void {
+test('seedDemoDataAction on ListSessions seeds 5 sessions for the current user', function (): void {
     $user = User::factory()->create();
     $this->actingAs($user);
 
     Livewire::test(ListSessions::class)
-        ->call('seedDemoData')
-        ->assertDispatched('notificationsSent');
+        ->callAction('seedDemoData');
+
+    expect($user->sessions()->count())->toBe(5)
+        ->and($user->fresh()->demo_data_seeded_at)->not->toBeNull();
 });

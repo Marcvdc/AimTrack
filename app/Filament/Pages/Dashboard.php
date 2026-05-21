@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\HasSeedDemoDataAction;
 use App\Models\User;
 use App\Support\UserOnboardingState;
-use Filament\Notifications\Notification;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
@@ -22,6 +22,8 @@ use Illuminate\Support\Facades\Auth;
  */
 class Dashboard extends BaseDashboard
 {
+    use HasSeedDemoDataAction;
+
     private ?UserOnboardingState $onboarding = null;
 
     public function getOnboarding(): UserOnboardingState
@@ -50,19 +52,5 @@ class Dashboard extends BaseDashboard
         }
 
         return parent::getTitle();
-    }
-
-    /**
-     * Livewire-action getriggerd door "Demo-data inladen". Echte
-     * seed-logica wordt in Fase 2 Stap 6 (SeedDemoDataAction) toegevoegd
-     * — voor nu een placeholder zodat de welcome-CTA niet stuk lijkt.
-     */
-    public function seedDemoData(): void
-    {
-        Notification::make()
-            ->title('Demo-data binnenkort beschikbaar')
-            ->body('De seed-functie wordt in een aparte stap toegevoegd. Voor nu kun je je eerste wapen handmatig aanmaken.')
-            ->info()
-            ->send();
     }
 }

@@ -91,13 +91,18 @@ test('welcome continue CTA points to weapon-create when user has no weapon', fun
     $response->assertSee('Verder waar ik was', escape: false);
 });
 
-test('seedDemoData placeholder action emits an info notification', function (): void {
+test('seedDemoDataAction triggers DemoDataSeeder for the current user', function (): void {
     $user = User::factory()->create();
     $this->actingAs($user);
 
+    expect($user->fresh()->demo_data_seeded_at)->toBeNull();
+
     Livewire::test(Dashboard::class)
-        ->call('seedDemoData')
-        ->assertDispatched('notificationsSent');
+        ->callAction('seedDemoData');
+
+    expect($user->fresh()->demo_data_seeded_at)->not->toBeNull()
+        ->and($user->weapons()->count())->toBe(3)
+        ->and($user->sessions()->count())->toBe(5);
 });
 
 test('dashboard renders default widgets grid when user has data', function (): void {

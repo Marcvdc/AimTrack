@@ -126,14 +126,9 @@
             >
                 Verder waar ik was
             </a>
-            <button
-                type="button"
-                wire:click="seedDemoData"
-                data-testid="first-run-demo"
-                style="padding: 12px 22px; border-radius: 10px; border: 1px solid var(--at-line); background: transparent; color: var(--at-text); font-size: 14px; cursor: pointer;"
-            >
-                Demo-data inladen
-            </button>
+            <span data-testid="first-run-demo">
+                {{ $this->seedDemoDataAction }}
+            </span>
         </div>
     </div>
 </div>
