@@ -80,6 +80,8 @@ Vergeet de registry hieronder niet bij te werken.
 | copilot | feature/copilot | `aimtrack-copilot/` | 19080 | 15433 | 19025 | 19000 | actief (Filament Copilot migratie) |
 | design-foundation | feature/design-foundation | `aimtrack-design-foundation/` | 19084 | 15436 | 19029 | 19004 | actief (issue #82 · Fase 0 foundation) |
 | prod-backups | feature/prod-backups | `aimtrack-prod-backups/` | 19085 | 15437 | 19030 | 19005 | actief (issue #83 — prod backup-strategie in repo) |
+| empty-states | feature/empty-states | `aimtrack-empty-states/` | 19086 | 15438 | 19031 | 19006 | actief (issue #82 · Fase 2 empty-states) |
+| range-console | feature/range-console | `aimtrack-range-console/` | 19087 | 15439 | 19032 | 19007 | actief (issue #82 · Fase 1 Range Console — 5 kernschermen) |
 
 Update deze tabel bij setup en cleanup — zo weet iedereen direct welke poort bij welke stack hoort.
 
