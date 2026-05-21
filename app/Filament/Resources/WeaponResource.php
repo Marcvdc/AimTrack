@@ -202,7 +202,8 @@ class WeaponResource extends Resource implements CopilotResourceContract
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->emptyState(view('filament.resources.weapons.empty-state'));
     }
 
     public static function infolist(Schema $schema): Schema
