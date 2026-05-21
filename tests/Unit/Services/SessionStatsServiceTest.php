@@ -38,10 +38,14 @@ it('returns 0 for tienen/negens/totalScore when session has no shots', function 
 it('counts tienen and negens by ring not score', function (): void {
     $session = Session::factory()->for(User::factory())->create();
 
-    SessionShot::factory()->for($session)->create(['ring' => 10, 'score' => 10]);
-    SessionShot::factory()->for($session)->create(['ring' => 10, 'score' => 10]);
-    SessionShot::factory()->for($session)->create(['ring' => 9, 'score' => 9]);
-    SessionShot::factory()->for($session)->create(['ring' => 8, 'score' => 8]);
+    foreach ([[10, 10], [10, 10], [9, 9], [8, 8]] as $i => [$ring, $score]) {
+        SessionShot::factory()->for($session)->create([
+            'turn_index' => 0,
+            'shot_index' => $i,
+            'ring' => $ring,
+            'score' => $score,
+        ]);
+    }
 
     $service = new SessionStatsService($session);
 

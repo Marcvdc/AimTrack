@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use App\Filament\Copilot\Tools\ShooterContextTool;
+use App\Services\CoachContextService;
 use App\Support\Features\AimtrackFeatureToggle;
 use BackedEnum;
 use EslamRedaDiv\FilamentCopilot\Contracts\CopilotPage as CopilotPageContract;
@@ -26,6 +27,11 @@ class CoachPage extends Page implements CopilotPageContract
     public static function shouldRegisterNavigation(): bool
     {
         return static::features()->aiEnabled() && parent::shouldRegisterNavigation();
+    }
+
+    public function getCoachContext(): CoachContextService
+    {
+        return new CoachContextService(auth()->user());
     }
 
     public static function copilotPageDescription(): ?string
