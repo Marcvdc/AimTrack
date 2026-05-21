@@ -1,8 +1,9 @@
 ---
-status: APPROVED
+status: COMPLETED
 created: 2026-05-14
-updated: 2026-05-14
+updated: 2026-05-21
 approved: 2026-05-14
+completed: 2026-05-21
 author: Claude (Opus 4.7)
 jira: GH#82
 worktree: aimtrack-empty-states (feature/empty-states)
@@ -11,10 +12,38 @@ basis: e809582 (main, post-PR #86 merge)
 
 # PLAN: Issue #82 · Fase 2 — Empty states & first-run
 
-## Status: APPROVED
+## Status: COMPLETED
 
-Goedgekeurd door marc@kjsoftware.nl op 2026-05-14. BUILD-mode actief,
-per-stap check-in (beslissing 4). Stap 1 in uitvoering.
+Alle 12 AC's gerealiseerd. Browser-smoke door marc@kjsoftware.nl
+geverifieerd op 2026-05-21. Klaar voor PR-review.
+
+### Commits (per stap, beslissing 4)
+
+1. `1274338` — Shared empty-state component + UserOnboardingState + StarterTemplates
+2. `85f23bd` — First-run welcome on Dashboard
+3. `7f783dc` — SessionResource empty state
+4. `59f1cee` — chore: worktree registry update
+5. `119cb45` — WeaponResource empty state + 3 starter templates
+6. `fc72b69` — AI-coach threshold empty state with progress
+7. `67af712` — DemoDataSeeder service + unified seed action + idempotency
+
+### Afwijkingen van het oorspronkelijke PLAN
+
+1. **EmptyStateComponentTest leeft onder `tests/Feature/` i.p.v. `tests/Unit/`**
+   — volgt projectconventie (DesignComponentsTest is ook Feature). Geen
+   functioneel verschil; beide directories gebruiken TestCase met
+   LazilyRefreshDatabase.
+2. **CreateWeapon::mount() doet AmmoType::firstOrCreate()** — niet in
+   PLAN-architectuur beschreven, maar technisch nodig omdat de
+   caliber-Select op bestaande user-AmmoType rijen filtert. Anders kan
+   de prefill-waarde niet getoond worden.
+3. **Demo-data unify is gedeeltelijk gedaan** — CopilotDemoSeeder is nu
+   thin wrapper rond DemoDataSeeder service. DevSeeder op feature/55 is
+   ongemoeid gelaten (cross-branch deprecation buiten scope; flag in
+   PR-body als follow-up).
+4. **Stap 6 scope-bump**: oorspronkelijk alleen Action, werd uitgebreid
+   met migration (users.demo_data_seeded_at), service-extractie en
+   CopilotDemoSeeder refactor — op verzoek tijdens review.
 
 ## Beslissingen na review (2026-05-14)
 
