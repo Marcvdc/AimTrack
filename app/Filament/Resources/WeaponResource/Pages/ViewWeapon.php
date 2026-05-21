@@ -13,6 +13,8 @@ class ViewWeapon extends ViewRecord
 {
     protected static string $resource = WeaponResource::class;
 
+    protected string $view = 'filament.resources.weapons.view-weapon';
+
     protected function getHeaderActions(): array
     {
         return [
