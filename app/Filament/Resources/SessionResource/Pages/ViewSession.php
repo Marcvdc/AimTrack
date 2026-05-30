@@ -15,6 +15,8 @@ class ViewSession extends ViewRecord
 {
     protected static string $resource = SessionResource::class;
 
+    protected string $view = 'filament.resources.sessions.view-session';
+
     protected Width|string|null $maxContentWidth = Width::Full;
 
     protected function getHeaderActions(): array

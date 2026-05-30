@@ -138,6 +138,30 @@ class WeaponResource extends Resource implements CopilotResourceContract
                             ->label('Notities')
                             ->columnSpanFull(),
                     ]),
+
+                InfoSection::make('Kalibratie')
+                    ->description('Optionele afstelling per wapen — wordt getoond op het wapen-detail scherm.')
+                    ->columns(2)
+                    ->collapsed()
+                    ->schema([
+                        TextInput::make('korrel_correction')
+                            ->label('Korrel')
+                            ->helperText('Bv. "+2" of "−1 R"')
+                            ->maxLength(16),
+                        TextInput::make('vizier_correction')
+                            ->label('Vizier')
+                            ->helperText('Bv. "−1 R" of "0"')
+                            ->maxLength(16),
+                        TextInput::make('trigger_weight_g')
+                            ->label('Trekkergewicht (g)')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(5000),
+                        TextInput::make('grip_size')
+                            ->label('Handgreep')
+                            ->helperText('Bv. "M · v2"')
+                            ->maxLength(32),
+                    ]),
             ]);
     }
 

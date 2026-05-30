@@ -7,6 +7,7 @@ namespace App\Filament\Pages;
 use App\Filament\Copilot\Tools\ShooterContextTool;
 use App\Filament\Resources\SessionResource;
 use App\Models\User;
+use App\Services\CoachContextService;
 use App\Support\Features\AimtrackFeatureToggle;
 use App\Support\UserOnboardingState;
 use BackedEnum;
@@ -31,6 +32,11 @@ class CoachPage extends Page implements CopilotPageContract
     public static function shouldRegisterNavigation(): bool
     {
         return static::features()->aiEnabled() && parent::shouldRegisterNavigation();
+    }
+
+    public function getCoachContext(): CoachContextService
+    {
+        return new CoachContextService(auth()->user());
     }
 
     public static function copilotPageDescription(): ?string
