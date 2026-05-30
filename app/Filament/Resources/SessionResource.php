@@ -339,7 +339,8 @@ class SessionResource extends Resource implements CopilotResourceContract
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->emptyState(view('filament.resources.sessions.empty-state'));
     }
 
     public static function infolist(Schema $schema): Schema

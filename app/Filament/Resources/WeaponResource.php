@@ -14,6 +14,7 @@ use App\Models\AmmoType;
 use App\Models\Location;
 use App\Models\Weapon;
 use App\Support\Features\AimtrackFeatureToggle;
+use App\Support\StarterTemplates;
 use EslamRedaDiv\FilamentCopilot\Contracts\CopilotResource as CopilotResourceContract;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -78,12 +79,23 @@ class WeaponResource extends Resource implements CopilotResourceContract
                             ->native(false),
                         Select::make('caliber')
                             ->label('Kaliber')
-                            ->options(fn () => AmmoType::query()
-                                ->where('user_id', auth()->id())
-                                ->whereNotNull('caliber')
-                                ->orderBy('caliber')
-                                ->distinct()
-                                ->pluck('caliber', 'caliber'))
+                            ->options(function (): array {
+                                $existing = AmmoType::query()
+                                    ->where('user_id', auth()->id())
+                                    ->whereNotNull('caliber')
+                                    ->orderBy('caliber')
+                                    ->distinct()
+                                    ->pluck('caliber', 'caliber')
+                                    ->all();
+
+                                $starters = collect(StarterTemplates::weapons())
+                                    ->mapWithKeys(fn (array $template): array => [
+                                        $template['caliber'] => $template['caliber'],
+                                    ])
+                                    ->all();
+
+                                return [...$existing, ...$starters];
+                            })
                             ->searchable()
                             ->preload()
                             ->required(),
@@ -202,7 +214,8 @@ class WeaponResource extends Resource implements CopilotResourceContract
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->emptyState(view('filament.resources.weapons.empty-state'));
     }
 
     public static function infolist(Schema $schema): Schema
