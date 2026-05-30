@@ -8,6 +8,7 @@ use App\Models\SessionWeapon;
 use App\Models\User;
 use App\Models\Weapon;
 use App\Support\Features\AimtrackFeatureToggle;
+use App\Support\UserOnboardingState;
 use EslamRedaDiv\FilamentCopilot\Models\CopilotConversation;
 use Livewire\Livewire;
 
@@ -18,24 +19,40 @@ beforeEach(function (): void {
     });
 });
 
-it('renders the 3-column layout with rails and CTA for an empty user', function (): void {
+/**
+ * De 3-koloms Range Console coach-view is sinds Fase 2 gepoort achter de
+ * AI-coach drempel (>= 3 sessies). Onder de drempel toont CoachPage de
+ * Fase 2 "te weinig data" empty-state (zie EmptyStates\AiCoachThresholdTest).
+ */
+function unlockCoach(User $user): void
+{
+    Session::factory()->for($user)->count(UserOnboardingState::aiCoachThreshold())->create([
+        'date' => now()->subDays(2),
+        'range_name' => 'SV Diemen',
+    ]);
+}
+
+it('renders the 3-column layout once the AI-coach threshold is reached', function (): void {
     $user = User::factory()->create();
+    unlockCoach($user);
 
     Livewire::actingAs($user)
         ->test(CoachPage::class)
         ->assertOk()
+        ->assertSee('data-testid="ai-coach-chat-ready"', escape: false)
         ->assertSee('RECENTE GESPREKKEN')
         ->assertSee('Stel een vraag aan je coach')
         ->assertSee('VOORBEELDVRAGEN')
         ->assertSee('CONTEXT IN GESPREK')
         ->assertSee('PRIVACY')
-        ->assertSee('Open coach')
-        ->assertSee('Geen sessies of wapens gevonden')
-        ->assertSee('Nog geen gesprekken met de coach');
+        ->assertSee('Open de chat')
+        ->assertSee('Nog geen gesprekken met de coach')
+        ->assertDontSee('data-testid="ai-coach-threshold"', escape: false);
 });
 
 it('lists recent Copilot conversations on the left rail', function (): void {
     $user = User::factory()->create();
+    unlockCoach($user);
 
     foreach (range(1, 3) as $i) {
         CopilotConversation::query()->create([
@@ -76,8 +93,9 @@ it('shows the last session and top weapon in the context rail when data exists',
 
 it('scopes conversations to the participant user', function (): void {
     $user = User::factory()->create();
-    $other = User::factory()->create();
+    unlockCoach($user);
 
+    $other = User::factory()->create();
     CopilotConversation::query()->create([
         'participant_type' => $other->getMorphClass(),
         'participant_id' => $other->getKey(),

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\SessionResource\Pages;
 
+use App\Filament\Concerns\HasSeedDemoDataAction;
 use App\Filament\Resources\SessionResource;
 use App\Services\RangeConsoleSummaryService;
 use Filament\Actions\CreateAction;
@@ -11,6 +12,8 @@ use Filament\Resources\Pages\ListRecords;
 
 class ListSessions extends ListRecords
 {
+    use HasSeedDemoDataAction;
+
     protected static string $resource = SessionResource::class;
 
     protected string $view = 'filament.resources.sessions.list-sessions';
