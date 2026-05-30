@@ -62,197 +62,234 @@ class SessionResource extends Resource implements CopilotResourceContract
         return $schema
             ->columns(1)
             ->components([
-                Hidden::make('user_id')
-                    ->default(fn () => auth()->id())
-                    ->required()
-                    ->dehydrated(fn ($state) => filled($state)),
+                static::userIdField(),
 
                 InfoSection::make('Sessie')
                     ->description('Basisgegevens van de sessie')
                     ->columns(2)
                     ->schema([
-                        DatePicker::make('date')
-                            ->label('Datum')
-                            ->native(false)
-                            ->required(),
-                        Select::make('range_location_id')
-                            ->label('Baan/vereniging')
-                            ->options(fn () => Location::query()
-                                ->where('user_id', auth()->id())
-                                ->where('is_range', true)
-                                ->orderBy('name')
-                                ->pluck('name', 'id'))
-                            ->searchable()
-                            ->preload()
-                            ->nullable()
-                            ->afterStateUpdated(function ($state, callable $set): void {
-                                if (! $state) {
-                                    return;
-                                }
-
-                                $location = Location::query()->find($state);
-
-                                if ($location) {
-                                    $set('range_name', $location->name);
-                                }
-                            }),
-                        Select::make('location_id')
-                            ->label('Locatie')
-                            ->options(fn () => Location::query()
-                                ->where('user_id', auth()->id())
-                                ->orderBy('name')
-                                ->pluck('name', 'id'))
-                            ->searchable()
-                            ->preload()
-                            ->nullable()
-                            ->afterStateUpdated(function ($state, callable $set): void {
-                                if (! $state) {
-                                    return;
-                                }
-
-                                $location = Location::query()->find($state);
-
-                                if ($location) {
-                                    $set('location', $location->name);
-                                }
-                            }),
-                        Hidden::make('range_name')
-                            ->dehydrated(),
-                        Hidden::make('location')
-                            ->dehydrated(),
-                        Textarea::make('notes_raw')
-                            ->label('Notities (ruw)')
-                            ->rows(4)
-                            ->columnSpanFull(),
-                        Textarea::make('manual_reflection')
-                            ->label('Handmatige reflectie')
-                            ->rows(3)
-                            ->columnSpanFull(),
+                        ...static::sessionDetailFields(),
+                        ...static::notesFields(),
                     ]),
 
                 InfoSection::make('Wapens in deze sessie')
                     ->description('Voeg per wapen de afstand en schoten toe')
                     ->schema([
-                        Repeater::make('sessionWeapons')
-                            ->label('Sessiewapens')
-                            ->relationship()
-                            ->schema([
-                                Select::make('weapon_id')
-                                    ->label('Wapen')
-                                    ->relationship(
-                                        name: 'weapon',
-                                        titleAttribute: 'name',
-                                        modifyQueryUsing: fn (Builder $query) => $query->where('user_id', auth()->id()),
-                                    )
-                                    ->required()
-                                    ->preload(),
-                                TextInput::make('distance_m')
-                                    ->label('Afstand (m)')
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->maxValue(2000),
-                                TextInput::make('rounds_fired')
-                                    ->label('Afgevuurde patronen')
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->required()
-                                    ->default(0),
-                                Hidden::make('ammo_type')
-                                    ->dehydrated(),
-                                Select::make('ammo_type_id')
-                                    ->label('Munitietype')
-                                    ->options(fn () => AmmoType::query()
-                                        ->where('user_id', auth()->id())
-                                        ->orderBy('name')
-                                        ->pluck('name', 'id'))
-                                    ->searchable()
-                                    ->preload()
-                                    ->afterStateUpdated(function ($state, callable $set): void {
-                                        if (! $state) {
-                                            return;
-                                        }
-
-                                        $ammoType = AmmoType::query()->find($state);
-
-                                        if ($ammoType) {
-                                            $set('ammo_type', $ammoType->name);
-                                        }
-                                    }),
-                                Textarea::make('group_quality_text')
-                                    ->label('Groepering / kwaliteit')
-                                    ->rows(2)
-                                    ->columnSpanFull(),
-                                Select::make('deviation')
-                                    ->label('Afwijking')
-                                    ->options(
-                                        collect(Deviation::cases())
-                                            ->mapWithKeys(fn (Deviation $case) => [$case->value => ucfirst($case->value)])
-                                            ->all(),
-                                    )
-                                    ->native(false),
-                                TextInput::make('flyers_count')
-                                    ->label('Flyers (aantal)')
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->default(0),
-                            ])
-                            ->columns(2)
-                            ->orderable(false)
-                            ->addActionLabel('Regel toevoegen')
-                            ->collapsed(false),
-                        // Eventueel uitbreiden met munitie-voorraad check of scorevelden.
+                        static::sessionWeaponsRepeater(),
                     ]),
 
                 InfoSection::make('Bijlagen')
                     ->description('Upload foto’s of PDF’s als context')
                     ->schema([
-                        Repeater::make('attachments')
-                            ->label('Bijlagen')
-                            ->relationship()
-                            ->schema([
-                                FileUpload::make('path')
-                                    ->label('Bestand')
-                                    ->required()
-                                    ->maxSize(20480)
-                                    ->directory('attachments')
-                                    ->preserveFilenames()
-                                    ->downloadable()
-                                    ->openable()
-                                    ->getUploadedFileNameForStorageUsing(fn (TemporaryUploadedFile $file): string => $file->getClientOriginalName())
-                                    ->afterStateUpdated(function ($state, callable $set): void {
-                                        if (! $state) {
-                                            return;
-                                        }
-
-                                        $file = is_array($state) ? end($state) : $state;
-
-                                        if (! $file instanceof TemporaryUploadedFile) {
-                                            return;
-                                        }
-
-                                        $set('original_name', $file->getClientOriginalName());
-                                        $set('mime_type', $file->getMimeType());
-                                        $set('size', $file->getSize());
-                                    }),
-                                Hidden::make('original_name')
-                                    ->dehydrated()
-                                    ->required(),
-                                Hidden::make('mime_type')
-                                    ->dehydrated()
-                                    ->required(),
-                                Hidden::make('size')
-                                    ->dehydrated()
-                                    ->required(),
-                            ])
-                            ->columns(2)
-                            ->orderable(false)
-                            ->itemLabel(fn (array $state): string => $state['original_name'] ?? 'Bijlage')
-                            ->addActionLabel('Bijlage toevoegen'),
-                        // Extra tuning: validatie op toegestane mime-types of max grootte.
+                        static::attachmentsRepeater(),
                     ])
                     ->collapsed(),
-
             ]);
+    }
+
+    public static function userIdField(): Hidden
+    {
+        return Hidden::make('user_id')
+            ->default(fn () => auth()->id())
+            ->required()
+            ->dehydrated(fn ($state) => filled($state));
+    }
+
+    /**
+     * Basisvelden van de sessie (zonder notities), herbruikt door de
+     * Edit-form en de Range Console nieuwe-sessie wizard (stap Sessie).
+     *
+     * @return array<int, \Filament\Schemas\Components\Component>
+     */
+    public static function sessionDetailFields(): array
+    {
+        return [
+            DatePicker::make('date')
+                ->label('Datum')
+                ->native(false)
+                ->required(),
+            Select::make('range_location_id')
+                ->label('Baan/vereniging')
+                ->options(fn () => Location::query()
+                    ->where('user_id', auth()->id())
+                    ->where('is_range', true)
+                    ->orderBy('name')
+                    ->pluck('name', 'id'))
+                ->searchable()
+                ->preload()
+                ->nullable()
+                ->afterStateUpdated(function ($state, callable $set): void {
+                    if (! $state) {
+                        return;
+                    }
+
+                    $location = Location::query()->find($state);
+
+                    if ($location) {
+                        $set('range_name', $location->name);
+                    }
+                }),
+            Select::make('location_id')
+                ->label('Locatie')
+                ->options(fn () => Location::query()
+                    ->where('user_id', auth()->id())
+                    ->orderBy('name')
+                    ->pluck('name', 'id'))
+                ->searchable()
+                ->preload()
+                ->nullable()
+                ->afterStateUpdated(function ($state, callable $set): void {
+                    if (! $state) {
+                        return;
+                    }
+
+                    $location = Location::query()->find($state);
+
+                    if ($location) {
+                        $set('location', $location->name);
+                    }
+                }),
+            Hidden::make('range_name')
+                ->dehydrated(),
+            Hidden::make('location')
+                ->dehydrated(),
+        ];
+    }
+
+    /**
+     * Notitie-velden, herbruikt door de Edit-form en de wizard (stap Notities).
+     *
+     * @return array<int, \Filament\Schemas\Components\Component>
+     */
+    public static function notesFields(): array
+    {
+        return [
+            Textarea::make('notes_raw')
+                ->label('Notities (ruw)')
+                ->rows(4)
+                ->columnSpanFull(),
+            Textarea::make('manual_reflection')
+                ->label('Handmatige reflectie')
+                ->rows(3)
+                ->columnSpanFull(),
+        ];
+    }
+
+    public static function sessionWeaponsRepeater(): Repeater
+    {
+        return Repeater::make('sessionWeapons')
+            ->label('Sessiewapens')
+            ->relationship()
+            ->schema([
+                Select::make('weapon_id')
+                    ->label('Wapen')
+                    ->relationship(
+                        name: 'weapon',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (Builder $query) => $query->where('user_id', auth()->id()),
+                    )
+                    ->required()
+                    ->preload(),
+                TextInput::make('distance_m')
+                    ->label('Afstand (m)')
+                    ->numeric()
+                    ->minValue(0)
+                    ->maxValue(2000),
+                TextInput::make('rounds_fired')
+                    ->label('Afgevuurde patronen')
+                    ->numeric()
+                    ->minValue(0)
+                    ->required()
+                    ->default(0),
+                Hidden::make('ammo_type')
+                    ->dehydrated(),
+                Select::make('ammo_type_id')
+                    ->label('Munitietype')
+                    ->options(fn () => AmmoType::query()
+                        ->where('user_id', auth()->id())
+                        ->orderBy('name')
+                        ->pluck('name', 'id'))
+                    ->searchable()
+                    ->preload()
+                    ->afterStateUpdated(function ($state, callable $set): void {
+                        if (! $state) {
+                            return;
+                        }
+
+                        $ammoType = AmmoType::query()->find($state);
+
+                        if ($ammoType) {
+                            $set('ammo_type', $ammoType->name);
+                        }
+                    }),
+                Textarea::make('group_quality_text')
+                    ->label('Groepering / kwaliteit')
+                    ->rows(2)
+                    ->columnSpanFull(),
+                Select::make('deviation')
+                    ->label('Afwijking')
+                    ->options(
+                        collect(Deviation::cases())
+                            ->mapWithKeys(fn (Deviation $case) => [$case->value => ucfirst($case->value)])
+                            ->all(),
+                    )
+                    ->native(false),
+                TextInput::make('flyers_count')
+                    ->label('Flyers (aantal)')
+                    ->numeric()
+                    ->minValue(0)
+                    ->default(0),
+            ])
+            ->columns(2)
+            ->orderable(false)
+            ->addActionLabel('Regel toevoegen')
+            ->collapsed(false);
+    }
+
+    public static function attachmentsRepeater(): Repeater
+    {
+        return Repeater::make('attachments')
+            ->label('Bijlagen')
+            ->relationship()
+            ->schema([
+                FileUpload::make('path')
+                    ->label('Bestand')
+                    ->required()
+                    ->maxSize(20480)
+                    ->directory('attachments')
+                    ->preserveFilenames()
+                    ->downloadable()
+                    ->openable()
+                    ->getUploadedFileNameForStorageUsing(fn (TemporaryUploadedFile $file): string => $file->getClientOriginalName())
+                    ->afterStateUpdated(function ($state, callable $set): void {
+                        if (! $state) {
+                            return;
+                        }
+
+                        $file = is_array($state) ? end($state) : $state;
+
+                        if (! $file instanceof TemporaryUploadedFile) {
+                            return;
+                        }
+
+                        $set('original_name', $file->getClientOriginalName());
+                        $set('mime_type', $file->getMimeType());
+                        $set('size', $file->getSize());
+                    }),
+                Hidden::make('original_name')
+                    ->dehydrated()
+                    ->required(),
+                Hidden::make('mime_type')
+                    ->dehydrated()
+                    ->required(),
+                Hidden::make('size')
+                    ->dehydrated()
+                    ->required(),
+            ])
+            ->columns(2)
+            ->orderable(false)
+            ->itemLabel(fn (array $state): string => $state['original_name'] ?? 'Bijlage')
+            ->addActionLabel('Bijlage toevoegen');
     }
 
     public static function table(Table $table): Table
