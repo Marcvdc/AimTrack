@@ -72,9 +72,11 @@ class CoachPage extends Page implements CopilotPageContract
      */
     public function explainAiCoach(): void
     {
+        $threshold = UserOnboardingState::aiCoachThreshold();
+
         Notification::make()
             ->title('Hoe werkt de AI-coach?')
-            ->body('De coach analyseert je gelogde sessies (afwijkingen, groepering, ademhalingsritmes) en suggereert verbeterpunten. Vanaf 3 sessies is er genoeg patroon om zinvolle feedback te geven.')
+            ->body("De coach analyseert je gelogde sessies (afwijkingen, groepering, ademhalingsritmes) en suggereert verbeterpunten. Vanaf {$threshold} sessies is er genoeg patroon om zinvolle feedback te geven.")
             ->info()
             ->persistent()
             ->send();

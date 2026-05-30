@@ -28,7 +28,7 @@ trait HasSeedDemoDataAction
             ->color('gray')
             ->requiresConfirmation()
             ->modalHeading('Demo-data inladen?')
-            ->modalDescription('Dit voegt 3 wapens, 5 sessies en 3 AI-reflecties toe aan jouw account zodat je de app kunt verkennen. De data is gemarkeerd; je kunt ze later handmatig verwijderen. Niet bedoeld voor echte sessies.')
+            ->modalDescription('Dit voegt 3 wapens, 5 sessies en 3 AI-reflecties toe aan jouw account zodat je de app kunt verkennen. Niet bedoeld voor echte sessies — je kunt deze records later handmatig verwijderen via de sessie- en wapenoverzichten.')
             ->modalSubmitActionLabel('Ja, laad demo-data')
             ->extraAttributes([
                 'style' => 'padding: 10px 18px; border-radius: 8px; border: 1px solid var(--at-line); background: transparent; color: var(--at-text); font-size: 13px;',

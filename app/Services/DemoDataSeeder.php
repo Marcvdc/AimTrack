@@ -42,18 +42,21 @@ final class DemoDataSeeder
     }
 
     /**
-     * Wist alle demo-records voor een gebruiker en reset de marker.
-     * Bedoeld voor dev-flows (CopilotDemoSeeder herhaaldelijk draaien
-     * tijdens browsertesten). NIET wired in de Filament-UI.
+     * Wist ALLE wapens en sessies van een gebruiker (niet alleen records
+     * die door seedFor zijn aangemaakt) en reset de marker. Uitsluitend
+     * bedoeld voor dev-flows zoals CopilotDemoSeeder die het wegwerp-
+     * fixture-account admin@aimtrack.test herhaaldelijk reseeden tijdens
+     * browsertesten. NIET wired in de Filament-UI; roep dit nooit aan op
+     * een echt gebruikersaccount.
+     *
+     * Het verwijderen van sessions cascadeert op DB-niveau naar
+     * session_weapons en ai_reflections (cascadeOnDelete op session_id),
+     * dus losse child-deletes zijn niet nodig.
      */
     public function purgeFor(User $user): void
     {
         DB::transaction(function () use ($user): void {
-            $user->sessions()->each(function (Session $session): void {
-                $session->aiReflection?->delete();
-                $session->sessionWeapons()->delete();
-                $session->delete();
-            });
+            $user->sessions()->delete();
             $user->weapons()->delete();
             $user->forceFill(['demo_data_seeded_at' => null])->save();
         });

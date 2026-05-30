@@ -12,9 +12,15 @@ use App\Models\User;
  * data?"-vragen voorkomt duplicate queries verspreid over Pages
  * en Resources.
  */
-final readonly class UserOnboardingState
+final class UserOnboardingState
 {
-    public function __construct(public User $user) {}
+    private ?bool $hasFirstWeapon = null;
+
+    private ?bool $hasFirstSession = null;
+
+    private ?int $sessionsCount = null;
+
+    public function __construct(public readonly User $user) {}
 
     public function hasNoData(): bool
     {
@@ -23,17 +29,17 @@ final readonly class UserOnboardingState
 
     public function hasFirstWeapon(): bool
     {
-        return $this->user->weapons()->exists();
+        return $this->hasFirstWeapon ??= $this->user->weapons()->exists();
     }
 
     public function hasFirstSession(): bool
     {
-        return $this->user->sessions()->exists();
+        return $this->hasFirstSession ??= $this->user->sessions()->exists();
     }
 
     public function sessionsCount(): int
     {
-        return $this->user->sessions()->count();
+        return $this->sessionsCount ??= $this->user->sessions()->count();
     }
 
     public function aiCoachUnlocked(): bool

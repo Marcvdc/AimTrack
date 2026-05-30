@@ -33,7 +33,17 @@ test('threshold empty state renders progress card with 0/3 when no sessions logg
     $response->assertSee('width: 0%', escape: false);
 });
 
-test('threshold progress shows 1/3 with one session and singular fallback at one remaining', function (): void {
+test('threshold progress shows 1/3 with one session and plural copy at two remaining', function (): void {
+    Session::factory()->count(1)->for($this->user)->create();
+
+    $response = $this->get(CoachPage::getUrl());
+
+    $response->assertSee('1<span style="color: var(--at-muted); font-size: 14px;">/3</span>', escape: false);
+    $response->assertSee('Nog 2 sessies te gaan', escape: false);
+    $response->assertSee('width: 33%', escape: false);
+});
+
+test('threshold progress shows 2/3 with two sessions and singular fallback at one remaining', function (): void {
     Session::factory()->count(2)->for($this->user)->create();
 
     $response = $this->get(CoachPage::getUrl());
@@ -74,8 +84,8 @@ test('threshold scoping is per-user', function (): void {
     $response->assertSee('Nog 3 sessies te gaan', escape: false);
 });
 
-test('explainAiCoach action dispatches a persistent info notification', function (): void {
+test('explainAiCoach action sends the coach-explanation notification', function (): void {
     Livewire::test(CoachPage::class)
         ->call('explainAiCoach')
-        ->assertDispatched('notificationsSent');
+        ->assertNotified('Hoe werkt de AI-coach?');
 });

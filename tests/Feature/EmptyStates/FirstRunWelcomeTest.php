@@ -70,15 +70,23 @@ test('welcome renders three onboarding steps with the wapen step pending and cur
     $response->assertSee('first-run-step-current', escape: false);
 });
 
-test('welcome marks profile step as done when user email is verified', function (): void {
+test('welcome marks ONLY the profile step done when email verified and no weapon or session', function (): void {
     $user = User::factory()->create(['email_verified_at' => now()]);
     $this->actingAs($user);
 
-    $response = $this->get('/admin');
+    $html = (string) $this->get('/admin')->getContent();
 
-    expect($response->getContent())
-        ->toContain('Maak je profiel af')
-        ->and(substr_count((string) $response->getContent(), 'first-run-step-done'))->toBeGreaterThanOrEqual(1);
+    $stepIsDone = function (int $step) use ($html): bool {
+        if (! preg_match('/data-testid="first-run-step-'.$step.'"[^>]*\bclass="([^"]*)"/', $html, $matches)) {
+            return false;
+        }
+
+        return str_contains($matches[1], 'first-run-step-done');
+    };
+
+    expect($stepIsDone(1))->toBeFalse()  // wapen-stap: nog niet gedaan
+        ->and($stepIsDone(2))->toBeTrue()  // profiel-stap: gedaan (email geverifieerd)
+        ->and($stepIsDone(3))->toBeFalse(); // sessie-stap: nog niet gedaan
 });
 
 test('welcome continue CTA points to weapon-create when user has no weapon', function (): void {

@@ -21,10 +21,10 @@
                     </svg>
                 </x-slot:icon>
 
-                <x-slot:title>De coach heeft 3 sessies nodig</x-slot:title>
+                <x-slot:title>De coach heeft {{ $threshold }} sessies nodig</x-slot:title>
 
                 <x-slot:description>
-                    Met minimaal 3 gelogde sessies kan AimTrack patronen herkennen en zinvolle reflecties geven.
+                    Met minimaal {{ $threshold }} gelogde sessies kan AimTrack patronen herkennen en zinvolle reflecties geven.
                 </x-slot:description>
 
                 <x-slot:extra>
