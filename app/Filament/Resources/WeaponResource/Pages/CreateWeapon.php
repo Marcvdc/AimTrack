@@ -3,10 +3,8 @@
 namespace App\Filament\Resources\WeaponResource\Pages;
 
 use App\Filament\Resources\WeaponResource;
-use App\Models\AmmoType;
-use App\Support\StarterTemplates;
+use App\Services\WeaponStarterTemplateService;
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Support\Facades\Auth;
 
 class CreateWeapon extends CreateRecord
 {
@@ -21,35 +19,24 @@ class CreateWeapon extends CreateRecord
 
     /**
      * Honoreer de ?template=… querystring uit de geen-wapens empty state:
-     * de matchende StarterTemplate-rij wordt over de form-defaults heen
-     * gevuld zodat de gebruiker direct kan opslaan. Wanneer er nog geen
-     * matchend kaliber als AmmoType bestaat, maakt mount() er een aan
-     * zodat de Select::make('caliber')-options de waarde kunnen tonen.
+     * de matchende StarterTemplate-waarden worden over de form-defaults
+     * heen gevuld zodat de gebruiker direct kan opslaan. De caliber-Select
+     * toont starter-kalibers als vaste opties (zie WeaponResource::form),
+     * dus deze prefill heeft geen database-write nodig en mount() blijft
+     * vrij van persistentie en business-logica.
      */
     private function applyStarterTemplate(): void
     {
-        $key = request()->query('template');
+        $data = app(WeaponStarterTemplateService::class)
+            ->prefillData(request()->query('template'));
 
-        if (! is_string($key) || $key === '') {
+        if ($data === null) {
             return;
         }
-
-        $template = StarterTemplates::findWeapon($key);
-
-        if ($template === null) {
-            return;
-        }
-
-        AmmoType::query()->firstOrCreate(
-            ['user_id' => Auth::id(), 'name' => $template['caliber']],
-            ['caliber' => $template['caliber']],
-        );
 
         $this->form->fill([
             ...$this->data,
-            'name' => $template['label'],
-            'weapon_type' => $template['weapon_type']->value,
-            'caliber' => $template['caliber'],
+            ...$data,
         ]);
     }
 }

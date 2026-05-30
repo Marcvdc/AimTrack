@@ -97,7 +97,7 @@ test('CreateWeapon with luchtpistool template pre-fills name, weapon_type and ca
         ]);
 });
 
-test('CreateWeapon with vrij-pistool template pre-fills .22 LR caliber', function (): void {
+test('CreateWeapon with vrij-pistool template pre-fills name, weapon_type and caliber', function (): void {
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -105,6 +105,7 @@ test('CreateWeapon with vrij-pistool template pre-fills .22 LR caliber', functio
         ->test(CreateWeapon::class)
         ->assertFormSet([
             'name' => 'Vrij pistool',
+            'weapon_type' => WeaponType::PISTOL->value,
             'caliber' => '.22 LR',
         ]);
 });
@@ -131,16 +132,28 @@ test('CreateWeapon with unknown template key falls back to default form', functi
         ]);
 });
 
-test('CreateWeapon ensures matching AmmoType row exists after template prefill', function (): void {
+test('CreateWeapon template prefill does not write an AmmoType row (no GET side-effect)', function (): void {
     $user = User::factory()->create();
     $this->actingAs($user);
 
-    expect(AmmoType::query()->where('user_id', $user->id)->where('caliber', '4.5 mm')->exists())->toBeFalse();
+    Livewire::withQueryParams(['template' => 'luchtpistool'])
+        ->test(CreateWeapon::class)
+        ->assertFormSet(['caliber' => '4.5 mm']);
+
+    expect(AmmoType::query()->where('user_id', $user->id)->count())->toBe(0);
+});
+
+test('weapon-create accepts a starter-template caliber without any pre-existing AmmoType row', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
 
     Livewire::withQueryParams(['template' => 'luchtpistool'])
-        ->test(CreateWeapon::class);
+        ->test(CreateWeapon::class)
+        ->call('create')
+        ->assertHasNoFormErrors();
 
-    expect(AmmoType::query()->where('user_id', $user->id)->where('caliber', '4.5 mm')->exists())->toBeTrue();
+    expect($user->weapons()->where('caliber', '4.5 mm')->exists())->toBeTrue()
+        ->and(AmmoType::query()->where('user_id', $user->id)->count())->toBe(0);
 });
 
 test('seedDemoDataAction on ListWeapons seeds 3 weapons for the current user', function (): void {
@@ -152,4 +165,18 @@ test('seedDemoDataAction on ListWeapons seeds 3 weapons for the current user', f
 
     expect($user->weapons()->count())->toBe(3)
         ->and($user->fresh()->demo_data_seeded_at)->not->toBeNull();
+});
+
+test('seedDemoDataAction is idempotent through the UI — second call warns and does not duplicate', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Livewire::test(ListWeapons::class)
+        ->callAction('seedDemoData')
+        ->assertNotified('Demo-data geladen')
+        ->callAction('seedDemoData')
+        ->assertNotified('Demo-data was al geladen');
+
+    expect($user->weapons()->count())->toBe(3)
+        ->and($user->sessions()->count())->toBe(5);
 });
