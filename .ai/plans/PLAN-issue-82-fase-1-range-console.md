@@ -11,10 +11,48 @@ basis: e809582 (main, post-PR #86 merge)
 
 # PLAN: Issue #82 · Fase 1 — Range Console (5 kernschermen)
 
-## Status: APPROVED
+## Status: COMPLETED
 
-BUILD-mode actief vanaf 2026-05-15. Per stap commit + sign-off; pas door
-naar volgende stap na expliciete OK van gebruiker.
+BUILD afgerond. Alle 5 kernschermen geland op `feature/range-console`,
+163 tests groen (3× stabiel), Pint clean.
+
+### Geland (commits op feature/range-console)
+1. `f4a77d1` — shared components (page-header, stat-card, target-rings,
+   shot-strip, series-card, ai-reflection-card) + SessionStatsService +
+   WeaponInsightsService.
+2. `4ee2db7` — ListSessions redesign: KPI-strip + right-rail (target-rings,
+   AI-reflectie, trend-sparkline) + RangeConsoleSummaryService + sparkline.
+3. `b747e29` — ViewSession deep-dive: header (T1 + T4 stamp), 5 stats,
+   series-card, shot-strip met dip-highlight, hit-pattern, AI-reflectie.
+4. `a83d54f` — ViewWeapon: ID-kaart + kalibratie (migratie 4 velden) +
+   KPI's + score-trend + sessies-tabel.
+5. `b1b22ee` — AI-coach 3-koloms view (hybride: Copilot-state + eigen Blade)
+   + CoachContextService.
+6. `a0000a4` — nieuwe-sessie wizard (4-staps Filament v5 Wizard) +
+   form-refactor naar herbruikbare static field-groups.
+7. `c22c2bb` — fixes uit adversariële branch-review (N+1, scoping, stats).
+
+### Afwijkingen / beslissingen tijdens BUILD
+- **Schoten-stap wizard** is een preview (numpad/readout read-only) i.p.v.
+  live loggen: het echte SessionShotBoard vereist een opgeslagen sessie en
+  logt via target-click → ring/score (niet de decimaal-numpad uit het
+  ontwerp). `getRedirectUrl()` stuurt na afronden naar het schotenbord.
+- **AI-coach** is hybride (decision 4): de bestaande FilamentCopilot-widget
+  blijft de chat-engine; de 3-koloms layout is eigen Blade.
+- **Theme-switch (AC4 uit issue)** blijft uit scope — Signal Mint dark enige
+  palet (afgesproken in Fase 0).
+- Twee adversariële review-workflows (wizard + branch-breed) uitgevoerd;
+  16 findings bevestigd en opgelost, incl. een latente Carbon-3 bug in
+  avgCadansSec (gaf altijd null in productie).
+
+### Niet in deze fase
+- Empty states (Fase 2 · aparte worktree), mobile (Fase 4), marketing (Fase 3).
+
+---
+
+## (oorspronkelijk PLAN — APPROVED 2026-05-15)
+
+Per stap commit + sign-off; pas door naar volgende stap na expliciete OK.
 
 ## Beslissingen na review (2026-05-15)
 
