@@ -130,8 +130,8 @@
                     @foreach ($recentSessions as $session)
                         @php
                             $sessionLabel = 'S-'.str_pad((string) $session->id, 4, '0', STR_PAD_LEFT);
-                            $sessionScore = (int) $session->shots()->sum('score');
-                            $sessionShots = (int) $session->sessionWeapons()->sum('rounds_fired');
+                            $sessionScore = (int) ($session->score_total ?? 0);
+                            $sessionShots = (int) ($session->rounds_total ?? 0);
                         @endphp
                         <div style="display: grid; grid-template-columns: 100px minmax(0, 1fr) 90px 80px 80px; padding: 12px 16px; border-bottom: 1px solid var(--at-line); align-items: center; font-size: 12px;">
                             <div style="font-family: var(--at-font-mono); color: var(--at-muted); font-size: 11px;">
@@ -142,7 +142,7 @@
                             <div style="font-family: var(--at-font-mono); color: var(--at-text);">{{ $sessionShots }}</div>
                             <div style="font-family: var(--at-font-mono); color: var(--at-accent); font-weight: 600;">{{ $sessionScore }}</div>
                             <div>
-                                @if ($session->aiReflection()->exists())
+                                @if ($session->ai_reflection_exists)
                                     <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 4px; background: var(--at-accent-12); color: var(--at-accent); border: 1px solid var(--at-accent-25); font-family: var(--at-font-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;">AI</span>
                                 @else
                                     <span style="font-family: var(--at-font-mono); font-size: 9px; color: var(--at-muted); letter-spacing: 0.08em; text-transform: uppercase;">open</span>

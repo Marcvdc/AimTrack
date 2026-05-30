@@ -86,6 +86,10 @@ final class SessionStatsService
     /**
      * Gemiddelde cadans (seconden tussen opeenvolgende schoten).
      * Returnt null als shots geen onderlinge timestamp-verschillen tonen.
+     *
+     * Schoten met exact gelijke timestamps (delta 0) worden bewust
+     * overgeslagen: dat duidt op bulk-inserts (bv. seeding of import),
+     * geen echte cadans. Een sessie waarvan álle deltas 0 zijn levert null.
      */
     public function avgCadansSec(): ?float
     {
@@ -104,7 +108,9 @@ final class SessionStatsService
                 continue;
             }
 
-            $delta = $curr->diffInSeconds($prev);
+            // abs(): Carbon 3 levert een signed diff op; we willen de
+            // magnitude van de tijd tussen twee schoten.
+            $delta = abs($curr->diffInSeconds($prev));
 
             if ($delta > 0) {
                 $deltas[] = $delta;
@@ -168,6 +174,11 @@ final class SessionStatsService
         $series = $this->seriesScores($perSerie);
 
         if (count($series) < 2) {
+            return null;
+        }
+
+        // Geen echte dip als alle series even hoog scoren.
+        if (min($series) === max($series)) {
             return null;
         }
 

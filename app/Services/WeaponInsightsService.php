@@ -63,13 +63,16 @@ final class WeaponInsightsService
         }
 
         $maxScore = $perSession->max();
-        $sessionId = $perSession->search($maxScore);
+        $topSessionIds = $perSession
+            ->filter(fn (int $total): bool => $total === $maxScore)
+            ->keys();
 
-        if ($sessionId === false) {
-            return null;
-        }
-
-        $session = Session::query()->find($sessionId);
+        // Bij gelijke topscore: de chronologisch laatste sessie wint.
+        $session = Session::query()
+            ->whereIn('id', $topSessionIds)
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->first(['id', 'date']);
 
         return $session?->date;
     }
@@ -114,6 +117,9 @@ final class WeaponInsightsService
     public function recentSessions(int $limit = 5): Collection
     {
         return $this->sessionsWithWeaponQuery()
+            ->withSum('shots as score_total', 'score')
+            ->withSum('sessionWeapons as rounds_total', 'rounds_fired')
+            ->withExists('aiReflection')
             ->orderByDesc('date')
             ->limit($limit)
             ->get();

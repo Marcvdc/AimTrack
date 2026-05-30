@@ -25,7 +25,7 @@ it('returns zero KPIs for a user with no sessions', function (): void {
     $service = new RangeConsoleSummaryService(User::factory()->create());
 
     expect($service->sessionsThisMonth())->toBe(0);
-    expect($service->sessionsLastMonth())->toBe(0);
+    expect($service->sessionsThisMonthDelta())->toBe(0);
     expect($service->shotsLast30d())->toBe(0);
     expect($service->bestSeriesScore())->toBeNull();
     expect($service->aiReflectionCount())->toBe(0);
@@ -44,7 +44,8 @@ it('counts sessions in current and previous month separately', function (): void
     $service = new RangeConsoleSummaryService($user);
 
     expect($service->sessionsThisMonth())->toBe(3);
-    expect($service->sessionsLastMonth())->toBe(2);
+    // sessionsLastMonth() is een implementatiedetail van de delta (privé);
+    // delta = dezeMaand - vorigeMaand = 3 - 2 = 1 borgt beide.
     expect($service->sessionsThisMonthDelta())->toBe(1);
 });
 

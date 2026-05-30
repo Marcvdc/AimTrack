@@ -47,6 +47,32 @@ it('renders the session-detail layout with header, stats and shot strip', functi
         ->assertSee('Nieuwe handgreep gebruikt');
 });
 
+it('highlights the concentration-dip series amber on the shot strip', function (): void {
+    $user = User::factory()->create();
+    $session = Session::factory()->for($user)->create();
+
+    // 3 series: serie 1 & 3 sterk (10), serie 2 (schot 11–20) zwak (7) → dip.
+    foreach (range(0, 29) as $i) {
+        $turn = intdiv($i, 10);
+        $value = $turn === 1 ? 7 : 10;
+        SessionShot::factory()->for($session)->create([
+            'turn_index' => $turn,
+            'shot_index' => $i % 10,
+            'ring' => $value,
+            'score' => $value,
+            'x_normalized' => 0.5,
+            'y_normalized' => 0.5,
+        ]);
+    }
+
+    expect((new App\Services\SessionStatsService($session))->dipRange())->toBe([10, 19]);
+
+    Livewire::actingAs($user)
+        ->test(ViewSession::class, ['record' => $session->id])
+        ->assertOk()
+        ->assertSee('var(--at-warn)');
+});
+
 it('falls back to a friendly empty message when the session has no shots', function (): void {
     $user = User::factory()->create();
     $session = Session::factory()->for($user)->create();

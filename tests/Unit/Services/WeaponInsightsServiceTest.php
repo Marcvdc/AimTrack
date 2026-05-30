@@ -90,6 +90,25 @@ it('returns a date for bestScoreDate matching the top session', function (): voi
     expect($date?->toDateString())->toBe('2026-04-15');
 });
 
+it('breaks bestScoreDate ties in favour of the most recent session', function (): void {
+    $user = User::factory()->create();
+    $weapon = Weapon::factory()->for($user)->create();
+
+    $earlier = Session::factory()->for($user)->create(['date' => '2026-03-01']);
+    $later = Session::factory()->for($user)->create(['date' => '2026-04-20']);
+
+    SessionWeapon::factory()->for($earlier)->for($weapon)->create();
+    SessionWeapon::factory()->for($later)->for($weapon)->create();
+
+    // Both sessions tie at the maximum score of 100.
+    shotsFor($earlier, 10, 10, 10);
+    shotsFor($later, 10, 10, 10);
+
+    $date = (new WeaponInsightsService($weapon))->bestScoreDate();
+
+    expect($date?->toDateString())->toBe('2026-04-20');
+});
+
 it('returns trend data only within the requested window', function (): void {
     $user = User::factory()->create();
     $weapon = Weapon::factory()->for($user)->create();

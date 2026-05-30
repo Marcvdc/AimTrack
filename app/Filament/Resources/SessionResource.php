@@ -295,6 +295,10 @@ class SessionResource extends Resource implements CopilotResourceContract
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query
+                ->with('sessionWeapons.weapon')
+                ->withSum('shots as total_score', 'score')
+                ->withExists('aiReflection'))
             ->columns([
                 TextColumn::make('date')
                     ->label('Datum')
@@ -322,12 +326,12 @@ class SessionResource extends Resource implements CopilotResourceContract
                     ->sortable(),
                 TextColumn::make('totalScore')
                     ->label('Score')
-                    ->state(fn (Session $record): int => (int) $record->shots()->sum('score'))
+                    ->state(fn (Session $record): int => (int) ($record->total_score ?? 0))
                     ->color(fn ($state): string => ((int) $state) > 0 ? 'success' : 'gray')
                     ->weight('semibold'),
                 TextColumn::make('reflectionStatus')
                     ->label('Status')
-                    ->state(fn (Session $record): string => $record->aiReflection()->exists() ? 'AI' : 'open')
+                    ->state(fn (Session $record): string => $record->ai_reflection_exists ? 'AI' : 'open')
                     ->badge()
                     ->color(fn (string $state): string => $state === 'AI' ? 'success' : 'warning'),
                 TextColumn::make('aiReflection.summary')

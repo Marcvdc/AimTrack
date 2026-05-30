@@ -63,6 +63,8 @@ final class CoachContextService
             ->orderByDesc('session_count')
             ->value('weapon_id');
 
-        return $weaponId ? Weapon::query()->find($weaponId) : null;
+        return $weaponId
+            ? Weapon::query()->where('user_id', $this->user->getKey())->find($weaponId)
+            : null;
     }
 }

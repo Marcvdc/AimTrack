@@ -27,7 +27,12 @@ final class RangeConsoleSummaryService
             ->count();
     }
 
-    public function sessionsLastMonth(): int
+    public function sessionsThisMonthDelta(): int
+    {
+        return $this->sessionsThisMonth() - $this->sessionsLastMonth();
+    }
+
+    private function sessionsLastMonth(): int
     {
         return $this->userSessions()
             ->whereBetween('date', [
@@ -35,11 +40,6 @@ final class RangeConsoleSummaryService
                 now()->subMonthNoOverflow()->endOfMonth(),
             ])
             ->count();
-    }
-
-    public function sessionsThisMonthDelta(): int
-    {
-        return $this->sessionsThisMonth() - $this->sessionsLastMonth();
     }
 
     public function totalSessions(): int
@@ -62,14 +62,36 @@ final class RangeConsoleSummaryService
     /**
      * Beste 10-shot serie over alle sessies van de user. Returnt null
      * als er geen volle serie van 10 is gelogd.
+     *
+     * Eén query voor alle shots (geen N+1 over sessies): groepeer per
+     * sessie, hak in series van 10 en pak de hoogste volledige serie.
      */
     public function bestSeriesScore(): ?int
     {
-        $sessions = $this->userSessions()->get();
+        $sessionIds = $this->userSessions()->pluck('id');
+
+        if ($sessionIds->isEmpty()) {
+            return null;
+        }
+
+        $shotsBySession = SessionShot::query()
+            ->whereIn('session_id', $sessionIds)
+            ->orderBy('session_id')
+            ->orderBy('turn_index')
+            ->orderBy('shot_index')
+            ->orderBy('id')
+            ->get(['session_id', 'score'])
+            ->groupBy('session_id');
 
         $best = null;
-        foreach ($sessions as $session) {
-            foreach ((new SessionStatsService($session))->seriesScores(10) as $serieSum) {
+        foreach ($shotsBySession as $shots) {
+            foreach ($shots->pluck('score')->chunk(10) as $chunk) {
+                if ($chunk->count() < 10) {
+                    continue;
+                }
+
+                $serieSum = (int) $chunk->sum();
+
                 if ($best === null || $serieSum > $best) {
                     $best = $serieSum;
                 }

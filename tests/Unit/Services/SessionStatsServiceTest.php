@@ -116,6 +116,13 @@ it('returns null dipRange when fewer than 2 complete series', function (): void 
     expect((new SessionStatsService($session))->dipRange())->toBeNull();
 });
 
+it('returns null dipRange when all series score equally (no real dip)', function (): void {
+    $session = Session::factory()->for(User::factory())->create();
+    statsShotsFor($session, 20, ['ring' => 10, 'score' => 10]);
+
+    expect((new SessionStatsService($session))->dipRange())->toBeNull();
+});
+
 it('returns null groupMm when fewer than 2 shots', function (): void {
     $session = Session::factory()->for(User::factory())->create();
     SessionShot::factory()->for($session)->create([
@@ -152,6 +159,24 @@ it('returns null avgCadansSec when shots have no time spread', function (): void
     $session->shots()->update(['created_at' => now()]);
 
     expect((new SessionStatsService($session))->avgCadansSec())->toBeNull();
+});
+
+it('averages only positive deltas, skipping same-second shots', function (): void {
+    $session = Session::factory()->for(User::factory())->create();
+    $base = now()->startOfMinute();
+
+    // Deltas: shot1->2 = 0s (same second, skipped), 2->3 = 4s, 3->4 = 2s.
+    // Expected average over positive deltas = (4 + 2) / 2 = 3.0.
+    $stamps = [$base, $base, $base->copy()->addSeconds(4), $base->copy()->addSeconds(6)];
+    foreach ($stamps as $i => $stamp) {
+        SessionShot::factory()->for($session)->create([
+            'turn_index' => 0,
+            'shot_index' => $i,
+            'created_at' => $stamp,
+        ]);
+    }
+
+    expect((new SessionStatsService($session))->avgCadansSec())->toBe(3.0);
 });
 
 it('caches the loaded shots collection across method calls', function (): void {
