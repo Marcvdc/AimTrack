@@ -10,6 +10,13 @@ Gebruik een aparte worktree zodra je een feature wilt ontwikkelen terwijl een an
 
 Niet gebruiken voor: hotfix op de huidige branch, kleine refactor in de huidige stack.
 
+## Branch-model: `main` / `develop`
+
+- **`main`** — productie-trunk. Komt **alleen** binnen via een PR vanuit `develop` (of een losse hotfix-branch). Geen directe feature-merges meer op `main`.
+- **`develop`** — integratie- en testbranch: de "test-versie van `main`". Alle feature-worktrees worden hiervan afgesplitst en hier weer in gemerged. CI (lint + Pest + build) draait automatisch op elke PR naar `develop` **en** op elke push naar `develop`. Zodra `develop` stabiel is → PR `develop` → `main`.
+
+Concreet: je baseert een worktree op `develop` (niet op `main`) en richt de feature-PR op `develop`. `main` blijft daarmee altijd een gemergde, groene baseline.
+
 ## Hoofdrepo-discipline
 
 De hoofd-clone (`/home/brandnetel/projects/aimtrack`, branch `main`) is **alleen voor main-sync**. Geen feature-werk, geen scratch-files, geen plan-bestanden in `.ai/plans/`. Reden:
@@ -19,7 +26,7 @@ De hoofd-clone (`/home/brandnetel/projects/aimtrack`, branch `main`) is **alleen
 
 ## Vóór je `worktree-setup.sh` aanroept
 
-1. **Lokale `main` fast-forwarden:** `git -C /home/brandnetel/projects/aimtrack pull --ff-only`. Het script splitst de nieuwe branch af van **lokale** `main`; staat die achter, dan mist je nieuwe worktree net-gemergde features (incl. de migraties/services waar je plan op leunt).
+1. **Lokale basis-branch bijwerken:** werk de branch bij waarvan je afsplitst. Voor de geïntegreerde flow is dat `develop`: `git -C <hoofdrepo> fetch origin develop:develop` (fast-forwardt de lokale `develop`-ref zonder checkout — de hoofdrepo blijft op `main`). Voor een op `main` gebaseerde worktree: `git -C <hoofdrepo> pull --ff-only`. Het script splitst de nieuwe branch af van de **lokale** basis-branch; staat die achter, dan mist je nieuwe worktree net-gemergde features (incl. de migraties/services waar je plan op leunt).
 2. **Hoofdrepo schoon:** `git status` in de hoofdrepo moet leeg zijn. Verplaats lopende plan-files of scratch-werk eerst naar de worktree waar ze bij horen.
 3. **Bevestig de afhankelijkheden:** als je nieuwe feature op een nog niet-gemergde branch leunt, splits dan vanaf die branch (`git worktree add -b <naam> ../aimtrack-<naam> <basis-branch>`) en niet via het script — het script forceert `main` als basis.
 
@@ -32,11 +39,17 @@ Als je tijdens het scopen al een DRAFT plan in de hoofdrepo hebt geschreven (bij
 ## Hoe — altijd via het setup script
 
 ```bash
-./scripts/worktree-setup.sh <feature-naam> [offset]
+./scripts/worktree-setup.sh <feature-naam> [offset] [base-branch]
+```
+
+Voor de geïntegreerde flow baseer je op `develop` (3e arg; laat de offset leeg voor auto):
+
+```bash
+./scripts/worktree-setup.sh <feature-naam> "" develop
 ```
 
 Het script:
-1. Maakt `../aimtrack-<feature>` aan met branch `feature/<feature>`
+1. Maakt `../aimtrack-<feature>` aan met branch `feature/<feature>` (default basis `main`, geef `develop` mee voor de integratie-flow)
 2. Kopieert `.env.local` (Laravel-config) naar de worktree
 3. Maakt een **aparte** `.env` in de worktree project root met de docker-compose overrides (`COMPOSE_PROJECT_NAME`, poorten)
 4. Print de URL's en cleanup-instructies
