@@ -1,0 +1,78 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+@source '../../../../resources/views/components/aimtrack/**/*';
+
+/*
+ * AimTrack · Signal Mint dark — Filament admin theme
+ *
+ * Bron van waarheid voor de tokens: resources/css/aimtrack-tokens.css en
+ * .ai/design-handoff/project/design-tokens.jsx (issue #82).
+ *
+ * Strategie: Filament's chrome (sidebar/topbar/tabellen/badges/wizard/velden)
+ * gebruikt Tailwind's grijs-schaal (dark:bg-gray-900, border-gray-700, ...).
+ * Door --color-gray-* te hermappen naar de Signal-Mint darks rendert de hele
+ * panel-chrome in het juiste palet i.p.v. Filament's neutrale default —
+ * dat lost root cause R1 op zonder per-component te vechten met specificity.
+ */
+@theme {
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono-font-family: 'JetBrains Mono';
+
+    /* Grijs-schaal → Signal Mint (50 = lichtste tekst, 950 = diepste bg) */
+    --color-gray-50: #e9f0ff;
+    --color-gray-100: #dbe5fb;
+    --color-gray-200: #c2d0ee;
+    --color-gray-300: #a7b6dc;
+    --color-gray-400: #94a3c5; /* --muted */
+    --color-gray-500: #6f7ea6;
+    --color-gray-600: #4a5780;
+    --color-gray-700: #1c2543; /* --line */
+    --color-gray-800: #131c34; /* --panel-2 */
+    --color-gray-900: #0c1428; /* --panel */
+    --color-gray-950: #040711; /* --bg */
+}
+
+/*
+ * Tactical-shell accenten die niet uit de grijs-hermapping volgen.
+ * Bewust beperkt en op stabiele Filament v5 .fi-* hooks.
+ */
+@layer components {
+    /* Nav-groeplabels: mono, uppercase, wijd gespatieerd (LOG / INZICHT / BEHEER) */
+    .fi-sidebar-group-label {
+        font-family: var(--at-font-mono);
+        font-size: 0.625rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--at-muted);
+    }
+
+    /* Actief nav-item: 2px accent-rand links + zwaardere tekst */
+    .fi-sidebar-item.fi-active > .fi-sidebar-item-button,
+    .fi-sidebar-item-active > .fi-sidebar-item-button {
+        border-left: 2px solid var(--at-accent);
+        background-color: var(--at-panel-2);
+        font-weight: 600;
+    }
+
+    /* Nav-badges in mono */
+    .fi-sidebar-item-badge,
+    .fi-badge {
+        font-family: var(--at-font-mono);
+        letter-spacing: 0.05em;
+    }
+
+    /* Topbar + sidebar: scherpe 1px hairlines in --line */
+    .fi-topbar,
+    .fi-sidebar {
+        border-color: var(--at-line);
+    }
+
+    /* Mono op numerieke data: KPI-waardes, tabel-cijferkolommen */
+    .fi-ta-text-item.fi-ta-text-item-numeric,
+    .fi-in-text-item-numeric {
+        font-family: var(--at-font-mono);
+        letter-spacing: -0.01em;
+    }
+}
