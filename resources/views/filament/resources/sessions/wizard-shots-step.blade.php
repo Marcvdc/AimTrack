@@ -2,8 +2,23 @@
     // Decimaal-numpad uit new-session-wizard.jsx — exact deze volgorde/labels.
     $numpad = ['10.9', '10.8', '10.7', '10.6', '10.5', '10.4', '10.3', '10.2', '10.1', '10.0', '9.9', '9.8', '9.7', '9.6', '9.5', '9.0', '8', '0'];
 
-    // Decision 6: AI-tijdens-sessie tip is hard-coded mock-tekst (geen runtime call).
-    $aiTip = 'Goed bezig — schot 1–10 zit boven je gemiddelde. Hou je cadans rond 30s aan.';
+    // Preview-tekst (geen runtime AI-call): kadert de live-feature i.p.v. nep-cijfers.
+    $aiTip = 'Zodra je schoten logt geeft de coach hier live tips op basis van je cadans en groepering.';
+
+    // Live wizard-state (geen sample data): toon het écht gekozen wapen + sessie
+    // uit de eerdere stappen. $this->data is de wizard-form-state op deze pagina.
+    $wizardData = is_array($this->data ?? null) ? $this->data : [];
+    $weaponRows = $wizardData['sessionWeapons'] ?? [];
+    $firstRow = is_array($weaponRows) ? (collect($weaponRows)->first() ?? []) : [];
+    $plannedShots = collect($weaponRows)->sum(fn ($r) => (int) ($r['rounds_fired'] ?? 0));
+
+    $chosenWeapon = ! empty($firstRow['weapon_id'])
+        ? \App\Models\Weapon::find($firstRow['weapon_id'])
+        : null;
+    $chosenDistance = $firstRow['distance_m'] ?? null;
+
+    $sessionDate = ! empty($wizardData['date']) ? \Illuminate\Support\Carbon::parse($wizardData['date'])->translatedFormat('d M Y') : null;
+    $sessionRange = $wizardData['range_name'] ?? ($wizardData['location'] ?? null);
 @endphp
 
 <div class="aimtrack-wizard-shots" style="display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start;">
@@ -13,7 +28,7 @@
                 <div class="at-label">VOORTGANG</div>
                 <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 6px;">
                     <div style="font-family: var(--at-font-mono); font-size: 36px; font-weight: 600; color: var(--at-text); line-height: 1; letter-spacing: -0.02em;">0</div>
-                    <div style="font-family: var(--at-font-mono); font-size: 14px; color: var(--at-muted);">/ 60</div>
+                    <div style="font-family: var(--at-font-mono); font-size: 14px; color: var(--at-muted);">/ {{ $plannedShots > 0 ? $plannedShots : 60 }}</div>
                 </div>
             </div>
             <div>
@@ -30,7 +45,7 @@
             </div>
         </div>
 
-        <x-aimtrack.shot-strip :shots="[]" :total-slots="60" :show-legend="false" />
+        <x-aimtrack.shot-strip :shots="[]" :total-slots="$plannedShots > 0 ? $plannedShots : 60" :show-legend="false" />
 
         <div>
             <div class="at-label">VOLGEND SCHOT · PREVIEW</div>
@@ -69,8 +84,8 @@
     <aside style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
         <div>
             <div class="at-label">SESSIE</div>
-            <div style="font-size: 14px; font-weight: 600; color: var(--at-text); margin-top: 6px;">Nieuwe sessie</div>
-            <div style="font-size: 12px; color: var(--at-muted); font-family: var(--at-font-mono); margin-top: 2px;">Datum &amp; baan: stap Sessie</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--at-text); margin-top: 6px;">{{ $sessionDate ?? 'Nieuwe sessie' }}</div>
+            <div style="font-size: 12px; color: var(--at-muted); font-family: var(--at-font-mono); margin-top: 2px;">{{ $sessionRange ?? 'Datum & baan: stap Sessie' }}</div>
         </div>
 
         <div>
@@ -78,8 +93,8 @@
             <div style="margin-top: 6px; padding: 10px 12px; border-radius: var(--at-r-lg); background: var(--at-panel-2); border: 1px solid var(--at-line); display: flex; align-items: center; gap: 10px;">
                 <span style="color: var(--at-accent); font-size: 16px; line-height: 1;" role="presentation">⦿</span>
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 13px; font-weight: 600; color: var(--at-text);">Zoals gekozen in stap Wapen</div>
-                    <div style="font-family: var(--at-font-mono); font-size: 11px; color: var(--at-muted);">wapen · kaliber · serial</div>
+                    <div style="font-size: 13px; font-weight: 600; color: var(--at-text);">{{ $chosenWeapon?->name ?? 'Kies in stap Wapen' }}</div>
+                    <div style="font-family: var(--at-font-mono); font-size: 11px; color: var(--at-muted);">{{ $chosenWeapon ? trim(($chosenWeapon->weapon_type?->value ? ucfirst($chosenWeapon->weapon_type->value) : '').($chosenWeapon->caliber ? ' · '.$chosenWeapon->caliber : '').($chosenDistance ? ' · '.$chosenDistance.'m' : '')) : 'wapen · kaliber · afstand' }}</div>
                 </div>
             </div>
         </div>
