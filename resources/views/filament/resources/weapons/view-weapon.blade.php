@@ -17,13 +17,13 @@
     $bestDate = $insights->bestScoreDate();
     $trendData = $insights->trendData(365);
     $recentSessions = $insights->recentSessions(5);
+    $weaponInsight = $weapon->aiWeaponInsight;
 
     $statusRows = [
-        ['Status', $weapon->is_active ? 'Actief' : 'Uit gebruik', $weapon->is_active ? 'ok' : null],
+        ['Status', $weapon->is_active ? 'Actief · WM-4' : 'Uit gebruik', $weapon->is_active ? 'ok' : null],
         ['Aangeschaft', $weapon->owned_since?->translatedFormat('M Y') ?? '—', null],
         ['Kaliber', $caliberLabel, null],
         ['Type', ucfirst($typeLabel), null],
-        ['Serial', $weapon->serial_number ?? '—', null],
         ['Opslag', $weapon->storageLocation?->name ?? ($weapon->storage_location ?? '—'), null],
     ];
 
@@ -51,7 +51,7 @@
                 <div style="margin-top: 14px;">
                     <div class="at-label">{{ strtoupper($typeLabel) }} · {{ $caliberLabel }}</div>
                     <h1 style="font-family: var(--at-font-display); font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin: 4px 0 0; color: var(--at-text);">{{ $weapon->name }}</h1>
-                    <div style="font-family: var(--at-font-mono); font-size: 11px; color: var(--at-muted); margin-top: 6px;">ID · {{ $idCode }}</div>
+                    <div style="font-family: var(--at-font-mono); font-size: 11px; color: var(--at-muted); margin-top: 6px;">SERIAL · {{ $weapon->serial_number ?? $idCode }}</div>
                 </div>
 
                 <div style="height: 1px; background: var(--at-line); margin: 14px 0;"></div>
@@ -115,6 +115,38 @@
                     @endif
                 </div>
             </div>
+
+            @if ($weaponInsight)
+                @php
+                    $insightPatterns = collect($weaponInsight->patterns ?? [])->filter()->values();
+                    $insightSuggestions = collect($weaponInsight->suggestions ?? [])->filter()->values();
+                @endphp
+                <x-aimtrack.bracket-frame :rounded="8" :padding="16" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; font-family: var(--at-font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-accent);">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--at-accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="presentation"><path d="M12 3l2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1z" /></svg>
+                        <span>AI-wapeninzicht</span>
+                        @if ($weaponInsight->updated_at)
+                            <span style="margin-left: auto; color: var(--at-muted);">{{ $weaponInsight->updated_at->diffForHumans() }}</span>
+                        @endif
+                    </div>
+                    @if (filled($weaponInsight->summary))
+                        <div style="font-size: 13px; line-height: 1.55; color: var(--at-text);">{{ $weaponInsight->summary }}</div>
+                    @endif
+                    @if ($insightPatterns->isNotEmpty() || $insightSuggestions->isNotEmpty())
+                        <div style="height: 1px; background: var(--at-line);"></div>
+                        <div style="display: grid; grid-template-columns: 90px 1fr; gap: 6px; font-size: 12px;">
+                            @if ($insightPatterns->isNotEmpty())
+                                <div class="at-label" style="color: var(--at-accent);">PATRONEN</div>
+                                <div style="color: var(--at-text);">{{ $insightPatterns->implode(' · ') }}</div>
+                            @endif
+                            @if ($insightSuggestions->isNotEmpty())
+                                <div class="at-label">ADVIES</div>
+                                <div style="color: var(--at-text);">{{ $insightSuggestions->implode(' · ') }}</div>
+                            @endif
+                        </div>
+                    @endif
+                </x-aimtrack.bracket-frame>
+            @endif
 
             <div style="background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-lg); overflow: hidden;">
                 <div style="padding: 14px 16px; border-bottom: 1px solid var(--at-line); display: flex; align-items: center; gap: 10px;">
