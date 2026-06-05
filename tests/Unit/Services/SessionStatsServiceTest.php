@@ -204,3 +204,50 @@ it('shotsPerSerie defaults to 10 for empty sessions and longer ones', function (
     statsShotsFor($small, 5);
     expect((new SessionStatsService($small))->shotsPerSerie())->toBe(5);
 });
+
+it('computes mean X/Y offset in mm relative to the centre', function (): void {
+    $session = Session::factory()->for(User::factory())->create();
+    statsShotsFor($session, 4, ['x_normalized' => 0.5, 'y_normalized' => 0.5, 'ring' => 10, 'score' => 10]);
+
+    $service = new SessionStatsService($session);
+
+    expect($service->meanXmm())->toBe(0.0)
+        ->and($service->meanYmm())->toBe(0.0);
+});
+
+it('returns null mean offset and SD when there are no shots', function (): void {
+    $service = new SessionStatsService(Session::factory()->for(User::factory())->create());
+
+    expect($service->meanXmm())->toBeNull()
+        ->and($service->meanYmm())->toBeNull()
+        ->and($service->sdMm())->toBeNull();
+});
+
+it('computes a positive standard deviation in mm for spread shots', function (): void {
+    $session = Session::factory()->for(User::factory())->create();
+    SessionShot::factory()->for($session)->create(['turn_index' => 0, 'shot_index' => 0, 'x_normalized' => 0.4, 'y_normalized' => 0.5, 'ring' => 9, 'score' => 9]);
+    SessionShot::factory()->for($session)->create(['turn_index' => 0, 'shot_index' => 1, 'x_normalized' => 0.6, 'y_normalized' => 0.5, 'ring' => 9, 'score' => 9]);
+
+    expect((new SessionStatsService($session))->sdMm())->toBeGreaterThan(0.0);
+});
+
+it('computes the score delta versus the user session average', function (): void {
+    $user = User::factory()->create();
+
+    $a = Session::factory()->for($user)->create();
+    statsShotsFor($a, 10, ['ring' => 10, 'score' => 10]); // totaal 100
+
+    $b = Session::factory()->for($user)->create();
+    statsShotsFor($b, 10, ['ring' => 8, 'score' => 8]);   // totaal 80
+
+    // gemiddelde van [100, 80] = 90 → 100 - 90 = +10
+    expect((new SessionStatsService($a))->scoreVsAverage())->toBe(10);
+});
+
+it('returns null score delta with fewer than two sessions', function (): void {
+    $user = User::factory()->create();
+    $a = Session::factory()->for($user)->create();
+    statsShotsFor($a, 5, ['ring' => 10, 'score' => 10]);
+
+    expect((new SessionStatsService($a))->scoreVsAverage())->toBeNull();
+});

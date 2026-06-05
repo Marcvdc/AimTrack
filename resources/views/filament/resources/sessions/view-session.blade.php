@@ -39,10 +39,22 @@
     ])->all();
 
     $reflectionRecord = $session->aiReflection;
+
+    $scoreDelta = $stats->scoreVsAverage();
+    $meanXmm = $stats->meanXmm();
+    $meanYmm = $stats->meanYmm();
+    $sdMm = $stats->sdMm();
+
+    $firstShotAt = $session->shots->min('created_at');
+    $lastShotAt = $session->shots->max('created_at');
+    $durationMin = ($firstShotAt && $lastShotAt) ? (int) round($firstShotAt->diffInSeconds($lastShotAt) / 60) : 0;
+    $timeWindow = $durationMin > 0
+        ? Carbon::parse($firstShotAt)->format('H:i').'–'.Carbon::parse($lastShotAt)->format('H:i').' · '.$durationMin.' min'
+        : null;
 @endphp
 
 <x-filament-panels::page>
-    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start;">
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start;">
         <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
             <div style="position: relative; padding: 20px; background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-lg); overflow: hidden;">
                 <x-aimtrack.watermark-bg :size="220" :opacity="0.07" :top="-60" :right="-40" />
@@ -58,13 +70,21 @@
                         <div style="display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--at-muted); flex-wrap: wrap;">
                             <span>{{ $session->range_name ?? '—' }}</span>
                             <span>{{ $weapon?->name ?? '—' }}{{ $weapon?->caliber ? ' · '.$weapon->caliber : '' }}</span>
-                            <span>{{ $cadans !== null ? round(($cadans * max(1, $totalShots)) / 60, 0).' min' : '—' }}</span>
+                            @if ($timeWindow)
+                                <span>{{ $timeWindow }}</span>
+                            @endif
                         </div>
                     </div>
                     <div style="text-align: right; position: relative;">
                         <div class="at-label">EINDSCORE</div>
                         <div style="font-family: var(--at-font-mono); font-size: 44px; font-weight: 600; color: var(--at-accent); line-height: 1; letter-spacing: -0.02em;">{{ $totalScore }}</div>
-                        <div style="font-family: var(--at-font-mono); font-size: 12px; color: var(--at-muted); margin-top: 2px;">{{ $totalShots > 0 ? round($totalScore / $totalShots, 1).' gem' : '—' }}</div>
+                        @if ($scoreDelta !== null)
+                            <div style="font-family: var(--at-font-mono); font-size: 12px; margin-top: 2px; color: {{ $scoreDelta >= 0 ? 'var(--at-accent)' : 'var(--at-warn)' }};">
+                                {{ $scoreDelta >= 0 ? '▲ +'.$scoreDelta : '▼ '.$scoreDelta }} vs gem.
+                            </div>
+                        @else
+                            <div style="font-family: var(--at-font-mono); font-size: 12px; color: var(--at-muted); margin-top: 2px;">{{ $totalShots > 0 ? round($totalScore / max(1, $totalShots), 1).' gem' : '—' }}</div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -109,7 +129,14 @@
                 </div>
                 <div style="padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
                     @if ($totalShots > 0)
-                        <x-aimtrack.target-rings :size="240" :hits="$hits" />
+                        <x-aimtrack.target-rings :size="240" :hits="$hits" :score-labels="true" />
+                        @if ($meanXmm !== null && $meanYmm !== null && $sdMm !== null)
+                            <div style="display: flex; justify-content: space-between; width: 100%; font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.12em;">
+                                <span>X: {{ $meanXmm >= 0 ? '+'.$meanXmm : $meanXmm }} mm</span>
+                                <span>Y: {{ $meanYmm >= 0 ? '+'.$meanYmm : $meanYmm }} mm</span>
+                                <span>SD: {{ $sdMm }} mm</span>
+                            </div>
+                        @endif
                     @else
                         <div style="padding: 40px 8px; color: var(--at-muted); font-size: 12px;">Nog geen hits geregistreerd</div>
                     @endif
