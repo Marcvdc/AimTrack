@@ -147,7 +147,26 @@
                 :reflection="$reflectionRecord"
                 :session-id="$sessionLabel"
                 :generated-at="$reflectionRecord?->updated_at"
-            />
+            >
+                @if ($reflectionRecord)
+                    <x-slot:actions>
+                        <a href="{{ \App\Filament\Pages\CoachPage::getUrl() }}"
+                            style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; border-radius: var(--at-r-md); border: 1px solid var(--at-accent-25); background: var(--at-accent-12); color: var(--at-accent); font-size: 12px; text-decoration: none;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
+                            Vraag coach
+                        </a>
+                        @if ($reflectionRecord->acknowledged_at)
+                            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; font-family: var(--at-font-mono); font-size: 11px; color: var(--at-accent);">✓ Gemarkeerd</span>
+                        @else
+                            <button type="button" wire:click="acknowledgeReflection"
+                                style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: var(--at-r-md); border: 1px solid var(--at-line); background: var(--at-panel); color: var(--at-text); font-size: 12px; cursor: pointer;">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                Markeer
+                            </button>
+                        @endif
+                    </x-slot:actions>
+                @endif
+            </x-aimtrack.ai-reflection-card>
 
             @if (filled($session->manual_reflection))
                 <div style="background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-lg); overflow: hidden;">

@@ -52,6 +52,26 @@ class ViewSession extends ViewRecord
         ];
     }
 
+    /**
+     * Markeer de AI-reflectie van deze sessie als gelezen (design: "Markeer").
+     */
+    public function acknowledgeReflection(): void
+    {
+        $reflection = $this->record->aiReflection;
+
+        if ($reflection === null || $reflection->acknowledged_at !== null) {
+            return;
+        }
+
+        $reflection->update(['acknowledged_at' => now()]);
+        $this->record->load('aiReflection');
+
+        Notification::make()
+            ->title('Reflectie gemarkeerd als gelezen')
+            ->success()
+            ->send();
+    }
+
     protected function features(): AimtrackFeatureToggle
     {
         return app(AimtrackFeatureToggle::class);
