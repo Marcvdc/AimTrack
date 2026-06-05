@@ -1,8 +1,14 @@
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
 
-@source '../../../../app/Filament/**/*';
-@source '../../../../resources/views/filament/**/*';
-@source '../../../../resources/views/components/aimtrack/**/*';
+/*
+ * Filament importeert Tailwind met source(none): alléén deze @source-paden
+ * worden gescand. Dek daarom ALLE Blade-views (incl. resources/views/livewire,
+ * waar o.a. het interactieve schotenbord staat) + app/**, anders worden
+ * utility-classes als aspect-square / lg:flex-row / inset-0 weggepurged en
+ * klapt de roos-canvas in.
+ */
+@source '../../../../app/**/*.php';
+@source '../../../../resources/views/**/*.blade.php';
 
 /*
  * AimTrack · Signal Mint dark — Filament admin theme

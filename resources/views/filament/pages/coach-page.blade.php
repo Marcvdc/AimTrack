@@ -90,12 +90,12 @@
             $trainingGoals = $page->getTrainingGoals();
             $scoreDrift = $page->getScoreDrift();
 
-            $sampleQuestions = [
+            $sampleQuestions = array_values(array_filter([
                 'Vergelijk met vorige maand',
-                'Wat trainen deze week?',
-                'Trekkerafstelling LP500',
-                'WM-4 status',
-            ];
+                'Wat moet ik deze week trainen?',
+                $topWeapon ? 'Trekkerafstelling '.$topWeapon->name : 'Hoe verbeter ik mijn groepering?',
+                $lastSession ? 'Reflectie op mijn laatste sessie' : null,
+            ]));
         @endphp
 
         <div data-testid="ai-coach-chat-ready" style="display: grid; grid-template-columns: 260px minmax(0, 1fr) 280px; gap: 16px; align-items: stretch; min-height: 540px;">
