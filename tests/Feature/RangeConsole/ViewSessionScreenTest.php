@@ -139,3 +139,16 @@ it('shows AI reflection actions and marks the reflection as read', function (): 
 
     expect($reflection->refresh()->acknowledged_at)->not->toBeNull();
 });
+
+it('links to the interactive shot board (ring view) from the session detail', function (): void {
+    $user = User::factory()->create();
+    $session = Session::factory()->for($user)->create();
+    seedShots($session, 10);
+
+    $shotBoardUrl = \App\Filament\Resources\SessionResource::getUrl('shots', ['record' => $session->id]);
+
+    Livewire::actingAs($user)
+        ->test(ViewSession::class, ['record' => $session->id])
+        ->assertSee('Schotenbord')
+        ->assertSee($shotBoardUrl, escape: false);
+});

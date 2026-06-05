@@ -2,8 +2,8 @@
     // Decimaal-numpad uit new-session-wizard.jsx — exact deze volgorde/labels.
     $numpad = ['10.9', '10.8', '10.7', '10.6', '10.5', '10.4', '10.3', '10.2', '10.1', '10.0', '9.9', '9.8', '9.7', '9.6', '9.5', '9.0', '8', '0'];
 
-    // Decision 6: AI-tijdens-sessie tip is hard-coded mock-tekst (geen runtime call).
-    $aiTip = 'Goed bezig — schot 1–10 zit boven je gemiddelde. Hou je cadans rond 30s aan.';
+    // Preview-tekst (geen runtime AI-call): kadert de live-feature i.p.v. nep-cijfers.
+    $aiTip = 'Zodra je schoten logt geeft de coach hier live tips op basis van je cadans en groepering.';
 @endphp
 
 <div class="aimtrack-wizard-shots" style="display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start;">

@@ -22,6 +22,11 @@ class ViewSession extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('shotBoard')
+                ->label('Schotenbord (roos)')
+                ->icon('heroicon-m-viewfinder-circle')
+                ->color('primary')
+                ->url(fn (): string => SessionResource::getUrl('shots', ['record' => $this->record])),
             EditAction::make()
                 ->label('Bewerken'),
             Action::make('regenerateAi')

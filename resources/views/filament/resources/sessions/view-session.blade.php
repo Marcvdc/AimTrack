@@ -125,7 +125,9 @@
             <div style="background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-lg); overflow: hidden;">
                 <div style="padding: 14px 16px; border-bottom: 1px solid var(--at-line); display: flex; align-items: center; gap: 10px;">
                     <div style="font-size: 13px; font-weight: 600; color: var(--at-text);">Hit-patroon</div>
-                    <div class="at-label" style="margin-left: auto;">{{ $totalShots }} schoten</div>
+                    <a href="{{ \App\Filament\Resources\SessionResource::getUrl('shots', ['record' => $session]) }}"
+                        style="margin-left: auto; font-family: var(--at-font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--at-accent); text-decoration: none;">Schotenbord →</a>
+                    <div class="at-label">{{ $totalShots }} schoten</div>
                 </div>
                 <div style="padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
                     @if ($totalShots > 0)
