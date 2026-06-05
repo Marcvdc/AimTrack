@@ -87,13 +87,15 @@
             $latestConversation = $coach->latestConversation();
             $lastSession = $coach->lastSession();
             $topWeapon = $coach->topWeapon();
+            $trainingGoals = $page->getTrainingGoals();
+            $scoreDrift = $page->getScoreDrift();
 
-            $sampleQuestions = [
+            $sampleQuestions = array_values(array_filter([
                 'Vergelijk met vorige maand',
-                'Wat trainen deze week?',
-                'Trekkerafstelling LP500',
-                'WM-4 status',
-            ];
+                'Wat moet ik deze week trainen?',
+                $topWeapon ? 'Trekkerafstelling '.$topWeapon->name : 'Hoe verbeter ik mijn groepering?',
+                $lastSession ? 'Reflectie op mijn laatste sessie' : null,
+            ]));
         @endphp
 
         <div data-testid="ai-coach-chat-ready" style="display: grid; grid-template-columns: 260px minmax(0, 1fr) 280px; gap: 16px; align-items: stretch; min-height: 540px;">
@@ -150,10 +152,25 @@
                         <div class="at-label" style="margin-bottom: 8px;">VOORBEELDVRAGEN</div>
                         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                             @foreach ($sampleQuestions as $q)
-                                <span style="padding: 5px 10px; border-radius: 999px; border: 1px solid var(--at-line); color: var(--at-muted); font-size: 11px; font-family: var(--at-font-mono); letter-spacing: 0.04em;">{{ $q }}</span>
+                                <button
+                                    type="button"
+                                    x-on:click="window.dispatchEvent(new CustomEvent('copilot-open'))"
+                                    style="padding: 5px 10px; border-radius: 999px; border: 1px solid var(--at-line); background: transparent; color: var(--at-muted); font-size: 11px; font-family: var(--at-font-mono); letter-spacing: 0.04em; cursor: pointer;"
+                                >{{ $q }}</button>
                             @endforeach
                         </div>
                     </div>
+
+                    @if (count($scoreDrift) >= 2)
+                        <x-aimtrack.bracket-frame :rounded="8" :padding="16" style="display: flex; flex-direction: column; gap: 10px;">
+                            <div class="at-label" style="color: var(--at-accent);">SCORE-DRIFT · GEM. PER SCHOT · LAATSTE SESSIES</div>
+                            <x-aimtrack.sparkline :data="array_values($scoreDrift)" :width="520" :height="70" :stroke-width="2" :fill="true" color="var(--at-warn)" />
+                            <div style="display: flex; justify-content: space-between; font-family: var(--at-font-mono); font-size: 9px; color: var(--at-muted); letter-spacing: 0.14em;">
+                                <span>SCHOT {{ array_key_first($scoreDrift) }}</span>
+                                <span>SCHOT {{ array_key_last($scoreDrift) }}</span>
+                            </div>
+                        </x-aimtrack.bracket-frame>
+                    @endif
 
                     <div style="margin-top: auto; display: flex; align-items: center; gap: 10px;">
                         <button
@@ -199,6 +216,33 @@
                         Geen sessies of wapens gevonden. De coach werkt nog zonder context.
                     </div>
                 @endunless
+
+                <div class="at-label" style="margin-top: 8px;">VOORGESTELDE DOELEN</div>
+                @forelse ($trainingGoals as $goal)
+                    <div wire:key="goal-{{ $goal->id }}" style="padding: 12px; background: var(--at-panel-2); border: 1px solid var(--at-line); border-radius: var(--at-r-md);">
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <button
+                                type="button"
+                                wire:click="completeGoal({{ $goal->id }})"
+                                title="Markeer als afgerond"
+                                style="flex: 0 0 16px; width: 16px; height: 16px; margin-top: 2px; border-radius: 4px; border: 1.5px solid var(--at-accent); background: transparent; cursor: pointer; padding: 0;"
+                            ></button>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-size: 12px; color: var(--at-text); font-weight: 600;">{{ $goal->title }}</div>
+                                @if (filled($goal->detail))
+                                    <div style="font-size: 11px; color: var(--at-muted); margin-top: 2px; line-height: 1.5;">{{ $goal->detail }}</div>
+                                @endif
+                                @if ($goal->source === \App\Enums\TrainingGoalSource::Ai)
+                                    <div style="font-family: var(--at-font-mono); font-size: 9px; color: var(--at-accent); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px;">AI-suggestie</div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div style="font-size: 11px; color: var(--at-muted); line-height: 1.55;">
+                        Nog geen doelen. Vraag de coach om een trainingsdoel voor te stellen.
+                    </div>
+                @endforelse
 
                 <div class="at-label" style="margin-top: 8px;">PRIVACY</div>
                 <div style="font-size: 11px; color: var(--at-muted); line-height: 1.6;">

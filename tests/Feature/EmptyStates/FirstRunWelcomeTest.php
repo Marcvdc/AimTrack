@@ -113,7 +113,7 @@ test('seedDemoDataAction triggers DemoDataSeeder for the current user', function
         ->and($user->sessions()->count())->toBe(5);
 });
 
-test('dashboard renders default widgets grid when user has data', function (): void {
+test('dashboard renders the stats/leergebieden/KNSA overview when the user has data', function (): void {
     $user = User::factory()->create();
     Weapon::factory()->for($user)->create();
 
@@ -123,4 +123,8 @@ test('dashboard renders default widgets grid when user has data', function (): v
 
     $response->assertOk();
     $response->assertDontSee('● WELKOM', escape: false);
+    $response->assertSee('Leergebieden · voortgang');
+    $response->assertSee('KNSA · kennisbank');
+    // De gefaalde-queue-jobs-widget is geen gebruikersinformatie meer.
+    $response->assertDontSee('queue draait zonder fouten');
 });

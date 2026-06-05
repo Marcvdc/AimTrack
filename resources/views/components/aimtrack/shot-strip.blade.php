@@ -69,7 +69,7 @@
         <div style="display: flex; gap: 18px; margin-top: 12px; font-size: 11px; color: var(--at-muted); font-family: var(--at-font-mono);">
             <span><span style="display: inline-block; width: 8px; height: 8px; background: var(--at-accent); margin-right: 6px;"></span>10+ ringen</span>
             @if ($dipFrom !== null)
-                <span><span style="display: inline-block; width: 8px; height: 8px; background: color-mix(in srgb, var(--at-warn) 70%, transparent); margin-right: 6px;"></span>dip {{ $dipFrom + 1 }}–{{ $dipTo + 1 }}</span>
+                <span><span style="display: inline-block; width: 8px; height: 8px; background: color-mix(in srgb, var(--at-warn) 70%, transparent); margin-right: 6px;"></span>concentratiedip {{ $dipFrom + 1 }}–{{ $dipTo + 1 }}</span>
             @endif
             <span><span style="display: inline-block; width: 8px; height: 8px; background: color-mix(in srgb, var(--at-muted) 40%, transparent); margin-right: 6px;"></span>normaal</span>
         </div>

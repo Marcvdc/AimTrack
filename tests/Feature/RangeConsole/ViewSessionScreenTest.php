@@ -123,3 +123,32 @@ it('refuses to render sessions owned by another user via the eloquent scope', fu
     Livewire::actingAs($user)
         ->test(ViewSession::class, ['record' => $foreignSession->id]);
 })->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+
+it('shows AI reflection actions and marks the reflection as read', function (): void {
+    $user = User::factory()->create();
+    $session = Session::factory()->for($user)->create();
+    seedShots($session, 10);
+    $reflection = AiReflection::factory()->for($session)->create();
+
+    Livewire::actingAs($user)
+        ->test(ViewSession::class, ['record' => $session->id])
+        ->assertSee('Vraag coach')
+        ->assertSee('Markeer')
+        ->call('acknowledgeReflection')
+        ->assertSee('Gemarkeerd');
+
+    expect($reflection->refresh()->acknowledged_at)->not->toBeNull();
+});
+
+it('links to the interactive shot board (ring view) from the session detail', function (): void {
+    $user = User::factory()->create();
+    $session = Session::factory()->for($user)->create();
+    seedShots($session, 10);
+
+    $shotBoardUrl = \App\Filament\Resources\SessionResource::getUrl('shots', ['record' => $session->id]);
+
+    Livewire::actingAs($user)
+        ->test(ViewSession::class, ['record' => $session->id])
+        ->assertSee('Schotenbord')
+        ->assertSee($shotBoardUrl, escape: false);
+});

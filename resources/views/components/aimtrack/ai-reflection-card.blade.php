@@ -30,7 +30,9 @@
     {{ $attributes->merge(['class' => 'aimtrack-ai-reflection-card', 'style' => 'display: flex; flex-direction: column; gap: 12px;']) }}
 >
     <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; font-family: var(--at-font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-accent);">
-        <span role="presentation">✦</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--at-accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="presentation">
+            <path d="M12 3l2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1z" />
+        </svg>
         <span>AI-reflectie {{ $headerSub }}</span>
         @if ($tsLabel)
             <span style="margin-left: auto; color: var(--at-muted);">{{ $tsLabel }}</span>

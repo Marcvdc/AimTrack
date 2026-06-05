@@ -105,3 +105,21 @@ it('refuses to render a weapon owned by another user', function (): void {
     Livewire::actingAs($user)
         ->test(ViewWeapon::class, ['record' => $foreign->id]);
 })->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+
+it('renders the AI-wapeninzicht card when an insight exists', function (): void {
+    $user = User::factory()->create();
+    $weapon = Weapon::factory()->for($user)->create();
+
+    $weapon->aiWeaponInsight()->create([
+        'summary' => 'Consistente groepering, lichte rechts-afwijking.',
+        'patterns' => ['Rechts-afwijking bij serie-eind'],
+        'suggestions' => ['Korrel 1 klik links'],
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(ViewWeapon::class, ['record' => $weapon->id])
+        ->assertSee('AI-wapeninzicht')
+        ->assertSee('Consistente groepering')
+        ->assertSee('PATRONEN')
+        ->assertSee('Korrel 1 klik links');
+});

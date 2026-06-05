@@ -2,7 +2,6 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Widgets\FailedJobsWidget;
 use App\Support\Features\AimtrackFeatureToggle;
 use EslamRedaDiv\FilamentCopilot\FilamentCopilotPlugin;
 use Filament\Actions\Action;
@@ -43,13 +42,15 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::hex('#64f4b3'),
             ])
             ->font('Inter')
+            ->viteTheme('resources/css/filament/admin/theme.css')
+            ->darkMode(true, isForced: true)
+            ->sidebarWidth('14rem')
+            ->navigationGroups(['LOG', 'INZICHT', 'BEHEER'])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
-            ->widgets([
-                FailedJobsWidget::class,
-            ])
+            ->widgets([])
             ->userMenuItems([
                 Action::make('landing-page')
                     ->label('Terug naar landingpage')
@@ -62,6 +63,14 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => view('filament.auth.login-extras')->render(),
             )
             ->renderHook(
+                PanelsRenderHook::SIDEBAR_LOGO_AFTER,
+                fn (): string => <<<'HTML'
+                    <div style="margin-top: 0.375rem; font-family: var(--at-font-mono); font-size: 0.625rem; letter-spacing: 0.12em; color: var(--at-muted);">
+                        self-hosted
+                    </div>
+                HTML,
+            )
+            ->renderHook(
                 PanelsRenderHook::HEAD_END,
                 fn (): string => $this->aimTrackDesignAssets(),
             )
@@ -70,6 +79,21 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => <<<'HTML'
                     <style>
                         .copilot-chat-widget { max-width: min(1024px, 70vw) !important; }
+                        /* De Copilot-widget heeft eigen CSS waarvan de dark:-varianten
+                           niet consistent activeren onder het geforceerde dark panel,
+                           wat wit-op-wit input gaf. Forceer leesbaar contrast. */
+                        .copilot-chat-widget { background-color: var(--at-panel) !important; color: var(--at-text); }
+                        .copilot-chat-widget form { background-color: var(--at-panel-2) !important; }
+                        .copilot-chat-widget textarea,
+                        .copilot-chat-widget input[type="text"] {
+                            color: var(--at-text) !important;
+                            -webkit-text-fill-color: var(--at-text) !important;
+                            background-color: transparent !important;
+                        }
+                        .copilot-chat-widget textarea::placeholder,
+                        .copilot-chat-widget input[type="text"]::placeholder {
+                            color: var(--at-muted) !important;
+                        }
                     </style>
                 HTML,
             )

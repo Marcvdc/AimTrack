@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Session;
+use App\Models\SessionShot;
 use Illuminate\Support\Collection;
 
 /**
@@ -190,6 +191,79 @@ final class SessionStatsService
         }
 
         return [$minIndex * $perSerie, ($minIndex + 1) * $perSerie - 1];
+    }
+
+    /**
+     * Gemiddelde horizontale afwijking t.o.v. het roos-centrum in mm
+     * (negatief = links). Geschaald naar een ISSF 10m target (155.5mm).
+     */
+    public function meanXmm(): ?float
+    {
+        return $this->meanOffsetMm('x_normalized');
+    }
+
+    /**
+     * Gemiddelde verticale afwijking t.o.v. het centrum in mm (negatief = laag).
+     */
+    public function meanYmm(): ?float
+    {
+        return $this->meanOffsetMm('y_normalized');
+    }
+
+    /**
+     * Spreiding (1σ) van de hits in mm. Returnt null bij <2 shots.
+     */
+    public function sdMm(): ?float
+    {
+        $shots = $this->shots();
+
+        if ($shots->count() < 2) {
+            return null;
+        }
+
+        $xs = $shots->pluck('x_normalized')->map(fn ($v): float => (float) $v)->all();
+        $ys = $shots->pluck('y_normalized')->map(fn ($v): float => (float) $v)->all();
+
+        return round(sqrt($this->variance($xs) + $this->variance($ys)) * 155.5, 1);
+    }
+
+    private function meanOffsetMm(string $column): ?float
+    {
+        $shots = $this->shots();
+
+        if ($shots->count() < 1) {
+            return null;
+        }
+
+        $mean = $shots->pluck($column)->map(fn ($v): float => (float) $v)->avg();
+
+        return round(((float) $mean - 0.5) * 155.5, 1);
+    }
+
+    /**
+     * Verschil tussen deze eindscore en het gemiddelde van álle sessies van
+     * de schutter (▲/▼ vs gem.). Returnt null bij <2 sessies-met-schoten of
+     * geen schoten in deze sessie.
+     */
+    public function scoreVsAverage(): ?int
+    {
+        if ($this->totalShots() === 0) {
+            return null;
+        }
+
+        $totals = SessionShot::query()
+            ->whereIn('session_id', Session::query()
+                ->where('user_id', $this->session->user_id)
+                ->select('id'))
+            ->groupBy('session_id')
+            ->selectRaw('session_id, SUM(score) as total')
+            ->pluck('total');
+
+        if ($totals->count() < 2) {
+            return null;
+        }
+
+        return (int) round($this->totalScore() - (float) $totals->avg());
     }
 
     private function shots(): Collection

@@ -31,7 +31,7 @@ class LocationResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Locaties';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Beheer';
+    protected static string|\UnitEnum|null $navigationGroup = 'BEHEER';
 
     public static function form(Schema $schema): Schema
     {

@@ -107,3 +107,53 @@ it('scopes conversations to the participant user', function (): void {
         ->test(CoachPage::class)
         ->assertDontSee('Geheim gesprek van iemand anders');
 });
+
+it('renders open training goals in the doelen rail and completes one', function (): void {
+    $user = User::factory()->create();
+    unlockCoach($user);
+
+    $goal = \App\Models\TrainingGoal::factory()->ai()->create([
+        'user_id' => $user->id,
+        'title' => 'Micro-pauze na schot 30',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(CoachPage::class)
+        ->assertSee('VOORGESTELDE DOELEN')
+        ->assertSee('Micro-pauze na schot 30')
+        ->assertSee('AI-suggestie')
+        ->call('completeGoal', $goal->id)
+        ->assertDontSee('Micro-pauze na schot 30');
+
+    expect($goal->fresh()->completed_at)->not->toBeNull();
+});
+
+it('does not complete a training goal owned by another user', function (): void {
+    $user = User::factory()->create();
+    unlockCoach($user);
+
+    $foreign = \App\Models\TrainingGoal::factory()->create([
+        'user_id' => User::factory()->create()->id,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(CoachPage::class)
+        ->call('completeGoal', $foreign->id);
+
+    expect($foreign->fresh()->completed_at)->toBeNull();
+});
+
+it('renders the score-drift card when the shooter has shot data', function (): void {
+    $user = User::factory()->create();
+
+    foreach (range(1, \App\Support\UserOnboardingState::aiCoachThreshold()) as $i) {
+        $session = Session::factory()->for($user)->create(['date' => now()->subDays($i), 'range_name' => 'SV Diemen']);
+        foreach (range(0, 9) as $s) {
+            \App\Models\SessionShot::factory()->for($session)->create(['turn_index' => 0, 'shot_index' => $s, 'ring' => 9, 'score' => 9]);
+        }
+    }
+
+    Livewire::actingAs($user)
+        ->test(CoachPage::class)
+        ->assertSee('SCORE-DRIFT · GEM. PER SCHOT · LAATSTE SESSIES');
+});

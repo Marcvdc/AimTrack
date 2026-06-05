@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Models\AiReflection;
 use App\Models\Session;
 use App\Models\SessionShot;
+use App\Models\SessionWeapon;
 use App\Models\User;
+use App\Models\Weapon;
 use App\Services\RangeConsoleSummaryService;
 
 /**
@@ -130,4 +132,69 @@ it('returns trend30d with sessions only from the last 30 days', function (): voi
     expect($trend)->toHaveCount(1);
     expect($trend)->toHaveKey($recent->date->toDateString());
     expect($trend[$recent->date->toDateString()])->toBe(50);
+});
+
+it('aggregates weapon usage with avg score, counts, trend and a date-ordered serie', function (): void {
+    $user = User::factory()->create();
+    $weapon = Weapon::factory()->create(['user_id' => $user->id]);
+
+    $older = Session::factory()->for($user)->create(['date' => now()->subDays(10)]);
+    $newer = Session::factory()->for($user)->create(['date' => now()->subDays(2)]);
+    SessionWeapon::factory()->create(['session_id' => $older->id, 'weapon_id' => $weapon->id]);
+    SessionWeapon::factory()->create(['session_id' => $newer->id, 'weapon_id' => $weapon->id]);
+    summaryShotsFor($older, 10, ['ring' => 10, 'score' => 10]); // 100
+    summaryShotsFor($newer, 10, ['ring' => 8, 'score' => 8]);   // 80
+
+    $usage = (new RangeConsoleSummaryService($user))->weaponUsage();
+
+    expect($usage)->toHaveCount(1);
+
+    $row = $usage->first();
+    expect($row['name'])->toBe($weapon->name)
+        ->and($row['sessions'])->toBe(2)
+        ->and($row['shots'])->toBe(20)
+        ->and($row['avg'])->toBe(90.0)
+        ->and($row['series'])->toBe([100, 80]) // oudste → nieuwste
+        ->and($row['trend'])->toBe(-20);
+});
+
+it('excludes unused weapons and scopes weapon usage to the user', function (): void {
+    $user = User::factory()->create();
+    Weapon::factory()->create(['user_id' => $user->id]); // ongebruikt → niet getoond
+
+    $other = User::factory()->create();
+    $otherWeapon = Weapon::factory()->create(['user_id' => $other->id]);
+    $otherSession = Session::factory()->for($other)->create();
+    SessionWeapon::factory()->create(['session_id' => $otherSession->id, 'weapon_id' => $otherWeapon->id]);
+
+    expect((new RangeConsoleSummaryService($user))->weaponUsage())->toBeEmpty();
+});
+
+it('aggregates progress per discipline (wapentype + afstand)', function (): void {
+    $user = User::factory()->create();
+    $weapon = Weapon::factory()->create(['user_id' => $user->id, 'weapon_type' => \App\Enums\WeaponType::PISTOL]);
+
+    $s1 = Session::factory()->for($user)->create(['date' => now()->subDays(5)]);
+    SessionWeapon::factory()->create(['session_id' => $s1->id, 'weapon_id' => $weapon->id, 'distance_m' => 25]);
+    summaryShotsFor($s1, 10, ['ring' => 10, 'score' => 10]); // 100
+
+    $s2 = Session::factory()->for($user)->create(['date' => now()->subDays(2)]);
+    SessionWeapon::factory()->create(['session_id' => $s2->id, 'weapon_id' => $weapon->id, 'distance_m' => 25]);
+    summaryShotsFor($s2, 10, ['ring' => 8, 'score' => 8]); // 80
+
+    $s3 = Session::factory()->for($user)->create(['date' => now()->subDay()]);
+    SessionWeapon::factory()->create(['session_id' => $s3->id, 'weapon_id' => $weapon->id, 'distance_m' => 15]);
+    summaryShotsFor($s3, 10, ['ring' => 9, 'score' => 9]); // 90
+
+    $progress = (new RangeConsoleSummaryService($user))->disciplineProgress();
+
+    expect($progress)->toHaveCount(2);
+
+    $p25 = $progress->firstWhere('label', 'Pistool 25m');
+    expect($p25)->not->toBeNull()
+        ->and($p25['sessions'])->toBe(2)
+        ->and($p25['shots'])->toBe(20)
+        ->and($p25['avg'])->toBe(90.0)
+        ->and($p25['series'])->toBe([100, 80]) // oudste → nieuwste
+        ->and($p25['trend'])->toBe(-20);
 });
