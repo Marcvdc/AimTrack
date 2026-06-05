@@ -6,10 +6,13 @@ namespace App\Filament\Pages;
 
 use App\Filament\Concerns\HasSeedDemoDataAction;
 use App\Models\User;
+use App\Services\RangeConsoleSummaryService;
+use App\Services\TrainingGoalService;
 use App\Support\UserOnboardingState;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -42,7 +45,38 @@ class Dashboard extends BaseDashboard
             ]);
         }
 
-        return parent::content($schema);
+        return $schema->components([
+            View::make('filament.pages.dashboard-overview'),
+        ]);
+    }
+
+    public function getSummary(): RangeConsoleSummaryService
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        return new RangeConsoleSummaryService($user);
+    }
+
+    /**
+     * @return Collection<int, \App\Models\TrainingGoal>
+     */
+    public function getTrainingGoals(): Collection
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        return app(TrainingGoalService::class)->openGoals($user, 4);
+    }
+
+    /**
+     * Gecureerde KNSA-kennisbank-links (gedeeld met de landingspagina).
+     *
+     * @return array<int, array{title: string, description?: string, url: string}>
+     */
+    public function getKnsaLinks(): array
+    {
+        return config('landing.knsa_links', []);
     }
 
     public function getTitle(): string
@@ -52,5 +86,15 @@ class Dashboard extends BaseDashboard
         }
 
         return parent::getTitle();
+    }
+
+    /**
+     * Onderdruk Filaments default pagina-heading: zowel de first-run-welkom als
+     * het overzicht renderen hun eigen (gestylede) titel, anders staat
+     * "Dashboard" dubbel op het scherm.
+     */
+    public function getHeading(): string
+    {
+        return '';
     }
 }

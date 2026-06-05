@@ -24,6 +24,7 @@ class CopilotDemoSeeder extends Seeder
                 'name' => 'Demo Schutter',
                 'password' => Hash::make('admin12345'),
                 'email_verified_at' => now(),
+                'is_admin' => true,
             ],
         );
 

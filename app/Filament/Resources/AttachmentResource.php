@@ -28,7 +28,7 @@ class AttachmentResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Bijlagen';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Dagboek';
+    protected static string|\UnitEnum|null $navigationGroup = 'BEHEER';
 
     public static function form(Schema $schema): Schema
     {

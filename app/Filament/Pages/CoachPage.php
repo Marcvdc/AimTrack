@@ -6,8 +6,11 @@ namespace App\Filament\Pages;
 
 use App\Filament\Copilot\Tools\ShooterContextTool;
 use App\Filament\Resources\SessionResource;
+use App\Models\TrainingGoal;
 use App\Models\User;
 use App\Services\CoachContextService;
+use App\Services\ScoreDriftService;
+use App\Services\TrainingGoalService;
 use App\Support\Features\AimtrackFeatureToggle;
 use App\Support\UserOnboardingState;
 use BackedEnum;
@@ -25,9 +28,19 @@ class CoachPage extends Page implements CopilotPageContract
 
     protected static ?string $title = 'AI-coach';
 
-    protected static string|UnitEnum|null $navigationGroup = 'AI & inzichten';
+    protected static string|UnitEnum|null $navigationGroup = 'INZICHT';
 
     protected string $view = 'filament.pages.coach-page';
+
+    public static function getNavigationBadge(): ?string
+    {
+        return 'NEW';
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return 'primary';
+    }
 
     public static function shouldRegisterNavigation(): bool
     {
@@ -85,6 +98,56 @@ class CoachPage extends Page implements CopilotPageContract
             ->body("De coach analyseert je gelogde sessies (afwijkingen, groepering, ademhalingsritmes) en suggereert verbeterpunten. Vanaf {$threshold} sessies is er genoeg patroon om zinvolle feedback te geven.")
             ->info()
             ->persistent()
+            ->send();
+    }
+
+    /**
+     * Open trainingsdoelen van de schutter ("Voorgestelde doelen"-rail).
+     *
+     * @return \Illuminate\Support\Collection<int, TrainingGoal>
+     */
+    public function getTrainingGoals(): \Illuminate\Support\Collection
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        return app(TrainingGoalService::class)->openGoals($user);
+    }
+
+    /**
+     * Gemiddelde score per schot-positie over de laatste sessies (score-drift).
+     *
+     * @return array<int, float>
+     */
+    public function getScoreDrift(): array
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        return (new ScoreDriftService($user))->perShotAverage();
+    }
+
+    /**
+     * Livewire-action: vink een trainingsdoel af (design: checkbox-kaart).
+     */
+    public function completeGoal(int $goalId): void
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $goal = TrainingGoal::query()
+            ->where('user_id', $user->id)
+            ->find($goalId);
+
+        if ($goal === null) {
+            return;
+        }
+
+        app(TrainingGoalService::class)->complete($goal);
+
+        Notification::make()
+            ->title('Trainingsdoel afgerond')
+            ->success()
             ->send();
     }
 }

@@ -28,7 +28,7 @@ class ExportSessionsPage extends Page implements HasForms
 
     protected static ?string $title = 'Export sessies';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Exports & rapportage';
+    protected static string|\UnitEnum|null $navigationGroup = 'BEHEER';
 
     protected string $view = 'filament.pages.export-sessions-page';
 

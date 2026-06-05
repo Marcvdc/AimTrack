@@ -22,15 +22,22 @@
     $range = max(0.0001, $max - $min);
 
     $points = [];
+    $lastX = $width / 2;
+    $lastY = $height / 2;
     foreach ($values as $i => $v) {
         $x = count($values) <= 1 ? $width / 2 : ($i / (count($values) - 1)) * $width;
         $y = $height - 2 - (($v - $min) / $range) * ($height - 6);
         $points[] = $fmt($x).','.$fmt($y);
+        $lastX = $x;
+        $lastY = $y;
     }
     $polyline = implode(' ', $points);
     $areaPath = $hasData
         ? "M{$points[0]} L".implode(' L', array_slice($points, 1))." L{$fmt($width)},{$fmt($height)} L0,{$fmt($height)} Z"
         : '';
+
+    // Unieke gradient-id per render (kleur kan een CSS-var zijn, dus niet bruikbaar in een id).
+    $gradientId = 'atspark-'.substr(md5($color.$width.$height.$polyline), 0, 10);
 @endphp
 
 <svg
@@ -43,9 +50,16 @@
 >
     @if ($hasData)
         @if ($fill)
-            <path d="{{ $areaPath }}" fill="{{ $color }}" opacity="0.12" />
+            <defs>
+                <linearGradient id="{{ $gradientId }}" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="{{ $color }}" stop-opacity="0.35" />
+                    <stop offset="100%" stop-color="{{ $color }}" stop-opacity="0" />
+                </linearGradient>
+            </defs>
+            <path d="{{ $areaPath }}" fill="url(#{{ $gradientId }})" />
         @endif
         <polyline points="{{ $polyline }}" fill="none" stroke="{{ $color }}" stroke-width="{{ $fmt($strokeWidth) }}" stroke-linejoin="round" stroke-linecap="round" />
+        <circle cx="{{ $fmt($lastX) }}" cy="{{ $fmt($lastY) }}" r="2.5" fill="{{ $color }}" />
     @else
         <line x1="0" y1="{{ $fmt($height / 2) }}" x2="{{ $fmt($width) }}" y2="{{ $fmt($height / 2) }}" stroke="var(--at-line)" stroke-width="1" stroke-dasharray="3 4" />
     @endif
