@@ -240,6 +240,73 @@ final class RangeConsoleSummaryService
         });
     }
 
+    /**
+     * Voortgang per discipline (leergebied) = wapentype + afstand. Per discipline:
+     * aantal sessies, totaal schoten, gem. sessiescore, een chronologische
+     * score-reeks (voor de sparkline) en de trend (laatste − eerste).
+     *
+     * @return Collection<int, array{label: string, sessions: int, shots: int, avg: float, trend: int, series: array<int, int>}>
+     */
+    public function disciplineProgress(int $limit = 6): Collection
+    {
+        $sessions = $this->userSessions()
+            ->with(['sessionWeapons.weapon:id,weapon_type'])
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get(['id', 'date']);
+
+        if ($sessions->isEmpty()) {
+            return collect();
+        }
+
+        $stats = SessionShot::query()
+            ->whereIn('session_id', $sessions->pluck('id'))
+            ->selectRaw('session_id, SUM(score) as total, COUNT(*) as shots')
+            ->groupBy('session_id')
+            ->get()
+            ->keyBy('session_id');
+
+        $grouped = [];
+
+        foreach ($sessions as $session) {
+            $entry = $session->sessionWeapons->first();
+            $type = $entry?->weapon?->weapon_type?->value;
+
+            if ($type === null) {
+                continue;
+            }
+
+            $distance = $entry->distance_m;
+            $label = ucfirst($type).($distance ? " {$distance}m" : '');
+            $stat = $stats->get($session->id);
+
+            $grouped[$label] ??= ['sessions' => 0, 'shots' => 0, 'series' => []];
+            $grouped[$label]['sessions']++;
+            $grouped[$label]['shots'] += (int) ($stat->shots ?? 0);
+            $grouped[$label]['series'][] = (int) ($stat->total ?? 0);
+        }
+
+        return collect($grouped)
+            ->map(function (array $data, string $label): array {
+                $nonZero = array_values(array_filter($data['series'], static fn (int $score): bool => $score > 0));
+                $avg = $nonZero !== [] ? round(array_sum($nonZero) / count($nonZero), 1) : 0.0;
+                $series = $data['series'];
+                $trend = count($series) >= 2 ? ($series[count($series) - 1] - $series[0]) : 0;
+
+                return [
+                    'label' => $label,
+                    'sessions' => $data['sessions'],
+                    'shots' => $data['shots'],
+                    'avg' => $avg,
+                    'trend' => $trend,
+                    'series' => $series,
+                ];
+            })
+            ->sortByDesc('sessions')
+            ->values()
+            ->take($limit);
+    }
+
     private function userSessions(): Builder
     {
         return Session::query()->where('user_id', $this->user->getKey());

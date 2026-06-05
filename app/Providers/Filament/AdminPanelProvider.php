@@ -2,7 +2,6 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Widgets\FailedJobsWidget;
 use App\Support\Features\AimtrackFeatureToggle;
 use EslamRedaDiv\FilamentCopilot\FilamentCopilotPlugin;
 use Filament\Actions\Action;
@@ -51,9 +50,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
-            ->widgets([
-                FailedJobsWidget::class,
-            ])
+            ->widgets([])
             ->userMenuItems([
                 Action::make('landing-page')
                     ->label('Terug naar landingpage')
