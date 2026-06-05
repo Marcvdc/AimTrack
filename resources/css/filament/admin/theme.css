@@ -76,3 +76,85 @@
         letter-spacing: -0.01em;
     }
 }
+
+/*
+ * Filament dark gebruikt witte alpha-kleuren (white/5, white/10, white/20)
+ * voor randen, scheidingen, rings en hover-tints. Op het Signal-Mint donker
+ * geven die een "gewassen" lichte look i.p.v. de scherpe --line/--panel-2.
+ * --color-white kan niet globaal hergemapt worden (tekst gebruikt text-white),
+ * dus we herkleuren de zichtbare oppervlakken gericht. Laatste in de
+ * components-layer → wint op gelijke specificiteit van de vendor-regels.
+ */
+@layer components {
+    /* Omkaderde oppervlakken: vervang de witte ring + schaduw door --line */
+    .fi-section:not(.fi-section-not-contained),
+    .fi-ta-ctn,
+    .fi-dropdown-panel,
+    .fi-modal-window,
+    .fi-wi-stats-overview-stat {
+        --tw-ring-color: var(--at-line);
+        box-shadow: none;
+    }
+
+    /* Section/widget header- en footer-scheidingen + header-tint */
+    .fi-section-header,
+    .fi-section-footer,
+    .fi-section-content-ctn,
+    .fi-ta-header,
+    .fi-ta-footer {
+        border-color: var(--at-line) !important;
+    }
+
+    .fi-section.fi-collapsible > .fi-section-header:hover,
+    .fi-ta-header-toolbar {
+        background-color: transparent;
+    }
+
+    /* Tabel: rij-scheidingen + header-cel-randen → --line; hover → --panel-2 */
+    .fi-ta-table {
+        border-color: var(--at-line) !important;
+    }
+
+    .fi-ta-table > tbody > tr,
+    .fi-ta-table > thead > tr > th,
+    .fi-ta-header-cell {
+        border-color: var(--at-line) !important;
+    }
+
+    .fi-ta-row:hover,
+    .fi-ta-row.fi-selected {
+        background-color: var(--at-panel-2) !important;
+    }
+
+    /* Tabel-kolomkoppen in mono-uppercase (design: dense tactical grid) */
+    .fi-ta-header-cell-label {
+        font-family: var(--at-font-mono);
+        font-size: 0.625rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--at-muted);
+        font-weight: 500;
+    }
+
+    /* Inputs / search: donkere achtergrond + --line rand i.p.v. witte ring */
+    .fi-input-wrp {
+        --tw-ring-color: var(--at-line);
+        background-color: var(--at-bg);
+    }
+
+    .fi-input-wrp:focus-within {
+        --tw-ring-color: var(--at-accent);
+    }
+
+    /* Dropdown-items hover-tint */
+    .fi-dropdown-list-item:hover {
+        background-color: var(--at-panel-2);
+    }
+
+    /* Paginatie-knoppen + tab-pills randen */
+    .fi-pagination .fi-btn,
+    .fi-tabs {
+        --tw-ring-color: var(--at-line);
+        border-color: var(--at-line);
+    }
+}
