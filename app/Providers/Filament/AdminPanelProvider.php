@@ -82,6 +82,21 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => <<<'HTML'
                     <style>
                         .copilot-chat-widget { max-width: min(1024px, 70vw) !important; }
+                        /* De Copilot-widget heeft eigen CSS waarvan de dark:-varianten
+                           niet consistent activeren onder het geforceerde dark panel,
+                           wat wit-op-wit input gaf. Forceer leesbaar contrast. */
+                        .copilot-chat-widget { background-color: var(--at-panel) !important; color: var(--at-text); }
+                        .copilot-chat-widget form { background-color: var(--at-panel-2) !important; }
+                        .copilot-chat-widget textarea,
+                        .copilot-chat-widget input[type="text"] {
+                            color: var(--at-text) !important;
+                            -webkit-text-fill-color: var(--at-text) !important;
+                            background-color: transparent !important;
+                        }
+                        .copilot-chat-widget textarea::placeholder,
+                        .copilot-chat-widget input[type="text"]::placeholder {
+                            color: var(--at-muted) !important;
+                        }
                     </style>
                 HTML,
             )
