@@ -87,6 +87,7 @@
             $latestConversation = $coach->latestConversation();
             $lastSession = $coach->lastSession();
             $topWeapon = $coach->topWeapon();
+            $trainingGoals = $page->getTrainingGoals();
 
             $sampleQuestions = [
                 'Vergelijk met vorige maand',
@@ -199,6 +200,33 @@
                         Geen sessies of wapens gevonden. De coach werkt nog zonder context.
                     </div>
                 @endunless
+
+                <div class="at-label" style="margin-top: 8px;">VOORGESTELDE DOELEN</div>
+                @forelse ($trainingGoals as $goal)
+                    <div wire:key="goal-{{ $goal->id }}" style="padding: 12px; background: var(--at-panel-2); border: 1px solid var(--at-line); border-radius: var(--at-r-md);">
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <button
+                                type="button"
+                                wire:click="completeGoal({{ $goal->id }})"
+                                title="Markeer als afgerond"
+                                style="flex: 0 0 16px; width: 16px; height: 16px; margin-top: 2px; border-radius: 4px; border: 1.5px solid var(--at-accent); background: transparent; cursor: pointer; padding: 0;"
+                            ></button>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-size: 12px; color: var(--at-text); font-weight: 600;">{{ $goal->title }}</div>
+                                @if (filled($goal->detail))
+                                    <div style="font-size: 11px; color: var(--at-muted); margin-top: 2px; line-height: 1.5;">{{ $goal->detail }}</div>
+                                @endif
+                                @if ($goal->source === \App\Enums\TrainingGoalSource::Ai)
+                                    <div style="font-family: var(--at-font-mono); font-size: 9px; color: var(--at-accent); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px;">AI-suggestie</div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div style="font-size: 11px; color: var(--at-muted); line-height: 1.55;">
+                        Nog geen doelen. Vraag de coach om een trainingsdoel voor te stellen.
+                    </div>
+                @endforelse
 
                 <div class="at-label" style="margin-top: 8px;">PRIVACY</div>
                 <div style="font-size: 11px; color: var(--at-muted); line-height: 1.6;">
