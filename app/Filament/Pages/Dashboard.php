@@ -87,4 +87,14 @@ class Dashboard extends BaseDashboard
 
         return parent::getTitle();
     }
+
+    /**
+     * Onderdruk Filaments default pagina-heading: zowel de first-run-welkom als
+     * het overzicht renderen hun eigen (gestylede) titel, anders staat
+     * "Dashboard" dubbel op het scherm.
+     */
+    public function getHeading(): string
+    {
+        return '';
+    }
 }
