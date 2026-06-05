@@ -9,6 +9,7 @@ use App\Filament\Resources\SessionResource;
 use App\Models\TrainingGoal;
 use App\Models\User;
 use App\Services\CoachContextService;
+use App\Services\ScoreDriftService;
 use App\Services\TrainingGoalService;
 use App\Support\Features\AimtrackFeatureToggle;
 use App\Support\UserOnboardingState;
@@ -111,6 +112,19 @@ class CoachPage extends Page implements CopilotPageContract
         $user = Auth::user();
 
         return app(TrainingGoalService::class)->openGoals($user);
+    }
+
+    /**
+     * Gemiddelde score per schot-positie over de laatste sessies (score-drift).
+     *
+     * @return array<int, float>
+     */
+    public function getScoreDrift(): array
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        return (new ScoreDriftService($user))->perShotAverage();
     }
 
     /**

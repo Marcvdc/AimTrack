@@ -142,3 +142,18 @@ it('does not complete a training goal owned by another user', function (): void 
 
     expect($foreign->fresh()->completed_at)->toBeNull();
 });
+
+it('renders the score-drift card when the shooter has shot data', function (): void {
+    $user = User::factory()->create();
+
+    foreach (range(1, \App\Support\UserOnboardingState::aiCoachThreshold()) as $i) {
+        $session = Session::factory()->for($user)->create(['date' => now()->subDays($i), 'range_name' => 'SV Diemen']);
+        foreach (range(0, 9) as $s) {
+            \App\Models\SessionShot::factory()->for($session)->create(['turn_index' => 0, 'shot_index' => $s, 'ring' => 9, 'score' => 9]);
+        }
+    }
+
+    Livewire::actingAs($user)
+        ->test(CoachPage::class)
+        ->assertSee('SCORE-DRIFT · GEM. PER SCHOT · LAATSTE SESSIES');
+});

@@ -136,6 +136,7 @@ return [
     'global_tools' => [
         \App\Filament\Copilot\Tools\ShooterContextTool::class,
         \App\Filament\Copilot\Tools\AddTrainingGoalTool::class,
+        \App\Filament\Copilot\Tools\ScoreDriftTool::class,
     ],
 
 ];

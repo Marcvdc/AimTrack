@@ -88,6 +88,7 @@
             $lastSession = $coach->lastSession();
             $topWeapon = $coach->topWeapon();
             $trainingGoals = $page->getTrainingGoals();
+            $scoreDrift = $page->getScoreDrift();
 
             $sampleQuestions = [
                 'Vergelijk met vorige maand',
@@ -151,10 +152,25 @@
                         <div class="at-label" style="margin-bottom: 8px;">VOORBEELDVRAGEN</div>
                         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                             @foreach ($sampleQuestions as $q)
-                                <span style="padding: 5px 10px; border-radius: 999px; border: 1px solid var(--at-line); color: var(--at-muted); font-size: 11px; font-family: var(--at-font-mono); letter-spacing: 0.04em;">{{ $q }}</span>
+                                <button
+                                    type="button"
+                                    x-on:click="window.dispatchEvent(new CustomEvent('copilot-open'))"
+                                    style="padding: 5px 10px; border-radius: 999px; border: 1px solid var(--at-line); background: transparent; color: var(--at-muted); font-size: 11px; font-family: var(--at-font-mono); letter-spacing: 0.04em; cursor: pointer;"
+                                >{{ $q }}</button>
                             @endforeach
                         </div>
                     </div>
+
+                    @if (count($scoreDrift) >= 2)
+                        <x-aimtrack.bracket-frame :rounded="8" :padding="16" style="display: flex; flex-direction: column; gap: 10px;">
+                            <div class="at-label" style="color: var(--at-accent);">SCORE-DRIFT · GEM. PER SCHOT · LAATSTE SESSIES</div>
+                            <x-aimtrack.sparkline :data="array_values($scoreDrift)" :width="520" :height="70" :stroke-width="2" :fill="true" color="var(--at-warn)" />
+                            <div style="display: flex; justify-content: space-between; font-family: var(--at-font-mono); font-size: 9px; color: var(--at-muted); letter-spacing: 0.14em;">
+                                <span>SCHOT {{ array_key_first($scoreDrift) }}</span>
+                                <span>SCHOT {{ array_key_last($scoreDrift) }}</span>
+                            </div>
+                        </x-aimtrack.bracket-frame>
+                    @endif
 
                     <div style="margin-top: auto; display: flex; align-items: center; gap: 10px;">
                         <button
