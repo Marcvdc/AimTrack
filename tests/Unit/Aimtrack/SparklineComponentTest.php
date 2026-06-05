@@ -32,16 +32,24 @@ test('sparkline honours width and height props', function (): void {
         ->toContain('viewBox="0 0 500 100"');
 });
 
-test('sparkline renders area fill when fill prop is true', function (): void {
+test('sparkline renders a gradient area fill when fill prop is true', function (): void {
     $html = Blade::render('<x-aimtrack.sparkline :data="[1, 2, 3]" :fill="true" />');
 
     expect($html)
         ->toContain('<path')
-        ->toContain('opacity="0.12"');
+        ->toContain('<linearGradient')
+        ->toContain('stop-opacity="0.35"')
+        ->toContain('fill="url(#atspark-');
 });
 
 test('sparkline omits area fill by default', function (): void {
     $html = Blade::render('<x-aimtrack.sparkline :data="[1, 2, 3]" />');
 
     expect($html)->not->toContain('<path');
+});
+
+test('sparkline marks the latest point with a terminal dot', function (): void {
+    $html = Blade::render('<x-aimtrack.sparkline :data="[1, 2, 3]" />');
+
+    expect($html)->toContain('<circle');
 });
