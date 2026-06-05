@@ -25,9 +25,19 @@ class CoachPage extends Page implements CopilotPageContract
 
     protected static ?string $title = 'AI-coach';
 
-    protected static string|UnitEnum|null $navigationGroup = 'AI & inzichten';
+    protected static string|UnitEnum|null $navigationGroup = 'INZICHT';
 
     protected string $view = 'filament.pages.coach-page';
+
+    public static function getNavigationBadge(): ?string
+    {
+        return 'NEW';
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return 'primary';
+    }
 
     public static function shouldRegisterNavigation(): bool
     {

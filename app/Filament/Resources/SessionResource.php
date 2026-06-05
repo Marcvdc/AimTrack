@@ -55,7 +55,14 @@ class SessionResource extends Resource implements CopilotResourceContract
 
     protected static ?string $pluralModelLabel = 'Sessies';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Dagboek';
+    protected static string|\UnitEnum|null $navigationGroup = 'LOG';
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = static::getEloquentQuery()->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
 
     public static function form(Schema $schema): Schema
     {

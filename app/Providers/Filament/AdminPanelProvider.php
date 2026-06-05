@@ -46,6 +46,7 @@ class AdminPanelProvider extends PanelProvider
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->darkMode(true, isForced: true)
             ->sidebarWidth('14rem')
+            ->navigationGroups(['LOG', 'INZICHT', 'BEHEER'])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([])
@@ -63,6 +64,14 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
                 fn (): string => view('filament.auth.login-extras')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::SIDEBAR_LOGO_AFTER,
+                fn (): string => <<<'HTML'
+                    <div style="margin-top: 0.375rem; font-family: var(--at-font-mono); font-size: 0.625rem; letter-spacing: 0.12em; color: var(--at-muted);">
+                        self-hosted
+                    </div>
+                HTML,
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
