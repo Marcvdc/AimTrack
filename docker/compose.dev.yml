@@ -72,6 +72,12 @@ services:
       - "${PYTHON_SERVICE_PORT:-8000}:8000"
     volumes:
       - ../python-service:/app
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      AIMTRACK_VISION_MODEL: ${AIMTRACK_VISION_MODEL:-claude-opus-4-8}
+      AIMTRACK_VISION_EFFORT: ${AIMTRACK_VISION_EFFORT:-high}
+      AIMTRACK_REVIEW_CONFIDENCE: ${AIMTRACK_REVIEW_CONFIDENCE:-0.6}
+      AIMTRACK_CAL_RMS_REVIEW_MM: ${AIMTRACK_CAL_RMS_REVIEW_MM:-20.0}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
       interval: 10s

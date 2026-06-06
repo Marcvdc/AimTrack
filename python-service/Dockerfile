@@ -23,4 +23,5 @@ COPY . .
 EXPOSE 8000
 
 # Run the application
+ENV AIMTRACK_VISION_MODEL=claude-opus-4-8
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
