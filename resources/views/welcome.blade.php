@@ -430,6 +430,7 @@
         .mk-footer-links { margin-left: auto; display: flex; flex-wrap: wrap; gap: 22px; font-size: 12px; }
         .mk-footer-link { color: var(--at-muted); text-decoration: none; transition: color .15s ease; }
         .mk-footer-link:hover { color: var(--at-text); }
+        .mk-footer-muted { color: var(--at-muted); }
 
         /* ── Responsive ─────────────────────────────────────────────── */
         @media (max-width: 1024px) {
@@ -794,12 +795,14 @@
     <footer class="mk-footer">
         <x-aimtrack.wordmark :size="22" color="var(--at-muted)" />
         <div class="mk-footer-meta">MIT · open-source · NL</div>
-        <nav class="mk-footer-links" aria-label="Footer">
-            <a class="mk-footer-link" href="#">Docs</a>
-            <a class="mk-footer-link" href="#">Changelog</a>
+        <div class="mk-footer-links">
+            {{-- Docs/Changelog/Contact bestaan nog niet als route → bewust geen
+                 href="#"-link (navigatieval), maar muted placeholders. --}}
+            <span class="mk-footer-muted">Docs</span>
+            <span class="mk-footer-muted">Changelog</span>
             <a class="mk-footer-link" href="https://github.com/marcvdc/AimTrack" target="_blank" rel="noopener noreferrer">GitHub</a>
-            <a class="mk-footer-link" href="#">Contact</a>
-        </nav>
+            <span class="mk-footer-muted">Contact</span>
+        </div>
     </footer>
 
 </body>

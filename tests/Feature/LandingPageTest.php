@@ -83,10 +83,14 @@ test('landing page hero falls back to a start state on an empty instance', funct
 });
 
 test('landing page inlines the AimTrack design tokens and webfonts', function (): void {
+    // Losse asserts i.p.v. exacte whitespace — de verbatim-token-inhoud wordt
+    // gedekt door BrandComponentsTest ("head-assets emits the full token
+    // stylesheet verbatim"); hier toetsen we alleen dát ze geïnlined zijn.
     $this->get('/')
         ->assertOk()
         ->assertSee('<style id="aimtrack-tokens">', escape: false)
-        ->assertSee('--at-accent:    #64f4b3;', escape: false)
+        ->assertSee('--at-accent', escape: false)
+        ->assertSee('#64f4b3', escape: false)
         ->assertSee('JetBrains+Mono', escape: false);
 });
 
@@ -159,11 +163,19 @@ test('landing page Sessies card falls back to an empty state without sessions', 
 
     $this->get('/')
         ->assertOk()
-        ->assertSee('Nog geen sessies', escape: false);
+        ->assertSee('Nog geen sessies', escape: false)
+        // Lege instance → de Trends-sparkline tekent een nullijn, geen
+        // area-gradient (die id verschijnt alleen bij fill + data).
+        ->assertDontSee('atspark-');
 });
 
 test('landing page feature cards surface live session data when it exists', function (): void {
     Cache::flush();
+
+    // Twee sessie-datums → de Trends-sparkline heeft ≥2 punten en rendert de
+    // gevulde area-gradient (de component vereist minstens 2 datapunten).
+    $earlier = Session::factory()->create(['date' => now()->subDay(), 'range_name' => 'Baan Demo Nul']);
+    SessionWeapon::factory()->for($earlier)->create(['rounds_fired' => 50]);
 
     $session = Session::factory()->create(['date' => now(), 'range_name' => 'Baan Demo One']);
     SessionWeapon::factory()->for($session)->create(['rounds_fired' => 73]);
@@ -172,5 +184,8 @@ test('landing page feature cards surface live session data when it exists', func
         ->assertOk()
         ->assertSee('Baan Demo One', escape: false)   // recente-sessies-kaart (live)
         ->assertSee('SCHOTEN · PER SESSIE', escape: false) // trends-kaart label
+        // De gevulde Trends-sparkline rendert de area-gradient (atspark-id)
+        // → bewijst dat het live trendSeries-data-pad daadwerkelijk liep.
+        ->assertSee('atspark-', escape: false)
         ->assertDontSee('Nog geen sessies');
 });

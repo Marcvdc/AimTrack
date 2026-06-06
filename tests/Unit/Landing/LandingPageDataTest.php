@@ -68,6 +68,18 @@ test('trendSeries sums rounds fired per session date, chronological', function (
     expect(app(LandingPageData::class)->trendSeries())->toBe([50, 75]);
 });
 
+test('trendSeries sums multiple sessions on the same date into one point', function (): void {
+    Cache::flush();
+
+    $morning = Session::factory()->create(['date' => now()]);
+    SessionWeapon::factory()->for($morning)->create(['rounds_fired' => 30]);
+
+    $evening = Session::factory()->create(['date' => now()]);
+    SessionWeapon::factory()->for($evening)->create(['rounds_fired' => 20]);
+
+    expect(app(LandingPageData::class)->trendSeries())->toBe([50]);
+});
+
 test('trendSeries keeps only the last N session dates', function (): void {
     Cache::flush();
 
@@ -102,6 +114,23 @@ test('recentSessions returns the latest sessions with range and total rounds', f
         ->and($rows[0]['range'])->toBe('Baan Centrum')
         ->and($rows[0]['rounds'])->toBe(45)
         ->and($rows[0]['date'])->toBe(now()->format('d-m'));
+});
+
+test('recentSessions defaults to the three most recent sessions, latest first', function (): void {
+    Cache::flush();
+
+    foreach (range(1, 5) as $offset) {
+        $session = Session::factory()->create([
+            'date' => now()->subDays($offset),
+            'range_name' => "Baan {$offset}",
+        ]);
+        SessionWeapon::factory()->for($session)->create(['rounds_fired' => 10]);
+    }
+
+    $rows = app(LandingPageData::class)->recentSessions();
+
+    expect($rows)->toHaveCount(3)
+        ->and(array_column($rows, 'range'))->toBe(['Baan 1', 'Baan 2', 'Baan 3']);
 });
 
 test('recentSessions falls back to location, then a dash, for the range label', function (): void {
