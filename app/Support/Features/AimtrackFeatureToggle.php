@@ -2,6 +2,7 @@
 
 namespace App\Support\Features;
 
+use App\Services\Ai\AiKeyResolver;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Pennant\Feature;
@@ -14,7 +15,12 @@ class AimtrackFeatureToggle
 
     public function aiEnabled(): bool
     {
-        return $this->isFeatureActive('aimtrack-ai');
+        return $this->isFeatureActive('aimtrack-ai') && $this->aiKeyResolved();
+    }
+
+    protected function aiKeyResolved(): bool
+    {
+        return filled(app(AiKeyResolver::class)->forCurrentUser());
     }
 
     public function aiDisabled(): bool
