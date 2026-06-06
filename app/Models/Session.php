@@ -43,6 +43,11 @@ class Session extends Model
         return $this->hasMany(SessionShot::class);
     }
 
+    public function turnAnalyses()
+    {
+        return $this->hasMany(SessionTurnAnalysis::class);
+    }
+
     public function attachments()
     {
         return $this->hasMany(Attachment::class);
