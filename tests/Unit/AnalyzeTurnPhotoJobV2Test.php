@@ -46,7 +46,7 @@ test('job calls v2 endpoint with target_type and expected count, persists return
     expect($shots[0]->score)->toBe(10);
     expect($shots[1]->ring)->toBe(7);
     expect((float) $shots[0]->x_normalized)->toBe(0.5);
-    expect((float) $shots[1]->x_normalized)->toBe(0.73);
+    expect((float) $shots[1]->x_normalized)->toBe(0.75);
     expect($shots[0]->source)->toBe('photo_detected');
     expect($shots[0]->metadata['kind'])->toBe('hole');
 
@@ -97,4 +97,34 @@ test('job records review without calling python when target_type missing', funct
     $analysis = SessionTurnAnalysis::where('session_id', $session->id)->where('turn_index', 0)->first();
     expect($analysis->needs_review)->toBeTrue();
     Http::assertNothingSent();
+});
+
+test('omits expected_shot_count from the request when it is null', function () {
+    $user = User::factory()->create();
+    $session = Session::factory()->create(['user_id' => $user->id, 'target_type' => 'kkp_25m']);
+    $imagePath = 'session-photos/test.jpg';
+    Storage::disk('private')->put($imagePath, 'x');
+
+    Http::fake([
+        '*/api/v2/analyze-target' => Http::response([
+            'success' => true, 'shots' => [], 'total_detected' => 0,
+            'expected_shot_count' => null, 'detected_count' => 0, 'count_matches_expected' => true,
+            'overall_confidence' => 0.9, 'needs_review' => false, 'orientation_note' => '',
+            'vision_model' => 'claude-opus-4-8',
+            'calibration' => ['ok' => true, 'rms_error_mm' => 8.0, 'confidence' => 0.18, 'rings_detected' => 7, 'error' => null],
+        ], 200),
+    ]);
+
+    (new AnalyzeTurnPhotoJob($session, 0, $imagePath, null))->handle();
+
+    Http::assertSent(function (Request $request) {
+        if (! str_contains($request->url(), '/api/v2/analyze-target')) {
+            return false;
+        }
+
+        $names = collect($request->data())->pluck('name')->all();
+
+        return ! in_array('expected_shot_count', $names, true)
+            && in_array('target_type', $names, true);
+    });
 });

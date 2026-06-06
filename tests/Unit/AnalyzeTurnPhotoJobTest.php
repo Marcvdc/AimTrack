@@ -54,15 +54,15 @@ test('converts python coordinates from [-1,1] to [0,1] range', function () {
 
     expect($shots)->toHaveCount(3);
 
-    // Check first shot: x=-0.5, y=0.5 maps via 0.46 ratio to x=0.27, y=0.73
+    // Check first shot: x=-0.5, y=0.5 maps via 0.5 ratio to x=0.25, y=0.75
     $shot1 = $shots->firstWhere('shot_index', 1);
-    expect((float) $shot1->x_normalized)->toBe(0.27);
-    expect((float) $shot1->y_normalized)->toBe(0.73);
+    expect((float) $shot1->x_normalized)->toBe(0.25);
+    expect((float) $shot1->y_normalized)->toBe(0.75);
 
-    // Check second shot: x=0.5, y=-0.5 maps to x=0.73, y=0.27
+    // Check second shot: x=0.5, y=-0.5 maps to x=0.75, y=0.25
     $shot2 = $shots->firstWhere('shot_index', 2);
-    expect((float) $shot2->x_normalized)->toBe(0.73);
-    expect((float) $shot2->y_normalized)->toBe(0.27);
+    expect((float) $shot2->x_normalized)->toBe(0.75);
+    expect((float) $shot2->y_normalized)->toBe(0.25);
 
     // Check third shot: x=0.0, y=0.0 maps to x=0.5, y=0.5 (center)
     $shot3 = $shots->firstWhere('shot_index', 3);

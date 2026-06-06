@@ -70,12 +70,15 @@ class AnalyzeTurnPhotoJob implements ShouldQueue
             $imageContent = Storage::disk('private')->get($this->photoPath);
             $baseUrl = config('services.image_processor.url');
 
+            $payload = ['target_type' => $targetType];
+
+            if ($this->expectedShotCount !== null) {
+                $payload['expected_shot_count'] = $this->expectedShotCount;
+            }
+
             $response = Http::timeout(90)
                 ->attach('file', $imageContent, basename($this->photoPath))
-                ->post($baseUrl.'/api/v2/analyze-target', [
-                    'target_type' => $targetType,
-                    'expected_shot_count' => $this->expectedShotCount,
-                ]);
+                ->post($baseUrl.'/api/v2/analyze-target', $payload);
 
             if (! $response->successful()) {
                 throw new Exception("Image processing failed: {$response->status()}");
@@ -92,7 +95,11 @@ class AnalyzeTurnPhotoJob implements ShouldQueue
                 ->where('source', 'photo_detected')
                 ->delete();
 
-            $targetRadiusRatio = 0.46;
+            // Python returns x,y in ring-1-normalized target space [-1, 1]. Map to the
+            // backend [0, 1] convention shared with manually-tagged shots (centre 0.5,
+            // ring-1 edge at offset 0.5); the shot board applies the visual
+            // TARGET_RADIUS_RATIO (0.46) itself in mapToBoard().
+            $targetRadiusRatio = 0.5;
 
             foreach ($data['shots'] as $index => $shot) {
                 $x = (float) $shot['x'];
@@ -104,7 +111,7 @@ class AnalyzeTurnPhotoJob implements ShouldQueue
                     'shot_index' => $index + 1,
                     'x_normalized' => max(0, min(1, 0.5 + $x * $targetRadiusRatio)),
                     'y_normalized' => max(0, min(1, 0.5 + $y * $targetRadiusRatio)),
-                    'distance_from_center' => sqrt($x ** 2 + $y ** 2),
+                    'distance_from_center' => sqrt(($x * $targetRadiusRatio) ** 2 + ($y * $targetRadiusRatio) ** 2),
                     'ring' => (int) ($shot['ring'] ?? 0),
                     'score' => (int) ($shot['score'] ?? 0),
                     'source' => 'photo_detected',

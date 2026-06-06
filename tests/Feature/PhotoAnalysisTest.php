@@ -84,8 +84,8 @@ test('analyze turn photo job persists v2 scoring from the service', function () 
         ->orderBy('shot_index')
         ->first();
 
-    // canvas mapping: 0.5 + x * 0.46  ->  0.5 + (-0.2 * 0.46) = 0.408
-    expect((float) $shot->x_normalized)->toBe(0.408);
+    // canvas mapping: 0.5 + x * 0.5  ->  0.5 + (-0.2 * 0.5) = 0.4
+    expect((float) $shot->x_normalized)->toBe(0.4);
     expect($shot->metadata)->toHaveKey('confidence', 0.95);
     expect($shot->metadata)->toHaveKey('photo_path', $imagePath);
 });
