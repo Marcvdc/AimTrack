@@ -215,6 +215,13 @@
         .mk-callout-unit { font-size: 12px; color: var(--at-muted); margin-left: 4px; }
         .mk-callout-ai .mk-callout-label { color: var(--at-accent); }
         .mk-callout-text { font-size: 11px; color: var(--at-text); margin-top: 2px; }
+        .mk-callout-start {
+            bottom: 8px; left: 50%; transform: translateX(-50%);
+            text-align: center; white-space: nowrap;
+            background: color-mix(in srgb, var(--at-accent) 8%, transparent);
+            border: 1px solid color-mix(in srgb, var(--at-accent) 25%, transparent);
+        }
+        .mk-callout-start .mk-callout-label { color: var(--at-accent); }
 
         /* ── Trust strip ────────────────────────────────────────────── */
         .mk-trust {
@@ -244,6 +251,7 @@
             color: var(--at-muted);
             opacity: 0.65;
         }
+        .mk-trust-logos .mk-club { color: var(--at-text); opacity: 1; font-weight: 600; }
 
         /* ── Responsive ─────────────────────────────────────────────── */
         @media (max-width: 1024px) {
@@ -286,7 +294,7 @@
         </div>
         <div class="mk-nav-actions">
             <a class="mk-login-link" href="/admin/login">Inloggen</a>
-            <a class="mk-btn-nav" href="/admin/login">Probeer gratis</a>
+            <a class="mk-btn-nav" href="/admin/login">Aan de slag</a>
         </div>
     </nav>
 
@@ -302,7 +310,7 @@
             </p>
             <div class="mk-cta-row">
                 <a class="mk-btn mk-btn-primary" href="/admin/login">
-                    30 dagen gratis proberen
+                    Gratis aan de slag
                     <x-aimtrack.icon name="arrow" :size="14" color="var(--at-cta-text)" :stroke="2" />
                 </a>
                 <a class="mk-btn mk-btn-outline" href="https://github.com/marcvdc/AimTrack" target="_blank" rel="noopener noreferrer">
@@ -337,18 +345,34 @@
                     <x-aimtrack.target-rings :size="220" accent="var(--at-accent)" dim="var(--at-text)" :ring-stroke="1" :hits="$heroHits" />
                 </div>
 
-                <div class="mk-callout mk-callout-score">
-                    <div class="mk-callout-label">SCORE</div>
-                    <div class="mk-callout-value">547</div>
-                </div>
-                <div class="mk-callout mk-callout-group">
-                    <div class="mk-callout-label">GROEP</div>
-                    <div class="mk-callout-value">22<span class="mk-callout-unit">mm</span></div>
-                </div>
-                <div class="mk-callout mk-callout-ai">
-                    <div class="mk-callout-label">● AI</div>
-                    <div class="mk-callout-text">Sterke opening,<br>dip schot 35</div>
-                </div>
+                @php
+                    // Echte instance-aggregaten (zie LandingPageController + LandingPageData).
+                    $hasData = (bool) data_get($stats ?? [], 'has_data', false);
+                    $totalSessions = (int) data_get($stats ?? [], 'total_sessions', 0);
+                    $totalRounds = (int) data_get($stats ?? [], 'total_rounds', 0);
+                    $aiReflections = (int) data_get($stats ?? [], 'ai_reflections', 0);
+                    $fmtNum = static fn (int $n): string => number_format($n, 0, ',', '.');
+                @endphp
+                @if ($hasData)
+                    <div class="mk-callout mk-callout-score">
+                        <div class="mk-callout-label">SESSIES</div>
+                        <div class="mk-callout-value">{{ $fmtNum($totalSessions) }}</div>
+                    </div>
+                    <div class="mk-callout mk-callout-group">
+                        <div class="mk-callout-label">SCHOTEN</div>
+                        <div class="mk-callout-value">{{ $fmtNum($totalRounds) }}</div>
+                    </div>
+                    <div class="mk-callout mk-callout-ai">
+                        <div class="mk-callout-label">● AI-REFLECTIES</div>
+                        <div class="mk-callout-value">{{ $fmtNum($aiReflections) }}</div>
+                    </div>
+                @else
+                    {{-- Verse instance: nodig uit i.p.v. nullen of neppe cijfers tonen. --}}
+                    <div class="mk-callout mk-callout-start">
+                        <div class="mk-callout-label">● START</div>
+                        <div class="mk-callout-text">Begin je eerste sessie —<br>je cijfers verschijnen hier.</div>
+                    </div>
+                @endif
             </div>
         </div>
     </section>
@@ -357,11 +381,10 @@
     <section class="mk-trust">
         <div class="mk-trust-label">Gebruikt door sportschutters bij</div>
         <div class="mk-trust-logos">
-            <span>SV Diemen</span>
-            <span>Schuttersgilde Hilversum</span>
-            <span>KNSA · regio West</span>
-            <span>SV De Adelaar</span>
-            <span>Pistoolclub Utrecht</span>
+            <span class="mk-club">{{ $club ?? config('landing.club') }}</span>
+            @foreach (($partnerClubs ?? []) as $partnerClub)
+                <span>{{ $partnerClub }}</span>
+            @endforeach
         </div>
     </section>
 

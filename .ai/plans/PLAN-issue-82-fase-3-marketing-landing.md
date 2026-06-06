@@ -17,6 +17,35 @@ basis: e809582 (main, post-PR #86 merge — Fase 0 foundation)
 Goedgekeurd door marc@kjsoftware.nl op 2026-05-30. BUILD per stap met
 check-in + expliciete OK vóór de volgende stap (zie "Beslissingen vooraf" #6).
 
+## Herziening 2026-05-30 (sessie 2) — APPROVED
+
+Na het mergen van `main` (Fase 1 Range Console + Fase 2 empty-states +
+design-fidelity Fase 1b: dark Filament-theme, AI-features, dashboard, Vite) en
+op verzoek van de gebruiker zijn drie beslissingen herzien. Deze amendment
+**superseedt** de bijbehorende punten hieronder:
+
+- **R1 — Live data (superseedt Beslissing #2 & #4, AC8).** De landingspagina is
+  géén pure statische marketing meer: hero-callouts en de Trends-sparkline tonen
+  **echte instance-brede aggregaten** (gem. score, sessies, AI-reflecties,
+  score-trend) uit de DB. `app/Support/Landing/LandingPageData.php` en
+  `config/landing.php` worden daarom **herbestemd** (niet verwijderd); de
+  controller injecteert de data. **Lege-staat-fallback:** bij een lege/verse
+  instance een nette "begin je eerste sessie"-staat i.p.v. nullen of misleidende
+  neppe cijfers. Brand-componenten van `main` (`target-rings`, `sparkline`)
+  worden hergebruikt; mijn `spark` wordt geconsolideerd richting main's
+  `sparkline` waar dat netjes kan.
+- **R2 — Club configureerbaar (nieuw, Beslissing #7).** `config/landing.php`
+  krijgt een `club`-key (env-overschrijfbaar), default **"SSV Scherpschutters"**
+  (de eigen club van de gebruiker). Trust-strip + footer gebruiken die i.p.v.
+  fictieve clubnamen.
+- **R3 — Geen prijzen (superseedt AC6-pricing, nieuw Beslissing #8).** De app is
+  gratis; de **pricing-sectie vervalt**. De "gratis · open-source · MIT ·
+  self-hosted"-boodschap vouwt in de self-hosted-strook. CTA-taal weg van
+  trial/pricing: nav "Probeer gratis" → **"Aan de slag"**, hero "30 dagen gratis
+  proberen" → **"Gratis aan de slag"** (beide → `/admin/login`).
+
+Tests groeien per stap mee; suite blijft per commit groen.
+
 ## Beslissingen vooraf (sessie 2026-05-30)
 
 1. **Route** → de bestaande publieke route `/` (name `welcome` →

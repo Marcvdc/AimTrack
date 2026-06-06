@@ -11,7 +11,8 @@ class LandingPageController extends Controller
     {
         return view('welcome', [
             'stats' => $landingPageData->stats(),
-            'knsaLinks' => $landingPageData->knsaLinks(),
+            'club' => $landingPageData->club(),
+            'partnerClubs' => $landingPageData->partnerClubs(),
         ]);
     }
 }
