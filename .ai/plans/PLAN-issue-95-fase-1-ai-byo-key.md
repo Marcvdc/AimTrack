@@ -545,6 +545,8 @@ private function callModel(string $prompt, ?string $apiKey): string
 ```
 
 > Behoud de bestaande `maybeAlert()`-aanroepen-logica (provider-agnostisch). Verwijder `withToken()`, `response_format`, en de OpenAI-`choices.0.message.content`-parse. **Geen** `temperature`/`thinking`/`budget_tokens` toevoegen (400 op Haiku).
+>
+> ⚠️ **Aanroepers verifiëren:** ik laat de oude `bool $expectsJson`-param vallen. Run eerst `grep -n 'callModel' app/Services/Ai/ShooterCoach.php` — als ALLEEN `generateSessionReflection` en `generateWeaponInsight` `callModel` aanroepen (zoals verwacht), is de nieuwe signature `($prompt, ?string $apiKey)` veilig. Roept iets anders `callModel($prompt, false)` aan, behoud dan `$expectsJson` als 3e param zodat de positionele args niet verschuiven.
 
 **(c) De twee publieke methods** — resolve de key uit de eigenaar en geef hem mee aan `callModel`:
 
@@ -782,6 +784,10 @@ git commit -m "feat(ai): per-user Claude-key in laravel/ai config voor Copilot v
 - Test: `tests/Feature/Filament/Pages/AiSettingsPageTest.php`
 
 > Spiegel de chrome (`content()`, `getFormActions()`, property-types) van `app/Filament/Pages/ExportSessionsPage.php` — dat is de geverifieerde v5-template in deze repo. Behoud exacte property-union-types: `protected static string|\BackedEnum|null $navigationIcon`, `protected static string|\UnitEnum|null $navigationGroup`, `protected string $view` (niet static).
+>
+> ⚠️ **API-exactheid (kopieer, raad niet):** de onderstaande klasse is een **logica-skelet**. Neem de exacte `use`-imports en schema-API **letterlijk over uit `ExportSessionsPage`/`FailedJobsPage`** — met name: `HasForms` (waarschijnlijk `Filament\Forms\Contracts\HasForms`, NIET `Filament\Contracts\HasForms`), `InteractsWithForms`, `Filament\Schemas\Schema`, en of de Schema `->components([...])` óf `->schema([...])` gebruikt. Run `php artisan test --filter=AiSettings` tot de chrome klopt.
+>
+> ⚠️ **NIET gaten op `aiEnabled()`:** deze pagina mag GÉÉN `canAccess()`/`shouldRegisterNavigation()` op `aiEnabled()` krijgen. Zonder key is `aiEnabled()` `false`, en dan moet een user juist hier nog wél kunnen komen om een key toe te voegen (kip-ei). Laat de pagina bereikbaar voor elke ingelogde user.
 
 - [ ] **Step 1: Failing test**
 
