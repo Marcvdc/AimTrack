@@ -95,6 +95,7 @@ Vergeet de registry hieronder niet bij te werken.
 | prod-backups | feature/prod-backups | `aimtrack-prod-backups/` | 19085 | 15437 | 19030 | 19005 | actief (issue #83 — prod backup-strategie in repo) |
 | empty-states | feature/empty-states | `aimtrack-empty-states/` | 19086 | 15438 | 19031 | 19006 | actief (issue #82 · Fase 2 empty-states) |
 | range-console | feature/range-console | `aimtrack-range-console/` | 19087 | 15439 | 19032 | 19007 | actief (issue #82 · Fase 1 Range Console — 5 kernschermen) |
+| marketing | feature/marketing | `aimtrack-marketing/` | 19088 | 15440 | 19033 | 19008 | actief (issue #82 · Fase 3 marketing landing) |
 | ai-byo-key | feature/ai-byo-key | `aimtrack-ai-byo-key/` | 19089 | 15441 | 19034 | 19009 | actief (issue #95 · Fase 1 BYO Claude-key per user) |
 
 Update deze tabel bij setup en cleanup — zo weet iedereen direct welke poort bij welke stack hoort.
