@@ -75,6 +75,8 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
 
     public $photo = null;
 
+    public ?int $expectedShotCount = null;
+
     protected SessionShotService $shotService;
 
     private const TURN_COLOR_PALETTE = [
@@ -203,7 +205,8 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
         AnalyzeTurnPhotoJob::dispatch(
             $this->session,
             $this->currentTurnIndex,
-            $privatePath
+            $privatePath,
+            $this->expectedShotCount,
         );
 
         Notification::make()
