@@ -11,6 +11,9 @@
  */
 
 :root {
+    /* Signal Mint is dark-only — laat de UA form controls/scrollbars meekleuren. */
+    color-scheme: dark;
+
     /* ── Color tokens (Signal Mint dark) ─────────────────────────── */
     --at-bg:        #040711;
     --at-panel:     #0c1428;
