@@ -45,3 +45,26 @@ class CalibrationErrorDetail(BaseModel):
     message: str
     rings_detected: int
     minimum_required: int
+
+
+class ShotResultV2(BaseModel):
+    x: float = Field(description="Horizontale positie t.o.v. roos-centrum [-1, 1]")
+    y: float = Field(description="Verticale positie t.o.v. roos-centrum [-1, 1]")
+    ring: int = Field(description="Ring 0 (mis) t/m 10")
+    score: int = Field(description="Score (gelijk aan ring)")
+    confidence: float = Field(description="Detectie-zekerheid 0-1")
+    kind: str = Field(description="'hole' of 'uncertain'")
+
+
+class AnalyzeV2Response(BaseModel):
+    success: bool
+    shots: list[ShotResultV2]
+    total_detected: int
+    expected_shot_count: int | None
+    detected_count: int
+    count_matches_expected: bool
+    overall_confidence: float
+    needs_review: bool
+    orientation_note: str
+    vision_model: str
+    calibration: dict
