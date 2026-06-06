@@ -19,11 +19,13 @@ class Session extends Model
         'notes_raw',
         'manual_reflection',
         'turn_count',
+        'target_type',
     ];
 
     protected $casts = [
         'date' => 'date',
         'turn_count' => 'integer',
+        'target_type' => \App\Enums\TargetType::class,
     ];
 
     public function user()
