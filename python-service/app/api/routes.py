@@ -17,10 +17,13 @@ from app.calibration.target_intrinsic import (
 from app.config import TARGET_SPECS
 from app.models.schemas import (
     AnalyzeResponse,
+    AnalyzeV2Response,
     CalibrationErrorDetail,
     CalibrateResponse,
     ShotResult,
+    ShotResultV2,
 )
+from app.pipeline import analyze_target_v2
 
 router = APIRouter()
 
@@ -82,6 +85,47 @@ async def calibrate_target(
     )
 
 
+@router.post("/api/v2/analyze-target", response_model=AnalyzeV2Response)
+async def analyze_target_v2_endpoint(
+    file: UploadFile = File(...),
+    target_type: str = Form(...),
+    expected_shot_count: int | None = Form(default=None),
+) -> AnalyzeV2Response:
+    """Hybrid CV + Claude shot detection on a perspective-corrected target.
+
+    Returns discipline-correctly-scored shots plus a non-blocking needs_review flag.
+    """
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Bestand moet een afbeelding zijn")
+
+    spec = TARGET_SPECS.get(target_type)
+    if spec is None:
+        valid = ", ".join(sorted(TARGET_SPECS.keys()))
+        raise HTTPException(
+            status_code=400,
+            detail=f"Onbekend roos-type '{target_type}'. Geldige waarden: {valid}",
+        )
+
+    image_data = await file.read()
+    image = _decode_image(image_data)
+
+    result = analyze_target_v2(image, spec, expected_shot_count)
+
+    return AnalyzeV2Response(
+        success=True,
+        shots=[ShotResultV2(**s) for s in result.shots],
+        total_detected=result.detected_count,
+        expected_shot_count=result.expected_shot_count,
+        detected_count=result.detected_count,
+        count_matches_expected=result.count_matches_expected,
+        overall_confidence=result.overall_confidence,
+        needs_review=result.needs_review,
+        orientation_note=result.orientation_note,
+        vision_model=result.vision_model,
+        calibration=result.calibration,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Bestaande endpoints — backwards-compatible, ongewijzigd output-contract
 # ---------------------------------------------------------------------------
@@ -106,7 +150,7 @@ async def analyze_target(file: UploadFile = File(...)) -> AnalyzeResponse:
 
 
 @router.post("/api/v1/analyze-target-v2", response_model=AnalyzeResponse)
-async def analyze_target_v2(file: UploadFile = File(...)) -> AnalyzeResponse:
+async def analyze_target_v2_legacy(file: UploadFile = File(...)) -> AnalyzeResponse:
     """
     Detecteer inschoten (max 10) op een roos-foto.
 
