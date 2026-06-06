@@ -49,6 +49,73 @@ test('stats are cached under the landing.stats key until flushed', function (): 
     expect($data->stats()['total_sessions'])->toBe(1);
 });
 
+test('trendSeries is empty on an empty instance', function (): void {
+    Cache::flush();
+
+    expect(app(LandingPageData::class)->trendSeries())->toBe([]);
+});
+
+test('trendSeries sums rounds fired per session date, chronological', function (): void {
+    Cache::flush();
+
+    $older = Session::factory()->create(['date' => now()->subDays(2)]);
+    SessionWeapon::factory()->for($older)->create(['rounds_fired' => 30]);
+    SessionWeapon::factory()->for($older)->create(['rounds_fired' => 20]);
+
+    $newer = Session::factory()->create(['date' => now()->subDay()]);
+    SessionWeapon::factory()->for($newer)->create(['rounds_fired' => 75]);
+
+    expect(app(LandingPageData::class)->trendSeries())->toBe([50, 75]);
+});
+
+test('trendSeries keeps only the last N session dates', function (): void {
+    Cache::flush();
+
+    foreach (range(1, 5) as $offset) {
+        $session = Session::factory()->create(['date' => now()->subDays($offset)]);
+        SessionWeapon::factory()->for($session)->create(['rounds_fired' => $offset * 10]);
+    }
+
+    // Oldest first → [50, 40, 30, 20, 10]; last 2 dates → [20, 10].
+    expect(app(LandingPageData::class)->trendSeries(points: 2))->toBe([20, 10]);
+});
+
+test('recentSessions is empty on an empty instance', function (): void {
+    Cache::flush();
+
+    expect(app(LandingPageData::class)->recentSessions())->toBe([]);
+});
+
+test('recentSessions returns the latest sessions with range and total rounds', function (): void {
+    Cache::flush();
+
+    $old = Session::factory()->create(['date' => now()->subWeek(), 'range_name' => 'Oude Baan']);
+    SessionWeapon::factory()->for($old)->create(['rounds_fired' => 10]);
+
+    $recent = Session::factory()->create(['date' => now(), 'range_name' => 'Baan Centrum']);
+    SessionWeapon::factory()->for($recent)->create(['rounds_fired' => 40]);
+    SessionWeapon::factory()->for($recent)->create(['rounds_fired' => 5]);
+
+    $rows = app(LandingPageData::class)->recentSessions(limit: 1);
+
+    expect($rows)->toHaveCount(1)
+        ->and($rows[0]['range'])->toBe('Baan Centrum')
+        ->and($rows[0]['rounds'])->toBe(45)
+        ->and($rows[0]['date'])->toBe(now()->format('d-m'));
+});
+
+test('recentSessions falls back to location, then a dash, for the range label', function (): void {
+    Cache::flush();
+
+    Session::factory()->create([
+        'date' => now(),
+        'range_name' => null,
+        'location' => 'Amsterdam',
+    ]);
+
+    expect(app(LandingPageData::class)->recentSessions()[0]['range'])->toBe('Amsterdam');
+});
+
 test('club defaults to SSV Scherpschutters and honours config', function (): void {
     expect(app(LandingPageData::class)->club())->toBe('SSV Scherpschutters');
 

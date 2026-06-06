@@ -99,3 +99,78 @@ test('landing page no longer shows the pre-handoff live-stats content', function
         ->assertDontSee('Gem. score')
         ->assertDontSee('Schiet- en Wedstrijdreglementen');
 });
+
+test('landing page renders the six feature cards', function (): void {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('Wat je krijgt', escape: false)
+        ->assertSee('01 · SESSIES', escape: false)
+        ->assertSee('02 · AI-COACH', escape: false)
+        ->assertSee('03 · TRENDS', escape: false)
+        ->assertSee('04 · WM-4', escape: false)
+        ->assertSee('05 · PRIVACY', escape: false)
+        ->assertSee('06 · WAPENS', escape: false);
+});
+
+test('landing page WM-4 card carries the T4 monogram stamp', function (): void {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('WM-4 OK', escape: false)
+        ->assertSee('aimtrack-monogram-stamp', escape: false);
+});
+
+test('landing page renders the AI-coach deep-dive with a bracket frame', function (): void {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('jouw cijfers', escape: false)
+        ->assertSee('aimtrack-bracket-frame', escape: false)
+        ->assertSee('SCORE-DRIFT', escape: false)
+        ->assertSee('je data verlaat de server niet', escape: false);
+});
+
+test('landing page renders the self-hosted strip in place of pricing', function (): void {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('Eén command, eigen instance.', escape: false)
+        ->assertSee('docker compose up -d', escape: false)
+        ->assertSee('MIT-licentie', escape: false)
+        ->assertSee('Gratis · voor altijd', escape: false);
+});
+
+test('landing page renders a footer with the MIT meta line', function (): void {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('MIT · open-source · NL', escape: false);
+});
+
+test('landing page carries no pricing section, tiers or trial language', function (): void {
+    $this->get('/')
+        ->assertOk()
+        ->assertDontSee('POPULAIR')
+        ->assertDontSee('/ maand')
+        ->assertDontSee('Vraag offerte')
+        ->assertDontSee('Eerlijk, en voor altijd')
+        ->assertDontSee('Prijzen')
+        ->assertDontSee('€');
+});
+
+test('landing page Sessies card falls back to an empty state without sessions', function (): void {
+    Cache::flush();
+
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('Nog geen sessies', escape: false);
+});
+
+test('landing page feature cards surface live session data when it exists', function (): void {
+    Cache::flush();
+
+    $session = Session::factory()->create(['date' => now(), 'range_name' => 'Baan Demo One']);
+    SessionWeapon::factory()->for($session)->create(['rounds_fired' => 73]);
+
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('Baan Demo One', escape: false)   // recente-sessies-kaart (live)
+        ->assertSee('SCHOTEN · PER SESSIE', escape: false) // trends-kaart label
+        ->assertDontSee('Nog geen sessies');
+});
