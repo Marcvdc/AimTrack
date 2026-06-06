@@ -214,11 +214,18 @@ Return ring + score in the response so Laravel persists them verbatim.
 | Canonical px | 1000×1000, center (500,500), ring-1 edge radius = `CANONICAL_RING1_RADIUS` |
 | Target-relative | `x_norm = (x_px-500)/CANONICAL_RING1_RADIUS`; range ≈ [-1,1] at ring-1 edge |
 | mm | `dist_mm = dist_norm * spec.ring1_diameter_mm/2` |
-| Canvas (UI) | existing `0.5 + x_norm * 0.46` mapping, preserved for the shot board |
+| Backend (DB) | `x_normalized = 0.5 + x_norm * 0.5` (centre 0.5, ring-1 edge → 1.0) — the **same convention as manually-tagged shots** (`ShotScoringService`, `max_radius = 0.5`). `distance_from_center = sqrt((x_norm*0.5)² + (y_norm*0.5)²)`. |
+| Canvas (UI) | the shot board applies the visual `TARGET_RADIUS_RATIO = 0.46` itself in `mapToBoard()`; the job must **not** pre-apply it. |
 
-Scoring is **edge-gauged** using `spec.bullet_diameter_mm`. The current `[-1,1]` Python→Laravel
-contract is preserved so the shot board renders unchanged; only the *source* of ring/score moves
-to Python and becomes discipline-correct.
+> **Correction (post-implementation review):** an earlier draft of this section said the job
+> stored `0.5 + x_norm * 0.46`. That double-counted the board ratio (the board's `mapToBoard()`
+> already multiplies by 0.46), placing photo markers ~4% inward and storing `distance_from_center`
+> in different units than manual shots. The job now uses the **0.5** backend convention above so
+> photo and manual shots are coordinate-coherent. Ring/score are unaffected (Python authoritative).
+
+Scoring is **edge-gauged** using `spec.bullet_diameter_mm`. The `[-1,1]` Python→Laravel contract is
+preserved; only the *source* of ring/score moves to Python (discipline-correct) and the backend
+coordinate normalization is aligned to the manual convention.
 
 ---
 
