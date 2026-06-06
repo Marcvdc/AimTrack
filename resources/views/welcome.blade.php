@@ -382,12 +382,62 @@
         .mk-drift { align-self: flex-start; width: 90%; padding: 12px; background: var(--at-bg); border: 1px solid var(--at-line); border-radius: 12px; }
         .mk-drift-label { font-family: var(--at-font-mono); font-size: 9px; color: var(--at-muted); letter-spacing: 0.14em; margin-bottom: 6px; }
 
+        /* ── Self-hosted strook ─────────────────────────────────────── */
+        .mk-selfhost {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: center;
+            padding: 64px;
+            border-top: 1px solid var(--at-line);
+            border-bottom: 1px solid var(--at-line);
+            background: var(--at-bg);
+        }
+        .mk-selfhost .mk-h2 { font-size: 38px; margin: 10px 0 14px; }
+        .mk-selfhost-lead { margin: 0; max-width: 480px; font-size: 15px; line-height: 1.6; color: var(--at-muted); }
+        .mk-selfhost-pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+
+        .mk-terminal {
+            padding: 20px;
+            background: var(--at-panel);
+            border: 1px solid var(--at-line);
+            border-radius: 12px;
+            font-family: var(--at-font-mono);
+            font-size: 13px;
+            color: var(--at-text);
+        }
+        .mk-terminal-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; }
+        .mk-terminal-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+        .mk-terminal-dot.is-warn { background: color-mix(in srgb, var(--at-warn) 53%, transparent); }
+        .mk-terminal-dot.is-accent { background: color-mix(in srgb, var(--at-accent) 53%, transparent); }
+        .mk-terminal-dot.is-muted { background: color-mix(in srgb, var(--at-muted) 33%, transparent); }
+        .mk-terminal-path { margin-left: auto; font-size: 10px; color: var(--at-muted); letter-spacing: 0.12em; }
+        .mk-terminal-line { color: var(--at-muted); word-break: break-all; }
+        .mk-terminal-line .mk-prompt { color: var(--at-accent); }
+        .mk-terminal-ok { color: var(--at-muted); margin-top: 6px; font-size: 11px; }
+        .mk-terminal-ok .mk-accent { color: var(--at-accent); }
+
+        /* ── Footer ─────────────────────────────────────────────────── */
+        .mk-footer {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 40px 64px;
+            border-top: 1px solid var(--at-line);
+        }
+        .mk-footer-meta { font-family: var(--at-font-mono); font-size: 11px; color: var(--at-muted); letter-spacing: 0.08em; }
+        .mk-footer-links { margin-left: auto; display: flex; flex-wrap: wrap; gap: 22px; font-size: 12px; }
+        .mk-footer-link { color: var(--at-muted); text-decoration: none; transition: color .15s ease; }
+        .mk-footer-link:hover { color: var(--at-text); }
+
         /* ── Responsive ─────────────────────────────────────────────── */
         @media (max-width: 1024px) {
             .mk-hero { grid-template-columns: 1fr; padding: 64px 32px 48px; }
-            .mk-nav, .mk-trust, .mk-features, .mk-ai { padding-left: 32px; padding-right: 32px; }
+            .mk-nav, .mk-trust, .mk-features, .mk-ai, .mk-selfhost, .mk-footer { padding-left: 32px; padding-right: 32px; }
             .mk-feature-grid { grid-template-columns: repeat(2, 1fr); }
             .mk-ai-grid { grid-template-columns: 1fr; gap: 40px; }
+            .mk-selfhost { grid-template-columns: 1fr; gap: 32px; }
         }
         @media (max-width: 768px) {
             .mk-nav-links { display: none; }
@@ -709,6 +759,48 @@
             </x-aimtrack.bracket-frame>
         </div>
     </section>
+
+    {{-- ── Self-hosted strook (vervangt de pricing-sectie — app is gratis) ─ --}}
+    <section class="mk-selfhost" id="self-hosted">
+        <div class="mk-selfhost-copy">
+            <div class="mk-section-label"><span class="mk-dot" aria-hidden="true"></span> Self-hosted · open-source</div>
+            <h2 class="mk-h2">Eén command, eigen instance.</h2>
+            <p class="mk-selfhost-lead">
+                Docker compose up. Klaar. AimTrack is open-source onder MIT-licentie,
+                werkt op een Raspberry Pi, en synchroniseert nergens heen. Gratis,
+                voor altijd — geen abonnement, geen addertjes.
+            </p>
+            <div class="mk-selfhost-pills">
+                <span class="mk-pill">● Gratis · voor altijd</span>
+                <span class="mk-pill">● Open-source</span>
+                <span class="mk-pill">● MIT-licentie</span>
+            </div>
+        </div>
+        <div class="mk-terminal">
+            <div class="mk-terminal-bar">
+                <span class="mk-terminal-dot is-warn" aria-hidden="true"></span>
+                <span class="mk-terminal-dot is-accent" aria-hidden="true"></span>
+                <span class="mk-terminal-dot is-muted" aria-hidden="true"></span>
+                <span class="mk-terminal-path">~/aimtrack</span>
+            </div>
+            <div class="mk-terminal-line"><span class="mk-prompt">$</span> git clone github.com/marcvdc/AimTrack</div>
+            <div class="mk-terminal-line"><span class="mk-prompt">$</span> cd AimTrack && docker compose up -d</div>
+            <div class="mk-terminal-ok">✓ AimTrack draait op <span class="mk-accent">http://localhost:8000</span></div>
+            <div class="mk-terminal-ok">✓ Klaar voor je eerste sessie.</div>
+        </div>
+    </section>
+
+    {{-- ── Footer ───────────────────────────────────────────────────── --}}
+    <footer class="mk-footer">
+        <x-aimtrack.wordmark :size="22" color="var(--at-muted)" />
+        <div class="mk-footer-meta">MIT · open-source · NL</div>
+        <nav class="mk-footer-links" aria-label="Footer">
+            <a class="mk-footer-link" href="#">Docs</a>
+            <a class="mk-footer-link" href="#">Changelog</a>
+            <a class="mk-footer-link" href="https://github.com/marcvdc/AimTrack" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a class="mk-footer-link" href="#">Contact</a>
+        </nav>
+    </footer>
 
 </body>
 </html>
