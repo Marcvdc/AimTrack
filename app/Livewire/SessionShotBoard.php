@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Jobs\AnalyzeTurnPhotoJob;
 use App\Models\Session;
 use App\Models\SessionShot;
+use App\Models\SessionTurnAnalysis;
 use App\Services\Sessions\SessionShotService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -76,6 +77,9 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
     public $photo = null;
 
     public ?int $expectedShotCount = null;
+
+    /** @var array<int, array<string, mixed>> */
+    public array $turnReview = [];
 
     protected SessionShotService $shotService;
 
@@ -435,6 +439,15 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
                 'turn_index' => $turn,
             ])
             ->values()
+            ->all();
+
+        $this->turnReview = $this->session->turnAnalyses()
+            ->get()
+            ->mapWithKeys(fn (SessionTurnAnalysis $analysis) => [$analysis->turn_index => [
+                'needs_review' => (bool) $analysis->needs_review,
+                'detected_count' => (int) $analysis->detected_count,
+                'overall_confidence' => $analysis->overall_confidence,
+            ]])
             ->all();
 
         $this->resetTable();

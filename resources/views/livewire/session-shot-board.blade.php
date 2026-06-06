@@ -93,6 +93,12 @@
                         <option value="{{ $turn }}">Beurt {{ $turn + 1 }}</option>
                     @endforeach
                 </select>
+
+                @if ($currentTurnIndex !== \App\Livewire\SessionShotBoard::ALL_TURNS_VALUE && ($turnReview[$currentTurnIndex]['needs_review'] ?? false))
+                    <x-filament::badge color="warning" icon="heroicon-m-exclamation-triangle">
+                        Controleren — foto-analyse onzeker voor deze beurt
+                    </x-filament::badge>
+                @endif
             </div>
         </x-filament::section>
     </div>
@@ -311,6 +317,24 @@
                 Upload een foto van het schotbord voor Beurt {{ $this->currentTurnIndex + 1 }}.
                 Maximaal 10MB. Ondersteunde formaten: JPEG, PNG.
             </p>
+
+            <div class="mt-4">
+                <label for="expectedShotCount" class="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Aantal schoten deze beurt <span class="text-gray-400">(optioneel)</span>
+                </label>
+                <input
+                    id="expectedShotCount"
+                    type="number"
+                    min="1"
+                    max="50"
+                    inputmode="numeric"
+                    wire:model="expectedShotCount"
+                    placeholder="bijv. 5"
+                    class="mt-1 w-32 rounded-lg border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Vul het aantal geloste schoten in voor betrouwbaardere detectie. Leeg laten mag.
+                </p>
+            </div>
 
             <!-- Action Buttons -->
             <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">
