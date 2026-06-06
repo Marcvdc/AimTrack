@@ -1,81 +1,51 @@
 <?php
 
-use App\Models\AiReflection;
-use App\Models\Session;
-use App\Models\SessionShot;
-use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Cache;
+// Fase 3 — Signal Mint marketing landing. The page is fully static guest-facing
+// marketing copy (no live DB stats). Assertions grow per BUILD-stap; the
+// controller/dead-code simplification + final coverage land in Stap 5.
 
-it('renders landing page stats and knsa links from live data', function () {
-    Cache::flush();
-
-    $now = CarbonImmutable::parse('2026-01-24 10:00:00');
-    CarbonImmutable::setTestNow($now);
-
-    $session = Session::factory()->create(['date' => $now->subDay()]);
-    Session::factory()->create(['date' => $now->subDays(3)]);
-    $oldSession = Session::factory()->create(['date' => $now->subMonth()->subDay()]);
-
-    SessionShot::factory()->for($session)->state(['score' => 8, 'ring' => 8, 'turn_index' => 0, 'shot_index' => 0, 'created_at' => $now])->create();
-    SessionShot::factory()->for($session)->state(['score' => 9, 'ring' => 9, 'turn_index' => 0, 'shot_index' => 1, 'created_at' => $now])->create();
-    SessionShot::factory()->for($session)->state(['score' => 10, 'ring' => 10, 'turn_index' => 0, 'shot_index' => 2, 'created_at' => $now])->create();
-
-    AiReflection::factory()->for($session)->state(['created_at' => $now])->create();
-    AiReflection::factory()->for($oldSession)->state(['created_at' => $now])->create();
-
-    config()->set('landing.knsa_links', [
-        [
-            'title' => 'Schiet- en Wedstrijdreglementen',
-            'description' => 'Regels',
-            'url' => 'https://www.knsa.nl/de-knsa/wet-en-regelgeving/schiet-en-wedstrijdreglementen/',
-        ],
-        [
-            'title' => 'KNSA Downloadcenter',
-            'description' => 'Checklist',
-            'url' => 'https://www.knsa.nl/downloadcenter/',
-        ],
-    ]);
-
-    $response = $this->get('/');
-
-    $response->assertOk()
-        ->assertViewHas('stats', function (array $stats) {
-            expect($stats['sessions_this_month'])->toBe(2);
-            expect($stats['average_score'])->toBe(9.0);
-            expect($stats['ai_reflections_last_30_days'])->toBe(2);
-            expect($stats['ring_heatmap'])->toBeArray();
-            $rings = collect($stats['ring_heatmap'])->keyBy('ring');
-            expect($rings[8]['total'])->toBe(1);
-            expect($rings[9]['total'])->toBe(1);
-            expect($rings[10]['total'])->toBe(1);
-
-            return true;
-        })
-        ->assertViewHas('knsaLinks', function (array $links) {
-            expect($links)->toHaveCount(2);
-            expect($links[0]['title'])->toBe('Schiet- en Wedstrijdreglementen');
-
-            return true;
-        })
-        ->assertSee('Gem. score')
-        ->assertSee('9.0')
-        ->assertSee('Schiet- en Wedstrijdreglementen');
-
-    CarbonImmutable::setTestNow();
+test('landing page renders for guests without auth or seeded data', function (): void {
+    $this->get('/')->assertOk();
 });
 
-it('falls back to zeros and placeholder when no data configured', function () {
-    Cache::flush();
-    CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-01-24 10:00:00'));
+test('landing page shows the Signal Mint hero copy', function (): void {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('Je schietsessies,', escape: false)
+        ->assertSee('scherp in beeld.', escape: false)
+        ->assertSee('AI-reflectie', escape: false);
+});
 
-    config()->set('landing.knsa_links', []);
+test('landing page nav links the login and welcome routes', function (): void {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('Inloggen', escape: false)
+        ->assertSee('Probeer gratis', escape: false)
+        ->assertSee('/admin/login', escape: false)
+        ->assertSee(route('welcome'), escape: false);
+});
 
-    $response = $this->get('/');
+test('landing page shows the trust strip', function (): void {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('Gebruikt door sportschutters bij', escape: false)
+        ->assertSee('SV Diemen', escape: false);
+});
 
-    $response->assertOk()
-        ->assertSee('Sessies deze maand')
-        ->assertSee('0')
-        ->assertSeeText('Geen KNSA-links geconfigureerd.');
+test('landing page inlines the AimTrack design tokens and webfonts', function (): void {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('<style id="aimtrack-tokens">', escape: false)
+        ->assertSee('--at-accent:    #64f4b3;', escape: false)
+        ->assertSee('JetBrains+Mono', escape: false);
+});
 
-    CarbonImmutable::setTestNow();
+test('landing page no longer shows the pre-handoff live-stats content', function (): void {
+    $this->get('/')
+        ->assertOk()
+        ->assertDontSee('Ring heatmap')
+        ->assertDontSee('KNSA referenties')
+        ->assertDontSee('Sessies deze maand')
+        ->assertDontSee('Gem. score')
+        ->assertDontSee('Schiet- en Wedstrijdreglementen');
 });

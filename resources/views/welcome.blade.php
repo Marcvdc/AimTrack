@@ -3,496 +3,360 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AimTrack • Schiethub</title>
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=space-grotesk:500,600,700|manrope:400,500,600&display=swap" rel="stylesheet" />
+    <title>AimTrack — Je schietsessies, scherp in beeld.</title>
+    <meta name="description" content="AimTrack logt je schietsessies, herkent patronen in je groepering en geeft per sessie een AI-reflectie. Self-hosted, WM-4 conform, open-source.">
+
+    {{-- Webfonts (Inter + JetBrains Mono) + Signal Mint design tokens — één bron
+         van waarheid, gedeeld met het Filament-panel via AdminPanelProvider. --}}
+    <x-aimtrack.head-assets />
+
     <style>
-        :root {
-            --bg-start: #040711;
-            --bg-end: #0c1428;
-            --text: #e3ecff;
-            --text-muted: #94a3c5;
-            --card: rgba(13, 20, 41, .65);
-            --border: rgba(255, 255, 255, .08);
-            --mint: #64f4b3;
-            --indigo: #7a8cff;
-            --danger: #f87171;
-        }
-        * { box-sizing: border-box; }
-        body {
+        *, *::before, *::after { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        .mk-body {
             margin: 0;
-            font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            color: var(--text);
-            background: radial-gradient(circle at top, rgba(100, 244, 179, 0.15), transparent 35%) ,
-                        radial-gradient(circle at 20% 20%, rgba(122, 140, 255, 0.12), transparent 25%) ,
-                        linear-gradient(135deg, var(--bg-start), var(--bg-end));
             min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            color: var(--at-text);
+            font-family: var(--at-font-body);
+            background: linear-gradient(to bottom, var(--at-bg), var(--at-panel) 60%, var(--at-bg));
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
         }
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background: url('data:image/svg+xml,%3Csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"160\" viewBox=\"0 0 160 160\"%3E%3Crect width=\"1\" height=\"1\" fill=\"%230c1224\"/%3E%3C/svg%3E');
-            opacity: .3;
+
+        .mk-body a:focus-visible,
+        .mk-body button:focus-visible {
+            outline: 2px solid var(--at-accent);
+            outline-offset: 3px;
+            border-radius: 4px;
+        }
+
+        /* ── Decorative reticle, top-right ──────────────────────────── */
+        .mk-reticle-deco {
+            position: absolute;
+            top: 40px;
+            right: 60px;
+            z-index: 0;
             pointer-events: none;
         }
-        main {
-            position: relative;
-            padding: 80px 24px 160px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        h1, h2 {
-            font-family: 'Space Grotesk', 'Manrope', sans-serif;
-            letter-spacing: -0.02em;
-        }
-        h1 {
-            font-size: clamp(2.5rem, 4vw, 4rem);
-            margin: 0 0 16px;
-        }
-        h2 {
-            font-size: clamp(1.8rem, 3vw, 2.6rem);
-            margin: 0 0 12px;
-        }
-        p {
-            margin: 0 0 1rem;
-            line-height: 1.6;
-            color: var(--text-muted);
-        }
-        .badge {
+
+        /* ── Shared bits ────────────────────────────────────────────── */
+        .mk-section-label {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            border-radius: 999px;
-            background: rgba(122, 140, 255, .15);
-            color: var(--indigo);
-            font-weight: 600;
-            font-size: .95rem;
-            margin-bottom: 16px;
+            gap: 8px;
+            font-family: var(--at-font-mono);
+            font-size: 10px;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--at-accent);
         }
-        .badge svg {
-            width: 18px;
-            height: 18px;
+        .mk-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--at-accent);
+            display: inline-block;
+            flex: 0 0 auto;
         }
-        .hero {
-            display: grid;
-            gap: 32px;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+
+        .mk-btn {
+            display: inline-flex;
             align-items: center;
-            margin-bottom: 72px;
-        }
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 32px;
-            box-shadow: 0 40px 90px rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(18px);
-        }
-        .cta-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            margin-top: 24px;
-        }
-        .btn {
+            justify-content: center;
+            gap: 8px;
             border: none;
-            border-radius: 999px;
-            font-size: 1.05rem;
-            padding: 16px 28px;
-            font-weight: 600;
             cursor: pointer;
-            transition: transform .2s ease, box-shadow .2s ease;
             text-decoration: none;
-            text-align: center;
+            font-family: var(--at-font-body);
+            transition: transform .15s ease, opacity .15s ease, background .15s ease;
         }
-        .btn-primary {
-            background: linear-gradient(120deg, var(--mint), #44d89b);
-            color: #051810;
-            box-shadow: 0 15px 40px rgba(100, 244, 179, 0.35);
+        .mk-btn:hover { transform: translateY(-1px); }
+        .mk-btn-primary {
+            padding: 14px 22px;
+            border-radius: 10px;
+            background: var(--at-accent);
+            color: var(--at-cta-text);
+            font-weight: 600;
+            font-size: 15px;
         }
-        .btn-secondary {
+        .mk-btn-outline {
+            padding: 14px 22px;
+            border-radius: 10px;
+            border: 1px solid var(--at-line);
             background: transparent;
-            border: 1px solid rgba(255, 255, 255, .25);
-            color: var(--text);
+            color: var(--at-text);
+            font-size: 15px;
         }
-        .btn:hover, .btn:focus-visible {
-            transform: translateY(-2px);
-        }
-        .stats-card {
+        .mk-btn-outline:hover { border-color: var(--at-accent-50, var(--at-accent)); }
+
+        /* ── Nav ────────────────────────────────────────────────────── */
+        .mk-nav {
+            position: sticky;
+            top: 0;
+            z-index: 10;
             display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 12px;
-        }
-        .stat {
-            background: rgba(4, 7, 17, .55);
-            border-radius: 16px;
-            padding: 16px;
-            border: 1px solid var(--border);
-        }
-        .stat span {
-            display: block;
-            font-size: .85rem;
-            color: var(--text-muted);
-        }
-        .stat strong {
-            font-size: 1.6rem;
-        }
-        .heatmap {
-            border-radius: 18px;
-            border: 1px dashed rgba(255, 255, 255, .15);
-            background: rgba(9, 13, 25, .7);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .heatmap-header {
-            display: flex;
-            justify-content: space-between;
             align-items: center;
+            gap: 28px;
+            padding: 18px 64px;
+            background: color-mix(in srgb, var(--at-bg) 80%, transparent);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--at-line);
         }
-        .heatmap-header span {
-            font-size: .85rem;
-            color: var(--text-muted);
+        .mk-brand { display: inline-flex; text-decoration: none; }
+        .mk-nav-links {
+            display: flex;
+            gap: 24px;
+            margin-left: 24px;
+            font-size: 13px;
         }
-        .heatmap-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+        .mk-nav-link { color: var(--at-muted); text-decoration: none; transition: color .15s ease; }
+        .mk-nav-link:hover, .mk-nav-link.is-active { color: var(--at-text); }
+        .mk-nav-actions {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
             gap: 10px;
         }
-        .heatmap-ring {
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, .1);
-            padding: 10px;
-            background: rgba(100, 244, 179, calc(.1 + var(--heat-intensity) * .5));
-            box-shadow: inset 0 0 15px rgba(100, 244, 179, calc(.05 + var(--heat-intensity) * .25));
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
+        .mk-login-link { font-size: 13px; color: var(--at-muted); text-decoration: none; transition: color .15s ease; }
+        .mk-login-link:hover { color: var(--at-text); }
+        .mk-btn-nav {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: none;
+            background: var(--at-accent);
+            color: var(--at-cta-text);
+            font-weight: 600;
+            font-size: 13px;
+            text-decoration: none;
+            cursor: pointer;
         }
-        .heatmap-ring span {
-            font-size: .8rem;
-            color: var(--text-muted);
-        }
-        .heatmap-ring strong {
-            font-size: 1.4rem;
-        }
-        .heatmap-empty {
-            color: var(--text-muted);
-            font-size: .9rem;
-        }
-        .section {
-            margin-bottom: 72px;
-        }
-        .section-header {
-            margin-bottom: 24px;
-        }
-        .section p {
-            max-width: 640px;
-        }
-        .grid {
+
+        /* ── Hero ───────────────────────────────────────────────────── */
+        .mk-hero {
+            position: relative;
             display: grid;
-            gap: 18px;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            grid-template-columns: 1.1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            padding: 88px 64px 64px;
         }
-        .list-card h3 {
+        .mk-hero .mk-section-label { margin-bottom: 18px; }
+        .mk-h1 {
             margin: 0;
-            font-size: 1.2rem;
+            font-family: var(--at-font-display);
+            font-size: 64px;
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            line-height: 1.02;
+            color: var(--at-text);
         }
-        .list-card ul {
-            padding-left: 20px;
-            color: var(--text-muted);
-            margin: 12px 0 0;
-            line-height: 1.5;
+        .mk-accent { color: var(--at-accent); }
+        .mk-lead {
+            margin: 22px 0 0;
+            max-width: 520px;
+            font-size: 18px;
+            line-height: 1.55;
+            color: var(--at-muted);
         }
-        .resource-card a {
+        .mk-cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+        .mk-pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+        .mk-pill {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            color: var(--mint);
-            text-decoration: none;
-            font-weight: 600;
-            margin-top: 12px;
-        }
-        .resource-card small {
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            font-size: .75rem;
-            color: var(--text-muted);
-        }
-        .quickstart-card {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .quickstart-card span {
-            width: 38px;
-            height: 38px;
-            border-radius: 12px;
-            background: rgba(100, 244, 179, .18);
-            display: grid;
-            place-items: center;
-            font-weight: 700;
-            color: var(--mint);
-        }
-        .options-list {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        .option-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-        }
-        .option-item p {
-            margin: 4px 0 0;
-        }
-        .sticky-cta {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            background: rgba(13, 20, 41, .8);
-            border: 1px solid var(--border);
+            gap: 6px;
+            padding: 5px 10px;
+            border: 1px solid var(--at-line);
             border-radius: 999px;
-            padding: 8px;
-            display: none;
-            z-index: 50;
+            font-family: var(--at-font-mono);
+            font-size: 11px;
+            letter-spacing: 0.04em;
+            color: var(--at-muted);
         }
-        .sticky-cta a {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+
+        .mk-hero-visual { display: flex; align-items: center; justify-content: center; }
+        .mk-hero-stage { position: relative; width: 420px; height: 420px; }
+        .mk-hero-stage .mk-reticle-frame { position: absolute; inset: 0; }
+        .mk-rings-center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+
+        .mk-callout { position: absolute; padding: 8px 12px; border-radius: 8px; }
+        .mk-callout-score {
+            top: 12px; left: -36px;
+            background: var(--at-panel);
+            border: 1px solid var(--at-line);
+            box-shadow: 0 8px 24px color-mix(in srgb, var(--at-bg) 50%, transparent);
         }
-        footer {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            text-align: center;
-            color: var(--text-muted);
+        .mk-callout-group {
+            bottom: 16px; right: -28px;
+            background: var(--at-panel);
+            border: 1px solid var(--at-line);
         }
-        footer a {
-            color: var(--indigo);
-            text-decoration: none;
+        .mk-callout-ai {
+            top: 52%; right: -56px;
+            background: color-mix(in srgb, var(--at-accent) 8%, transparent);
+            border: 1px solid color-mix(in srgb, var(--at-accent) 25%, transparent);
+        }
+        .mk-callout-label {
+            font-family: var(--at-font-mono);
+            font-size: 9px;
+            letter-spacing: 0.16em;
+            color: var(--at-muted);
+        }
+        .mk-callout-value {
+            font-family: var(--at-font-mono);
+            font-size: 22px;
             font-weight: 600;
+            color: var(--at-accent);
+        }
+        .mk-callout-group .mk-callout-value { color: var(--at-text); }
+        .mk-callout-unit { font-size: 12px; color: var(--at-muted); margin-left: 4px; }
+        .mk-callout-ai .mk-callout-label { color: var(--at-accent); }
+        .mk-callout-text { font-size: 11px; color: var(--at-text); margin-top: 2px; }
+
+        /* ── Trust strip ────────────────────────────────────────────── */
+        .mk-trust {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 40px;
+            padding: 24px 64px;
+            border-top: 1px solid var(--at-line);
+            border-bottom: 1px solid var(--at-line);
+        }
+        .mk-trust-label {
+            font-family: var(--at-font-mono);
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--at-muted);
+        }
+        .mk-trust-logos {
+            display: flex;
+            flex: 1;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 40px;
+            font-family: var(--at-font-display);
+            font-size: 16px;
+            color: var(--at-muted);
+            opacity: 0.65;
+        }
+
+        /* ── Responsive ─────────────────────────────────────────────── */
+        @media (max-width: 1024px) {
+            .mk-hero { grid-template-columns: 1fr; padding: 64px 32px 48px; }
+            .mk-nav, .mk-trust { padding-left: 32px; padding-right: 32px; }
         }
         @media (max-width: 768px) {
-            main { padding-top: 60px; }
-            .card { padding: 24px; }
+            .mk-nav-links { display: none; }
+            .mk-h1 { font-size: 44px; }
+            .mk-lead { font-size: 16px; }
+            .mk-trust { gap: 20px; }
+            .mk-trust-logos { gap: 22px; font-size: 14px; }
+            .mk-reticle-deco { right: -40px; opacity: .6; }
         }
-        @media (max-width: 640px) {
-            .cta-group { flex-direction: column; }
-            .sticky-cta { display: inline-flex; left: 24px; right: 24px; }
+        @media (max-width: 520px) {
+            .mk-nav { padding: 14px 18px; gap: 12px; }
+            .mk-hero { padding: 44px 18px 36px; }
+            .mk-hero-stage { transform: scale(.74); margin: -55px 0; }
+            .mk-cta-row .mk-btn { flex: 1 1 auto; }
         }
     </style>
 </head>
-<body>
-@php
-    $sessionsThisMonth = (int) data_get($stats ?? [], 'sessions_this_month', 0);
-    $averageScore = number_format((float) data_get($stats ?? [], 'average_score', 0), 1);
-    $aiReflections = (int) data_get($stats ?? [], 'ai_reflections_last_30_days', 0);
-    $ringHeatmap = collect(data_get($stats ?? [], 'ring_heatmap', []));
-    if ($ringHeatmap->isEmpty()) {
-        $ringHeatmap = collect(range(0, 10))->map(fn ($ring) => [
-            'ring' => $ring,
-            'total' => 0,
-            'intensity' => 0,
-        ]);
-    }
-@endphp
-<main>
-    <section class="hero">
-        <div>
-            <span class="badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-                    <circle cx="12" cy="12" r="10" opacity=".4"></circle>
-                    <circle cx="12" cy="12" r="4"></circle>
-                    <path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path>
-                </svg>
-                AimTrack Schiethub
-            </span>
-            <h1>Log je sessies, blijf veilig en leer van elke serie.</h1>
-            <p>Een persoonlijke hub voor sportschutters: sessies registreren, wapens beheren en direct inzichten krijgen van een AI-coach. Geïnspireerd op de KNSA-veiligheidsrichtlijnen.</p>
-            <div class="cta-group">
-                <a class="btn btn-primary" href="/admin/login">Inloggen</a>
-                <a class="btn btn-secondary" href="#handleiding">Handleiding &amp; quickstart</a>
-            </div>
-        </div>
-        <div class="card stats-card">
-            <div class="heatmap">
-                <div class="heatmap-header">
-                    <h3 style="margin:0;font-size:1rem;">Ring heatmap (30 dagen)</h3>
-                    <span>Laatste {{ $ringHeatmap->sum('total') }} schoten</span>
-                </div>
-                @if($ringHeatmap->sum('total') > 0)
-                    <div class="heatmap-grid">
-                        @foreach($ringHeatmap as $ringStat)
-                            <div class="heatmap-ring" style="--heat-intensity: {{ $ringStat['intensity'] ?? 0 }};">
-                                <span>Ring {{ $ringStat['ring'] }}</span>
-                                <strong>{{ $ringStat['total'] }}</strong>
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <p class="heatmap-empty">Nog geen schoten geregistreerd in de afgelopen 30 dagen.</p>
-                @endif
-            </div>
-            <div class="stats-grid">
-                <div class="stat">
-                    <span>Sessies deze maand</span>
-                    <strong>{{ $sessionsThisMonth }}</strong>
-                </div>
-                <div class="stat">
-                    <span>Gem. score</span>
-                    <strong>{{ $averageScore }}</strong>
-                </div>
-                <div class="stat">
-                    <span>AI reflecties (30d)</span>
-                    <strong>{{ $aiReflections }}</strong>
-                </div>
-            </div>
-            <p style="margin:0;color:var(--text-muted);font-size:.9rem;">Live data vanuit AimTrack • Dashboard preview</p>
-        </div>
-    </section>
+<body class="mk-body">
 
-    <section class="section" aria-labelledby="features">
-        <div class="section-header">
-            <h2 id="features">Waarom AimTrack?</h2>
-            <p>Sessies, wapens, reflecties en exports samen in één hub – ontworpen voor gebruik op de baan én thuis.</p>
+    <div class="mk-reticle-deco">
+        <x-aimtrack.reticle :size="420" color="var(--at-accent)" :stroke="1" :opacity="0.07" :dot="true" aria-hidden="true" />
+    </div>
+
+    {{-- ── Nav ──────────────────────────────────────────────────────── --}}
+    <nav class="mk-nav">
+        <a class="mk-brand" href="{{ route('welcome') }}" aria-label="AimTrack — naar boven">
+            <x-aimtrack.wordmark :size="26" />
+        </a>
+        <div class="mk-nav-links">
+            <a class="mk-nav-link is-active" href="#features">Functies</a>
+            <a class="mk-nav-link" href="#ai-coach">AI-coach</a>
+            <a class="mk-nav-link" href="#self-hosted">Self-hosted</a>
+            <a class="mk-nav-link" href="#pricing">Prijzen</a>
+            <a class="mk-nav-link" href="https://github.com/marcvdc/AimTrack" target="_blank" rel="noopener noreferrer">GitHub</a>
         </div>
-        <div class="grid">
-            <div class="card list-card">
-                <h3>Interactieve sessies &amp; roos</h3>
-                <ul>
-                    <li>Per schot coördinaten en ring-score</li>
-                    <li>Totaaloverzicht per beurt</li>
-                </ul>
+        <div class="mk-nav-actions">
+            <a class="mk-login-link" href="/admin/login">Inloggen</a>
+            <a class="mk-btn-nav" href="/admin/login">Probeer gratis</a>
+        </div>
+    </nav>
+
+    {{-- ── Hero ─────────────────────────────────────────────────────── --}}
+    <section class="mk-hero">
+        <div class="mk-hero-copy">
+            <div class="mk-section-label"><span class="mk-dot" aria-hidden="true"></span> Voor sportschutters · NL</div>
+            <h1 class="mk-h1">Je schietsessies,<br><span class="mk-accent">scherp in beeld.</span></h1>
+            <p class="mk-lead">
+                AimTrack logt je trainingen, herkent patronen in je groepering en
+                geeft per sessie een AI-reflectie. Self-hosted, WM-4 conform,
+                zonder gedoe.
+            </p>
+            <div class="mk-cta-row">
+                <a class="mk-btn mk-btn-primary" href="/admin/login">
+                    30 dagen gratis proberen
+                    <x-aimtrack.icon name="arrow" :size="14" color="var(--at-cta-text)" :stroke="2" />
+                </a>
+                <a class="mk-btn mk-btn-outline" href="https://github.com/marcvdc/AimTrack" target="_blank" rel="noopener noreferrer">
+                    <x-aimtrack.icon name="shield" :size="14" />
+                    Bekijk op GitHub
+                </a>
             </div>
-            <div class="card list-card">
-                <h3>Wapenbeheer</h3>
-                <ul>
-                    <li>Bijhouden van wapentypes, onderhoud en gebruik</li>
-                    <li>Opslagnotities en serienummers veilig</li>
-                </ul>
+            <div class="mk-pills">
+                <span class="mk-pill">● Self-hosted</span>
+                <span class="mk-pill">● WM-4 export</span>
+                <span class="mk-pill">● AI-reflectie</span>
+                <span class="mk-pill">● Open-source</span>
             </div>
-            <div class="card list-card">
-                <h3>AI-coach</h3>
-                <ul>
-                    <li>Reflectie op je sessie met concrete tips</li>
-                    <li>Vrije vragen zoals trainingsfocus</li>
-                </ul>
-            </div>
-            <div class="card list-card">
-                <h3>Export &amp; rapportage</h3>
-                <ul>
-                    <li>CSV / PDF voor trainers of WM-4 aanvragen</li>
-                    <li>Filters op periode en wapen</li>
-                </ul>
+        </div>
+
+        <div class="mk-hero-visual">
+            <div class="mk-hero-stage">
+                <div class="mk-reticle-frame">
+                    <x-aimtrack.reticle :size="420" color="var(--at-accent)" :stroke="1.5" :opacity="0.85" aria-hidden="true" />
+                </div>
+                <div class="mk-rings-center">
+                    <x-aimtrack.target-rings :size="220" accent="var(--at-accent)" dim="var(--at-text)" :ring-stroke="1" />
+                </div>
+
+                <div class="mk-callout mk-callout-score">
+                    <div class="mk-callout-label">SCORE</div>
+                    <div class="mk-callout-value">547</div>
+                </div>
+                <div class="mk-callout mk-callout-group">
+                    <div class="mk-callout-label">GROEP</div>
+                    <div class="mk-callout-value">22<span class="mk-callout-unit">mm</span></div>
+                </div>
+                <div class="mk-callout mk-callout-ai">
+                    <div class="mk-callout-label">● AI</div>
+                    <div class="mk-callout-text">Sterke opening,<br>dip schot 35</div>
+                </div>
             </div>
         </div>
     </section>
 
-    <section class="section" aria-labelledby="knsa">
-        <div class="section-header">
-            <h2 id="knsa">KNSA referenties</h2>
-            <p>Belangrijkste artikelen om veilig en up-to-date te blijven. Links openen in een nieuw tabblad.</p>
-        </div>
-        <div class="grid">
-            @forelse($knsaLinks ?? [] as $link)
-                <article class="card resource-card">
-                    <small>Bron: KNSA</small>
-                    <h3>{{ $link['title'] }}</h3>
-                    <p>{{ $link['description'] }}</p>
-                    <a href="{{ $link['url'] }}" target="_blank" rel="noreferrer noopener">Lees meer →</a>
-                </article>
-            @empty
-                <p style="color: var(--text-muted);">Geen KNSA-links geconfigureerd.</p>
-            @endforelse
+    {{-- ── Trust strip ──────────────────────────────────────────────── --}}
+    <section class="mk-trust">
+        <div class="mk-trust-label">Gebruikt door sportschutters bij</div>
+        <div class="mk-trust-logos">
+            <span>SV Diemen</span>
+            <span>Schuttersgilde Hilversum</span>
+            <span>KNSA · regio West</span>
+            <span>SV De Adelaar</span>
+            <span>Pistoolclub Utrecht</span>
         </div>
     </section>
 
-    <section class="section" id="handleiding" aria-labelledby="quickstart">
-        <div class="section-header">
-            <h2 id="quickstart">Snelle handleiding</h2>
-            <p>Drie mini-kaarten laten zien hoe je binnen vijf minuten start en veilig logt.</p>
-        </div>
-        <div class="grid">
-            <article class="card quickstart-card">
-                <span>01</span>
-                <h3>Start je eerste sessie</h3>
-                <p>Log in → voeg wapen en baan toe → start sessie. Leg elke serie vast via de schietroos.</p>
-            </article>
-            <article class="card quickstart-card">
-                <span>02</span>
-                <h3>Veiligheidscheck</h3>
-                <p>Klik door naar de KNSA-checklist en noteer baancondities &amp; eventuele deviatie voordat je schiet.</p>
-            </article>
-            <article class="card quickstart-card">
-                <span>03</span>
-                <h3>Ontdek AI-coach</h3>
-                <p>Voorbeeldvraag: “Hoe verbeter ik mijn 25m vrij pistool groep?” Krijg passende reflecties en focuspunten.</p>
-            </article>
-        </div>
-    </section>
+    {{-- Stap 3 (features + AI-coach deep-dive) en Stap 4 (self-hosted +
+         pricing + footer) worden hier ingevoegd. --}}
 
-    <section class="section" aria-labelledby="addons">
-        <div class="section-header">
-            <h2 id="addons">Uitbreidingsopties</h2>
-            <p>Kies wat je zichtbaar wilt maken op de homepage. Blokken zijn optioneel en kunnen later worden geactiveerd.</p>
-        </div>
-        <div class="card options-list">
-            <div class="option-item">
-                <div>
-                    <strong>Live statistieken</strong>
-                    <p>Totalen, accuracy-trends en wapenfrequentie uit jouw database.</p>
-                </div>
-                <span style="color:var(--mint);font-weight:600;">Aanbevolen</span>
-            </div>
-            <div class="option-item">
-                <div>
-                    <strong>Community &amp; verhalen</strong>
-                    <p>Laat quotes of successen van schutters zien, met link naar blog of nieuwsbrief.</p>
-                </div>
-                <span style="color:var(--indigo);font-weight:600;">Optioneel</span>
-            </div>
-            <div class="option-item">
-                <div>
-                    <strong>Roadmap &amp; partners</strong>
-                    <p>Highlight toekomstige features en eventuele KNSA- of baanpartners.</p>
-                </div>
-                <span style="color:var(--text-muted);font-weight:600;">Placeholder</span>
-            </div>
-        </div>
-    </section>
-
-    <footer>
-        <p>Direct inloggen op AimTrack Filament admin.</p>
-        <a href="/admin/login">Ga naar /admin/login</a>
-        <p>&copy; <span id="year"></span> AimTrack — gebouwd voor sportschutters.</p>
-    </footer>
-</main>
-
-<div class="sticky-cta">
-    <a class="btn btn-primary" href="/admin/login">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#051810" stroke-width="1.8">
-            <path d="M5 12h14"></path>
-            <path d="M13 6l6 6-6 6"></path>
-            <path d="M7 5V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-1"></path>
-        </svg>
-        Inloggen
-    </a>
-</div>
-
-<script>
-    document.getElementById('year').textContent = new Date().getFullYear();
-</script>
 </body>
 </html>

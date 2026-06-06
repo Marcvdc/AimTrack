@@ -255,8 +255,17 @@ bronbestand (`resource_path('css/aimtrack-tokens.css')`) → geen drift.
       extra coverage-tests verwerkt (volledige icon-set, spark edge-cases, custom hits/bg)
 - Commit: `feat(marketing): brand primitives — icon, target-rings, spark, head-assets (#82 fase 3)`
 
-### Stap 2 — Welcome view: nav + hero + trust strip
-- [ ] `welcome.blade.php` head (head-assets, title, meta, page-CSS), nav, hero, trust strip
+### Stap 2 — Welcome view: nav + hero + trust strip ✅
+- [x] `welcome.blade.php` herbouwd: head (head-assets, title, meta, `.mk-*` page-CSS
+      met uitsluitend `--at-*` tokens + `color-mix`), sticky blurred nav, hero
+      (headline + accent, lead, 2 CTA's met arrow/shield-icon, 4 pills, visual =
+      reticle 420 + target-rings 220 + 3 callouts), trust strip
+- [x] Geen pre-handoff resten meer (`--indigo`, `#64f4b3` hardcoded, Space Grotesk/
+      Manrope, `.heatmap`, oude `.badge`) — AC1 ✓
+- [x] `LandingPageTest` in lockstep herschreven (6 tests groen; assert nieuwe pagina
+      + géén oude strings) zodat de suite per commit groen blijft. Controller +
+      dead-code + finale AC9-coverage volgen in Stap 5.
+- [x] Volledige suite 115 groen, Pint schoon, live smoke :19088 → 200, geen errors
 - Commit: `feat(marketing): nav + hero + trust strip (#82 fase 3)`
 
 ### Stap 3 — Features + AI-coach deep-dive
