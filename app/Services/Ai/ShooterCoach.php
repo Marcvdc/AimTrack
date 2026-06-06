@@ -20,10 +20,10 @@ use Throwable;
 class ShooterCoach
 {
     public function __construct(
-        private readonly string $driver = '',
-        private readonly string $model = '',
-        private readonly ?string $baseUrl = null,
-        private readonly ?string $apiKey = null,
+        private readonly string $model = 'claude-haiku-4-5-20251001',
+        private readonly string $baseUrl = 'https://api.anthropic.com',
+        private readonly int $maxTokens = 1024,
+        private readonly string $anthropicVersion = '2023-06-01',
     ) {}
 
     public static function make(): self
@@ -31,17 +31,17 @@ class ShooterCoach
         $config = config('ai');
 
         return new self(
-            driver: $config['driver'] ?? 'openai',
-            model: $config['model'] ?? 'gpt-4.1-mini',
-            baseUrl: $config['base_url'] ?? null,
-            apiKey: $config['api_key'] ?? env('OPENAI_API_KEY'),
+            model: $config['model'] ?? 'claude-haiku-4-5-20251001',
+            baseUrl: $config['base_url'] ?? 'https://api.anthropic.com',
+            maxTokens: (int) ($config['max_tokens'] ?? 1024),
+            anthropicVersion: $config['anthropic_version'] ?? '2023-06-01',
         );
     }
 
     public function generateSessionReflection(Session $session): AiReflection
     {
         $prompt = $this->buildSessionPrompt($session);
-        $rawContent = $this->callModel($prompt);
+        $rawContent = $this->callModel($prompt, app(AiKeyResolver::class)->forUser($session->user));
         $parsed = $this->parseReflectionPayload($rawContent);
 
         return $session->aiReflection()->updateOrCreate([], $parsed);
@@ -50,27 +50,25 @@ class ShooterCoach
     public function generateWeaponInsight(Weapon $weapon): AiWeaponInsight
     {
         $prompt = $this->buildWeaponPrompt($weapon);
-        $rawContent = $this->callModel($prompt);
+        $rawContent = $this->callModel($prompt, app(AiKeyResolver::class)->forUser($weapon->user));
         $parsed = $this->parseWeaponPayload($rawContent);
 
         return $weapon->aiWeaponInsight()->updateOrCreate([], $parsed);
     }
 
-    private function callModel(string $prompt, bool $expectsJson = true): string
+    private function callModel(string $prompt, ?string $apiKey): string
     {
-        if (blank($this->apiKey)) {
-            Log::error('AI: geen API key geconfigureerd.');
+        if (blank($apiKey)) {
+            Log::warning('AI: geen Claude API key voor deze gebruiker.');
 
-            return 'AI-configuratie ontbreekt. Voeg een API key toe om antwoorden te genereren.';
+            return 'AI-configuratie ontbreekt. Voeg je Claude API-key toe bij AI-instellingen om antwoorden te genereren.';
         }
 
         $payload = [
             'model' => $this->model,
+            'max_tokens' => $this->maxTokens,
+            'system' => $this->systemContext(),
             'messages' => [
-                [
-                    'role' => 'system',
-                    'content' => $this->systemContext(),
-                ],
                 [
                     'role' => 'user',
                     'content' => $prompt,
@@ -78,18 +76,17 @@ class ShooterCoach
             ],
         ];
 
-        if ($expectsJson) {
-            $payload['response_format'] = ['type' => 'json_object'];
-        }
-
         try {
-            $response = Http::baseUrl($this->baseUrl ?: 'https://api.openai.com/v1')
+            $response = Http::baseUrl($this->baseUrl)
                 ->acceptJson()
-                ->withToken($this->apiKey)
+                ->withHeaders([
+                    'x-api-key' => $apiKey,
+                    'anthropic-version' => $this->anthropicVersion,
+                ])
                 ->connectTimeout(5)
                 ->timeout(20)
                 ->retry(2, 500, throw: false)
-                ->post('/chat/completions', $payload);
+                ->post('/v1/messages', $payload);
 
             if (! $response->successful()) {
                 Log::error('AI: fout bij API-call', [
@@ -102,7 +99,7 @@ class ShooterCoach
                 return 'Geen AI-antwoord beschikbaar (API-fout of timeout). Probeer het later opnieuw.';
             }
 
-            $content = data_get($response->json(), 'choices.0.message.content');
+            $content = data_get($response->json(), 'content.0.text');
 
             return is_string($content)
                 ? $content
@@ -152,6 +149,7 @@ Context sessie:
 - {$manualReflection}
 
 Gevraagde output: JSON met velden summary (string), positives (array van strings), improvements (array van strings), next_focus (string).
+Antwoord uitsluitend met het JSON-object, zonder enige tekst eromheen.
 PROMPT);
     }
 
@@ -234,6 +232,7 @@ Recente sessies (max 5):
 {$entriesText}
 
 Gevraagde output: JSON met velden summary (string), patterns (array van strings), suggestions (array van strings).
+Antwoord uitsluitend met het JSON-object, zonder enige tekst eromheen.
 PROMPT);
     }
 
