@@ -2,17 +2,17 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\SessionResource\Pages\ListSessions;
+use App\Enums\Deviation;
+use App\Enums\TargetType;
 use App\Filament\Resources\SessionResource\Pages\CreateSession;
 use App\Filament\Resources\SessionResource\Pages\EditSession;
+use App\Filament\Resources\SessionResource\Pages\ListSessions;
 use App\Filament\Resources\SessionResource\Pages\ViewSession;
-use App\Enums\Deviation;
 use App\Jobs\GenerateSessionReflectionJob;
 use App\Models\AmmoType;
 use App\Models\Location;
 use App\Models\Session;
 use App\Support\Features\AimtrackFeatureToggle;
-use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -32,7 +32,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section as InfoSection;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\View as ViewComponent;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -40,13 +39,12 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
-use UnitEnum;
 
 class SessionResource extends Resource
 {
     protected static ?string $model = Session::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-calendar-days';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calendar-days';
 
     protected static ?string $navigationLabel = 'Sessies';
 
@@ -54,7 +52,7 @@ class SessionResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Sessies';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Dagboek';
+    protected static string|\UnitEnum|null $navigationGroup = 'Dagboek';
 
     public static function form(Schema $schema): Schema
     {
@@ -71,140 +69,151 @@ class SessionResource extends Resource
                         Tab::make('Details')
                             ->schema([
                                 InfoSection::make('Sessie')
-                    ->description('Basisgegevens van de sessie')
-                    ->columns(2)
-                    ->schema([
-                        DatePicker::make('date')
-                            ->label('Datum')
-                            ->native(false)
-                            ->required(),
-                        Select::make('range_location_id')
-                            ->label('Baan/vereniging')
-                            ->options(fn () => Location::query()
-                                ->where('user_id', auth()->id())
-                                ->where('is_range', true)
-                                ->orderBy('name')
-                                ->pluck('name', 'id'))
-                            ->searchable()
-                            ->preload()
-                            ->nullable()
-                            ->afterStateUpdated(function ($state, callable $set): void {
-                                if (! $state) {
-                                    return;
-                                }
+                                    ->description('Basisgegevens van de sessie')
+                                    ->columns(2)
+                                    ->schema([
+                                        DatePicker::make('date')
+                                            ->label('Datum')
+                                            ->native(false)
+                                            ->required(),
+                                        Select::make('target_type')
+                                            ->label('Discipline')
+                                            ->options([
+                                                TargetType::Kkp25m->value => 'KKP 25m (klein kaliber pistool)',
+                                                TargetType::Gkp25m->value => 'GKP 25m (groot kaliber pistool)',
+                                                TargetType::Kkg50m->value => 'KKG 50m (klein kaliber geweer)',
+                                                TargetType::Kkg100m->value => 'KKG 100m (klein kaliber geweer)',
+                                                TargetType::Gkg100m->value => 'GKG 100m (groot kaliber geweer)',
+                                            ])
+                                            ->helperText('Vereist om foto-analyse te kunnen uitvoeren.')
+                                            ->native(false),
+                                        Select::make('range_location_id')
+                                            ->label('Baan/vereniging')
+                                            ->options(fn () => Location::query()
+                                                ->where('user_id', auth()->id())
+                                                ->where('is_range', true)
+                                                ->orderBy('name')
+                                                ->pluck('name', 'id'))
+                                            ->searchable()
+                                            ->preload()
+                                            ->nullable()
+                                            ->afterStateUpdated(function ($state, callable $set): void {
+                                                if (! $state) {
+                                                    return;
+                                                }
 
-                                $location = Location::query()->find($state);
+                                                $location = Location::query()->find($state);
 
-                                if ($location) {
-                                    $set('range_name', $location->name);
-                                }
-                            }),
-                        Select::make('location_id')
-                            ->label('Locatie')
-                            ->options(fn () => Location::query()
-                                ->where('user_id', auth()->id())
-                                ->orderBy('name')
-                                ->pluck('name', 'id'))
-                            ->searchable()
-                            ->preload()
-                            ->nullable()
-                            ->afterStateUpdated(function ($state, callable $set): void {
-                                if (! $state) {
-                                    return;
-                                }
+                                                if ($location) {
+                                                    $set('range_name', $location->name);
+                                                }
+                                            }),
+                                        Select::make('location_id')
+                                            ->label('Locatie')
+                                            ->options(fn () => Location::query()
+                                                ->where('user_id', auth()->id())
+                                                ->orderBy('name')
+                                                ->pluck('name', 'id'))
+                                            ->searchable()
+                                            ->preload()
+                                            ->nullable()
+                                            ->afterStateUpdated(function ($state, callable $set): void {
+                                                if (! $state) {
+                                                    return;
+                                                }
 
-                                $location = Location::query()->find($state);
+                                                $location = Location::query()->find($state);
 
-                                if ($location) {
-                                    $set('location', $location->name);
-                                }
-                            }),
-                        Hidden::make('range_name')
-                            ->dehydrated(),
-                        Hidden::make('location')
-                            ->dehydrated(),
-                        Textarea::make('notes_raw')
-                            ->label('Notities (ruw)')
-                            ->rows(4)
-                            ->columnSpanFull(),
-                        Textarea::make('manual_reflection')
-                            ->label('Handmatige reflectie')
-                            ->rows(3)
-                            ->columnSpanFull(),
-                    ]),
+                                                if ($location) {
+                                                    $set('location', $location->name);
+                                                }
+                                            }),
+                                        Hidden::make('range_name')
+                                            ->dehydrated(),
+                                        Hidden::make('location')
+                                            ->dehydrated(),
+                                        Textarea::make('notes_raw')
+                                            ->label('Notities (ruw)')
+                                            ->rows(4)
+                                            ->columnSpanFull(),
+                                        Textarea::make('manual_reflection')
+                                            ->label('Handmatige reflectie')
+                                            ->rows(3)
+                                            ->columnSpanFull(),
+                                    ]),
 
-                InfoSection::make('Wapens in deze sessie')
-                    ->description('Voeg per wapen de afstand en schoten toe')
-                    ->schema([
-                        Repeater::make('sessionWeapons')
-                            ->label('Sessiewapens')
-                            ->relationship()
-                            ->schema([
-                                Select::make('weapon_id')
-                                    ->label('Wapen')
-                                    ->relationship(
-                                        name: 'weapon',
-                                        titleAttribute: 'name',
-                                        modifyQueryUsing: fn (Builder $query) => $query->where('user_id', auth()->id()),
-                                    )
-                                    ->required()
-                                    ->preload(),
-                                TextInput::make('distance_m')
-                                    ->label('Afstand (m)')
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->maxValue(2000),
-                                TextInput::make('rounds_fired')
-                                    ->label('Afgevuurde patronen')
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->required()
-                                    ->default(0),
-                                Hidden::make('ammo_type')
-                                    ->dehydrated(),
-                                Select::make('ammo_type_id')
-                                    ->label('Munitietype')
-                                    ->options(fn () => AmmoType::query()
-                                        ->where('user_id', auth()->id())
-                                        ->orderBy('name')
-                                        ->pluck('name', 'id'))
-                                    ->searchable()
-                                    ->preload()
-                                    ->afterStateUpdated(function ($state, callable $set): void {
-                                        if (! $state) {
-                                            return;
-                                        }
+                                InfoSection::make('Wapens in deze sessie')
+                                    ->description('Voeg per wapen de afstand en schoten toe')
+                                    ->schema([
+                                        Repeater::make('sessionWeapons')
+                                            ->label('Sessiewapens')
+                                            ->relationship()
+                                            ->schema([
+                                                Select::make('weapon_id')
+                                                    ->label('Wapen')
+                                                    ->relationship(
+                                                        name: 'weapon',
+                                                        titleAttribute: 'name',
+                                                        modifyQueryUsing: fn (Builder $query) => $query->where('user_id', auth()->id()),
+                                                    )
+                                                    ->required()
+                                                    ->preload(),
+                                                TextInput::make('distance_m')
+                                                    ->label('Afstand (m)')
+                                                    ->numeric()
+                                                    ->minValue(0)
+                                                    ->maxValue(2000),
+                                                TextInput::make('rounds_fired')
+                                                    ->label('Afgevuurde patronen')
+                                                    ->numeric()
+                                                    ->minValue(0)
+                                                    ->required()
+                                                    ->default(0),
+                                                Hidden::make('ammo_type')
+                                                    ->dehydrated(),
+                                                Select::make('ammo_type_id')
+                                                    ->label('Munitietype')
+                                                    ->options(fn () => AmmoType::query()
+                                                        ->where('user_id', auth()->id())
+                                                        ->orderBy('name')
+                                                        ->pluck('name', 'id'))
+                                                    ->searchable()
+                                                    ->preload()
+                                                    ->afterStateUpdated(function ($state, callable $set): void {
+                                                        if (! $state) {
+                                                            return;
+                                                        }
 
-                                        $ammoType = AmmoType::query()->find($state);
+                                                        $ammoType = AmmoType::query()->find($state);
 
-                                        if ($ammoType) {
-                                            $set('ammo_type', $ammoType->name);
-                                        }
-                                    }),
-                                Textarea::make('group_quality_text')
-                                    ->label('Groepering / kwaliteit')
-                                    ->rows(2)
-                                    ->columnSpanFull(),
-                                Select::make('deviation')
-                                    ->label('Afwijking')
-                                    ->options(
-                                        collect(Deviation::cases())
-                                            ->mapWithKeys(fn (Deviation $case) => [$case->value => ucfirst($case->value)])
-                                            ->all(),
-                                    )
-                                    ->native(false),
-                                TextInput::make('flyers_count')
-                                    ->label('Flyers (aantal)')
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->default(0),
-                            ])
-                            ->columns(2)
-                            ->orderable(false)
-                            ->addActionLabel('Regel toevoegen')
-                            ->collapsed(false),
-                        // Eventueel uitbreiden met munitie-voorraad check of scorevelden.
-                    ]),
+                                                        if ($ammoType) {
+                                                            $set('ammo_type', $ammoType->name);
+                                                        }
+                                                    }),
+                                                Textarea::make('group_quality_text')
+                                                    ->label('Groepering / kwaliteit')
+                                                    ->rows(2)
+                                                    ->columnSpanFull(),
+                                                Select::make('deviation')
+                                                    ->label('Afwijking')
+                                                    ->options(
+                                                        collect(Deviation::cases())
+                                                            ->mapWithKeys(fn (Deviation $case) => [$case->value => ucfirst($case->value)])
+                                                            ->all(),
+                                                    )
+                                                    ->native(false),
+                                                TextInput::make('flyers_count')
+                                                    ->label('Flyers (aantal)')
+                                                    ->numeric()
+                                                    ->minValue(0)
+                                                    ->default(0),
+                                            ])
+                                            ->columns(2)
+                                            ->orderable(false)
+                                            ->addActionLabel('Regel toevoegen')
+                                            ->collapsed(false),
+                                        // Eventueel uitbreiden met munitie-voorraad check of scorevelden.
+                                    ]),
 
                                 InfoSection::make('Bijlagen')
                                     ->description('Upload foto\'s of PDF\'s als context')
@@ -255,7 +264,6 @@ class SessionResource extends Resource
                                     ])
                                     ->collapsed(),
                             ]),
-
 
                     ]),
             ]);
