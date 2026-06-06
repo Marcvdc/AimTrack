@@ -80,6 +80,7 @@ Vergeet de registry hieronder niet bij te werken.
 | copilot | feature/copilot | `aimtrack-copilot/` | 19080 | 15433 | 19025 | 19000 | actief (Filament Copilot migratie) |
 | design-foundation | feature/design-foundation | `aimtrack-design-foundation/` | 19084 | 15436 | 19029 | 19004 | actief (issue #82 · Fase 0 foundation) |
 | prod-backups | feature/prod-backups | `aimtrack-prod-backups/` | 19085 | 15437 | 19030 | 19005 | actief (issue #83 — prod backup-strategie in repo) |
+| marketing | feature/marketing | `aimtrack-marketing/` | 19088 | 15440 | 19033 | 19008 | actief (issue #82 · Fase 3 marketing landing) |
 
 Update deze tabel bij setup en cleanup — zo weet iedereen direct welke poort bij welke stack hoort.
 
