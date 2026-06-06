@@ -2,6 +2,11 @@
 
 use Illuminate\Support\Facades\Blade;
 
+// Fase 3 brand primitives that are unique to the marketing landing.
+// NB: target-rings + sparkline live on main (Fase 1) and are covered by
+// tests/Unit/Aimtrack/*. This file covers the genuinely new primitives:
+// icon, spark (marketing sparkline variant) and head-assets.
+
 // ─── icon ──────────────────────────────────────────────────────────────────
 
 test('icon renders a 24x24 stroke svg with sensible defaults', function (): void {
@@ -69,76 +74,6 @@ test('icon honours size, color and stroke props', function (): void {
         ->toContain('stroke="var(--at-accent)"')
         ->toContain('stroke-width="2"')
         ->toContain('color: var(--at-accent)');
-});
-
-// ─── target-rings ────────────────────────────────────────────────────────────
-
-test('target-rings renders an svg with default size and accent/dim tokens', function (): void {
-    $html = Blade::render('<x-aimtrack.target-rings />');
-
-    expect($html)
-        ->toContain('<svg')
-        ->toContain('viewBox="0 0 200 200"')
-        ->toContain('width="200"')
-        ->toContain('var(--at-text)')
-        ->toContain('var(--at-accent)')
-        ->toContain('aria-hidden="true"');
-});
-
-test('target-rings draws eight rings plus a centre dot and ten shot hits', function (): void {
-    $html = Blade::render('<x-aimtrack.target-rings />');
-
-    // 8 rings + 1 centre dot + 10 hit dots + 5 ten-ring halos (r >= 9.5) = 24.
-    expect(substr_count($html, '<circle'))->toBe(24);
-});
-
-test('target-rings draws a dashed crosshair as two lines', function (): void {
-    $html = Blade::render('<x-aimtrack.target-rings />');
-
-    expect(substr_count($html, '<line'))->toBe(2);
-    expect($html)->toContain('stroke-dasharray="2 4"');
-});
-
-test('target-rings omits hit markers when show-hits is false', function (): void {
-    $html = Blade::render('<x-aimtrack.target-rings :show-hits="false" />');
-
-    // Only the 8 rings + centre dot remain.
-    expect(substr_count($html, '<circle'))->toBe(9);
-});
-
-test('target-rings honours size, accent, dim and ring-stroke props', function (): void {
-    $html = Blade::render('<x-aimtrack.target-rings size="220" accent="#64f4b3" dim="#ffffff" ring-stroke="2" />');
-
-    expect($html)
-        ->toContain('viewBox="0 0 220 220"')
-        ->toContain('width="220"')
-        ->toContain('stroke="#ffffff"')
-        ->toContain('fill="#64f4b3"')
-        ->toContain('stroke-width="2"');
-});
-
-test('target-rings renders score labels for rings 7-10 when enabled', function (): void {
-    $html = Blade::render('<x-aimtrack.target-rings :score-labels="true" />');
-
-    expect(substr_count($html, '<text'))->toBe(4);
-});
-
-test('target-rings plots a custom hit set with ten-ring halos', function (): void {
-    $html = Blade::render('<x-aimtrack.target-rings :hits="$hits" />', [
-        'hits' => [
-            ['x' => 0.0, 'y' => 0.0, 'r' => 10.0],  // ten-ring -> dot + halo
-            ['x' => 0.2, 'y' => -0.1, 'r' => 8.4],  // outside -> dot only
-        ],
-    ]);
-
-    // 8 rings + centre dot + 2 hit dots + 1 ten-ring halo = 12.
-    expect(substr_count($html, '<circle'))->toBe(12);
-});
-
-test('target-rings paints the requested background colour', function (): void {
-    $html = Blade::render('<x-aimtrack.target-rings bg="#040711" />');
-
-    expect($html)->toContain('background: #040711');
 });
 
 // ─── spark ─────────────────────────────────────────────────────────────────

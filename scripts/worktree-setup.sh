@@ -74,6 +74,22 @@ for candidate in .env.local .env.example; do
   fi
 done
 
+# Stem APP_URL/WEB_PORT in de gekopieerde .env.local af op de worktree-poort.
+# Zonder dit blijft APP_URL op de hoofd-dev poort (8080) staan, waardoor
+# route()-gegenereerde URL's (o.a. de Copilot stream-fetch) cross-origin naar
+# de verkeerde stack wijzen → 401 / kapotte features.
+if [[ -f "$WORKTREE_PATH/.env.local" ]]; then
+  if grep -q '^APP_URL=' "$WORKTREE_PATH/.env.local"; then
+    sed -i -E "s#^APP_URL=.*#APP_URL=http://localhost:${WEB_PORT}#" "$WORKTREE_PATH/.env.local"
+  else
+    echo "APP_URL=http://localhost:${WEB_PORT}" >> "$WORKTREE_PATH/.env.local"
+  fi
+  if grep -q '^WEB_PORT=' "$WORKTREE_PATH/.env.local"; then
+    sed -i -E "s#^WEB_PORT=.*#WEB_PORT=${WEB_PORT}#" "$WORKTREE_PATH/.env.local"
+  fi
+  echo "==> APP_URL/WEB_PORT in .env.local afgestemd op poort ${WEB_PORT}"
+fi
+
 # Maak .env in de worktree root met ALLEEN docker compose overrides.
 # Deze .env wordt door 'docker compose --env-file .env' gelezen.
 cat > "$WORKTREE_PATH/.env" <<EOF

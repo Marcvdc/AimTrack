@@ -324,7 +324,17 @@
                     <x-aimtrack.reticle :size="420" color="var(--at-accent)" :stroke="1.5" :opacity="0.85" aria-hidden="true" />
                 </div>
                 <div class="mk-rings-center">
-                    <x-aimtrack.target-rings :size="220" accent="var(--at-accent)" dim="var(--at-text)" :ring-stroke="1" />
+                    @php
+                        // Voorbeeld-groepering voor de hero (prototype RING_HITS uit shared.jsx).
+                        $heroHits = [
+                            ['x' => 0.05, 'y' => -0.06, 'r' => 10], ['x' => -0.10, 'y' => 0.04, 'r' => 9.7],
+                            ['x' => -0.02, 'y' => 0.12, 'r' => 9.5], ['x' => 0.18, 'y' => -0.04, 'r' => 9.0],
+                            ['x' => 0.08, 'y' => 0.02, 'r' => 9.9], ['x' => -0.06, 'y' => -0.14, 'r' => 9.3],
+                            ['x' => 0.22, 'y' => 0.10, 'r' => 8.6], ['x' => -0.18, 'y' => 0.06, 'r' => 8.9],
+                            ['x' => 0.04, 'y' => -0.08, 'r' => 9.8], ['x' => 0.12, 'y' => 0.14, 'r' => 9.1],
+                        ];
+                    @endphp
+                    <x-aimtrack.target-rings :size="220" accent="var(--at-accent)" dim="var(--at-text)" :ring-stroke="1" :hits="$heroHits" />
                 </div>
 
                 <div class="mk-callout mk-callout-score">

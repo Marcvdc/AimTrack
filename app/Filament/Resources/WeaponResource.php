@@ -14,6 +14,7 @@ use App\Models\AmmoType;
 use App\Models\Location;
 use App\Models\Weapon;
 use App\Support\Features\AimtrackFeatureToggle;
+use App\Support\StarterTemplates;
 use EslamRedaDiv\FilamentCopilot\Contracts\CopilotResource as CopilotResourceContract;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -49,7 +50,14 @@ class WeaponResource extends Resource implements CopilotResourceContract
 
     protected static ?string $pluralModelLabel = 'Wapens';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Beheer';
+    protected static string|\UnitEnum|null $navigationGroup = 'LOG';
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = static::getEloquentQuery()->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -78,12 +86,23 @@ class WeaponResource extends Resource implements CopilotResourceContract
                             ->native(false),
                         Select::make('caliber')
                             ->label('Kaliber')
-                            ->options(fn () => AmmoType::query()
-                                ->where('user_id', auth()->id())
-                                ->whereNotNull('caliber')
-                                ->orderBy('caliber')
-                                ->distinct()
-                                ->pluck('caliber', 'caliber'))
+                            ->options(function (): array {
+                                $existing = AmmoType::query()
+                                    ->where('user_id', auth()->id())
+                                    ->whereNotNull('caliber')
+                                    ->orderBy('caliber')
+                                    ->distinct()
+                                    ->pluck('caliber', 'caliber')
+                                    ->all();
+
+                                $starters = collect(StarterTemplates::weapons())
+                                    ->mapWithKeys(fn (array $template): array => [
+                                        $template['caliber'] => $template['caliber'],
+                                    ])
+                                    ->all();
+
+                                return [...$existing, ...$starters];
+                            })
                             ->searchable()
                             ->preload()
                             ->required(),
@@ -125,6 +144,30 @@ class WeaponResource extends Resource implements CopilotResourceContract
                         Textarea::make('notes')
                             ->label('Notities')
                             ->columnSpanFull(),
+                    ]),
+
+                InfoSection::make('Kalibratie')
+                    ->description('Optionele afstelling per wapen — wordt getoond op het wapen-detail scherm.')
+                    ->columns(2)
+                    ->collapsed()
+                    ->schema([
+                        TextInput::make('korrel_correction')
+                            ->label('Korrel')
+                            ->helperText('Bv. "+2" of "−1 R"')
+                            ->maxLength(16),
+                        TextInput::make('vizier_correction')
+                            ->label('Vizier')
+                            ->helperText('Bv. "−1 R" of "0"')
+                            ->maxLength(16),
+                        TextInput::make('trigger_weight_g')
+                            ->label('Trekkergewicht (g)')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(5000),
+                        TextInput::make('grip_size')
+                            ->label('Handgreep')
+                            ->helperText('Bv. "M · v2"')
+                            ->maxLength(32),
                     ]),
             ]);
     }
@@ -202,7 +245,8 @@ class WeaponResource extends Resource implements CopilotResourceContract
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->emptyState(view('filament.resources.weapons.empty-state'));
     }
 
     public static function infolist(Schema $schema): Schema

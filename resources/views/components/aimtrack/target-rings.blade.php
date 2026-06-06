@@ -1,88 +1,122 @@
 @props([
     'size' => 200,
+    'rings' => 8,
     'accent' => null,
     'dim' => null,
-    'bg' => 'transparent',
     'ringStroke' => 1,
-    'showHits' => true,
+    'hits' => [],
     'scoreLabels' => false,
-    'hits' => null,
+    'hitScale' => 0.35,
 ])
 
 @php
+    // Faithful port of .ai/design-handoff/project/shared.jsx · TargetRings:
+    // 8 concentric rings (10 = outer, emphasized; 3 = inner), dim fill on the
+    // innermost rings, a center 10-ring dot, a dashed crosshair, score labels
+    // for the top rings, and hit dots scaled by `hitScale` so a real shot
+    // group reads as a tight cluster (the *0.35 damping the prototype uses)
+    // instead of spreading to the rim.
     $size = (float) $size;
-    $ringStroke = (float) $ringStroke;
+    $rings = max(2, (int) $rings);
     $accent = $accent ?? 'var(--at-accent)';
     $dim = $dim ?? 'var(--at-text)';
-
-    $fmt = static fn (float $value): string => rtrim(rtrim(number_format($value, 3, '.', ''), '0'), '.');
+    $ringStroke = (float) $ringStroke;
+    $hitScale = (float) $hitScale;
 
     $cx = $size / 2;
     $cy = $size / 2;
     $maxR = $size * 0.46;
-    $rings = [10, 9, 8, 7, 6, 5, 4, 3];
-    $ringCount = count($rings);
-    $crossReach = $maxR * 1.05;
-    $centerDotR = $maxR / $ringCount * 0.5;
+    $highest = $rings + 2; // 8 rings → numbered 10..3
+    $hits = is_iterable($hits) ? (is_array($hits) ? $hits : iterator_to_array($hits)) : [];
 
-    /** @var list<array{x: float, y: float, r: float}> $defaultHits */
-    $defaultHits = [
-        ['x' => 0.05, 'y' => -0.06, 'r' => 10.0],
-        ['x' => -0.10, 'y' => 0.04, 'r' => 9.7],
-        ['x' => -0.02, 'y' => 0.12, 'r' => 9.5],
-        ['x' => 0.18, 'y' => -0.04, 'r' => 9.0],
-        ['x' => 0.08, 'y' => 0.02, 'r' => 9.9],
-        ['x' => -0.06, 'y' => -0.14, 'r' => 9.3],
-        ['x' => 0.22, 'y' => 0.10, 'r' => 8.6],
-        ['x' => -0.18, 'y' => 0.06, 'r' => 8.9],
-        ['x' => 0.04, 'y' => -0.08, 'r' => 9.8],
-        ['x' => 0.12, 'y' => 0.14, 'r' => 9.1],
-    ];
-    $hits = $hits ?? $defaultHits;
+    $fmt = static fn (float $value): string => rtrim(rtrim(number_format($value, 3, '.', ''), '0'), '.');
 @endphp
 
 <svg
-    {{ $attributes->merge([
-        'aria-hidden' => 'true',
-        'style' => "display: block; background: {$bg};",
-    ]) }}
+    {{ $attributes->merge(['class' => 'aimtrack-target-rings', 'style' => 'display: block;']) }}
     width="{{ $fmt($size) }}"
     height="{{ $fmt($size) }}"
     viewBox="0 0 {{ $fmt($size) }} {{ $fmt($size) }}"
+    role="img"
+    aria-label="Hit-patroon"
 >
-    @foreach ($rings as $i => $n)
+    @for ($i = 0; $i < $rings; $i++)
         @php
-            $r = $maxR * (($ringCount - $i) / $ringCount);
-            $ringFill = $n <= 4 ? $dim : 'transparent';
-            $ringFillOpacity = $n <= 4 ? '0.06' : '0';
-            $ringStrokeOpacity = $n === 10 ? '0.55' : '0.22';
+            $n = $highest - $i;
+            $r = $maxR * (($rings - $i) / $rings);
+            $hasFill = $n <= 4;
         @endphp
-        <circle cx="{{ $fmt($cx) }}" cy="{{ $fmt($cy) }}" r="{{ $fmt($r) }}" fill="{{ $ringFill }}" fill-opacity="{{ $ringFillOpacity }}" stroke="{{ $dim }}" stroke-opacity="{{ $ringStrokeOpacity }}" stroke-width="{{ $fmt($ringStroke) }}" />
-    @endforeach
+        <circle
+            cx="{{ $fmt($cx) }}"
+            cy="{{ $fmt($cy) }}"
+            r="{{ $fmt($r) }}"
+            fill="{{ $hasFill ? $dim : 'none' }}"
+            fill-opacity="{{ $hasFill ? '0.06' : '0' }}"
+            stroke="{{ $dim }}"
+            stroke-opacity="{{ $fmt($n === $highest ? 0.55 : 0.22) }}"
+            stroke-width="{{ $fmt($ringStroke) }}"
+        />
+    @endfor
 
-    <circle cx="{{ $fmt($cx) }}" cy="{{ $fmt($cy) }}" r="{{ $fmt($centerDotR) }}" fill="{{ $dim }}" fill-opacity="0.18" />
+    {{-- Center 10-ring dot --}}
+    <circle
+        cx="{{ $fmt($cx) }}"
+        cy="{{ $fmt($cy) }}"
+        r="{{ $fmt($maxR / $rings * 0.5) }}"
+        fill="{{ $dim }}"
+        fill-opacity="0.18"
+    />
 
-    <line x1="{{ $fmt($cx - $crossReach) }}" y1="{{ $fmt($cy) }}" x2="{{ $fmt($cx + $crossReach) }}" y2="{{ $fmt($cy) }}" stroke="{{ $dim }}" stroke-opacity="0.18" stroke-width="{{ $fmt($ringStroke) }}" stroke-dasharray="2 4" />
-    <line x1="{{ $fmt($cx) }}" y1="{{ $fmt($cy - $crossReach) }}" x2="{{ $fmt($cx) }}" y2="{{ $fmt($cy + $crossReach) }}" stroke="{{ $dim }}" stroke-opacity="0.18" stroke-width="{{ $fmt($ringStroke) }}" stroke-dasharray="2 4" />
+    {{-- Crosshair (dashed) --}}
+    <line x1="{{ $fmt($cx - $maxR * 1.05) }}" y1="{{ $fmt($cy) }}" x2="{{ $fmt($cx + $maxR * 1.05) }}" y2="{{ $fmt($cy) }}"
+        stroke="{{ $dim }}" stroke-opacity="0.18" stroke-width="{{ $fmt($ringStroke) }}" stroke-dasharray="2 4" />
+    <line x1="{{ $fmt($cx) }}" y1="{{ $fmt($cy - $maxR * 1.05) }}" x2="{{ $fmt($cx) }}" y2="{{ $fmt($cy + $maxR * 1.05) }}"
+        stroke="{{ $dim }}" stroke-opacity="0.18" stroke-width="{{ $fmt($ringStroke) }}" stroke-dasharray="2 4" />
 
     @if ($scoreLabels)
-        @foreach (array_values(array_filter($rings, fn (int $n): bool => $n >= 7)) as $i => $n)
-            @php $labelR = $maxR * (($ringCount - $i) / $ringCount); @endphp
-            <text x="{{ $fmt($cx + 4) }}" y="{{ $fmt($cy - $labelR + 10) }}" fill="{{ $dim }}" fill-opacity="0.45" style="font: 9px ui-monospace, monospace;">{{ $n }}</text>
-        @endforeach
+        @for ($i = 0; $i < $rings; $i++)
+            @php $n = $highest - $i; @endphp
+            @if ($n >= 7)
+                @php $r = $maxR * (($rings - $i) / $rings); @endphp
+                <text
+                    x="{{ $fmt($cx + 4) }}"
+                    y="{{ $fmt($cy - $r + 10) }}"
+                    fill="{{ $dim }}"
+                    fill-opacity="0.45"
+                    style="font-family: var(--at-font-mono); font-size: 9px; letter-spacing: 0.04em;"
+                >{{ $n }}</text>
+            @endif
+        @endfor
     @endif
 
-    @if ($showHits)
-        @foreach ($hits as $h)
-            @php
-                $hx = $cx + ((float) $h['x']) * $maxR * 0.35;
-                $hy = $cy + ((float) $h['y']) * $maxR * 0.35;
-                $isTen = ((float) $h['r']) >= 9.5;
-            @endphp
-            <circle cx="{{ $fmt($hx) }}" cy="{{ $fmt($hy) }}" r="3.2" fill="{{ $accent }}" fill-opacity="{{ $isTen ? '0.95' : '0.55' }}" stroke="{{ $accent }}" stroke-width="{{ $isTen ? '0' : '0.5' }}" />
-            @if ($isTen)
-                <circle cx="{{ $fmt($hx) }}" cy="{{ $fmt($hy) }}" r="6" fill="none" stroke="{{ $accent }}" stroke-opacity="0.35" stroke-width="1" />
-            @endif
-        @endforeach
-    @endif
+    @foreach ($hits as $hit)
+        @php
+            $hx = (float) ($hit['x'] ?? 0);
+            $hy = (float) ($hit['y'] ?? 0);
+            $hr = isset($hit['r']) ? (float) $hit['r'] : null;
+            $px = $cx + ($hx * $maxR * $hitScale);
+            $py = $cy + ($hy * $maxR * $hitScale);
+            $isTen = $hr !== null && $hr >= 9.5;
+            $dotR = max(2.5, $size * 0.0145);
+        @endphp
+        <circle
+            cx="{{ $fmt($px) }}"
+            cy="{{ $fmt($py) }}"
+            r="{{ $fmt($dotR) }}"
+            fill="{{ $accent }}"
+            fill-opacity="{{ $isTen ? '0.95' : '0.55' }}"
+            @unless ($isTen) stroke="{{ $accent }}" stroke-width="0.5" @endunless
+        />
+        @if ($isTen)
+            <circle
+                cx="{{ $fmt($px) }}"
+                cy="{{ $fmt($py) }}"
+                r="{{ $fmt($dotR * 1.9) }}"
+                fill="none"
+                stroke="{{ $accent }}"
+                stroke-opacity="0.35"
+                stroke-width="{{ $fmt($ringStroke) }}"
+            />
+        @endif
+    @endforeach
 </svg>

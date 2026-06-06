@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Pages\CoachPage;
+use App\Models\Session;
 use App\Models\User;
 use Laravel\Pennant\Feature;
 
@@ -9,8 +10,10 @@ beforeEach(function () {
     $this->actingAs($this->user);
 });
 
-it('renders the coach page for an authenticated user', function () {
+it('renders the coach chat UI for users with three or more sessions', function () {
     Feature::activate('aimtrack-ai');
+
+    Session::factory()->count(3)->for($this->user)->create();
 
     $response = $this->get(CoachPage::getUrl());
 

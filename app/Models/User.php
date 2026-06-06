@@ -15,6 +15,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'is_admin',
     ];
 
     protected $hidden = [
@@ -24,8 +25,15 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'demo_data_seeded_at' => 'datetime',
         'password' => 'hashed',
+        'is_admin' => 'boolean',
     ];
+
+    public function isAdmin(): bool
+    {
+        return (bool) $this->is_admin;
+    }
 
     public function sessions()
     {
@@ -35,6 +43,11 @@ class User extends Authenticatable
     public function weapons()
     {
         return $this->hasMany(Weapon::class);
+    }
+
+    public function trainingGoals()
+    {
+        return $this->hasMany(TrainingGoal::class);
     }
 
     public function coachQuestions()

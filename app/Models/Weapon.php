@@ -15,6 +15,10 @@ class Weapon extends Model
         'name',
         'weapon_type',
         'caliber',
+        'korrel_correction',
+        'vizier_correction',
+        'trigger_weight_g',
+        'grip_size',
         'serial_number',
         'storage_location',
         'storage_location_id',
@@ -27,6 +31,7 @@ class Weapon extends Model
         'owned_since' => 'date',
         'is_active' => 'boolean',
         'weapon_type' => WeaponType::class,
+        'trigger_weight_g' => 'integer',
     ];
 
     public function user()
