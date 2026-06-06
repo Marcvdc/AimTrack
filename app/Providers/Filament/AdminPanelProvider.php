@@ -129,16 +129,9 @@ class AdminPanelProvider extends PanelProvider
      */
     private function aimTrackDesignAssets(): string
     {
-        $tokensPath = resource_path('css/aimtrack-tokens.css');
-        $tokensCss = is_file($tokensPath) ? (string) file_get_contents($tokensPath) : '';
-
-        return <<<HTML
-            <link rel="preconnect" href="https://fonts.googleapis.com">
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-            <style id="aimtrack-tokens">
-            {$tokensCss}
-            </style>
-            HTML;
+        // Single source of truth: de <x-aimtrack.head-assets> component levert
+        // dezelfde webfonts + token-CSS aan zowel dit panel als de publieke
+        // landingspagina, zodat de twee nooit uit elkaar kunnen lopen.
+        return Blade::render('<x-aimtrack.head-assets />');
     }
 }

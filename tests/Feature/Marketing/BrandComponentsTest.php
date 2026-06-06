@@ -2,10 +2,9 @@
 
 use Illuminate\Support\Facades\Blade;
 
-// Fase 3 brand primitives that are unique to the marketing landing.
-// NB: target-rings + sparkline live on main (Fase 1) and are covered by
-// tests/Unit/Aimtrack/*. This file covers the genuinely new primitives:
-// icon, spark (marketing sparkline variant) and head-assets.
+// Fase 3 brand primitives that are genuinely new on this branch: icon + head-assets.
+// target-rings + sparkline live on main (Fase 1) and are covered by tests/Unit/Aimtrack/*.
+// (The marketing landing reuses main's <x-aimtrack.sparkline> for trend charts.)
 
 // ─── icon ──────────────────────────────────────────────────────────────────
 
@@ -76,81 +75,6 @@ test('icon honours size, color and stroke props', function (): void {
         ->toContain('color: var(--at-accent)');
 });
 
-// ─── spark ─────────────────────────────────────────────────────────────────
-
-test('spark renders a sparkline svg with area fill by default', function (): void {
-    $html = Blade::render('<x-aimtrack.spark />');
-
-    expect($html)
-        ->toContain('<svg')
-        ->toContain('viewBox="0 0 140 36"')
-        ->toContain('width="140"')
-        ->toContain('height="36"')
-        ->toContain('<linearGradient')
-        ->toContain('stop-opacity="0.35"')
-        ->toContain('stop-opacity="0"')
-        ->toContain('url(#sg-')
-        ->toContain('stroke="var(--at-accent)"')
-        ->toContain('stroke-width="1.5"')
-        ->toContain('r="2.5"')
-        ->toContain('aria-hidden="true"');
-});
-
-test('spark closes the area path and starts the line with a move command', function (): void {
-    $html = Blade::render('<x-aimtrack.spark />');
-
-    expect($html)
-        ->toContain('d="M')
-        ->toContain(' Z"');
-});
-
-test('spark omits the gradient fill when fill is false', function (): void {
-    $html = Blade::render('<x-aimtrack.spark :fill="false" />');
-
-    expect($html)
-        ->not->toContain('<linearGradient')
-        ->not->toContain('<defs>')
-        ->toContain('stroke="var(--at-accent)"');
-});
-
-test('spark normalises custom data, dimensions and colour', function (): void {
-    $html = Blade::render('<x-aimtrack.spark :data="[1, 2, 3]" w="300" h="60" color="var(--at-warn)" stroke-w="2" />');
-
-    expect($html)
-        ->toContain('viewBox="0 0 300 60"')
-        ->toContain('width="300"')
-        ->toContain('height="60"')
-        ->toContain('stroke="var(--at-warn)"')
-        ->toContain('stroke-width="2"')
-        ->toContain('stop-color="var(--at-warn)"')
-        // min->bottom, max->top: first point at baseline, last at top of the band.
-        ->toContain('M0.0 58.0')
-        ->toContain('L300.0 2.0');
-});
-
-test('spark produces a gradient id free of invalid url() characters', function (): void {
-    $html = Blade::render('<x-aimtrack.spark color="var(--at-accent)" />');
-
-    expect($html)->toMatch('/url\(#sg-[a-z0-9]+\)/');
-});
-
-test('spark renders a flat baseline for a single data point', function (): void {
-    $html = Blade::render('<x-aimtrack.spark :data="$data" />', ['data' => [5]]);
-
-    // span falls back to 1, single point sits at h-2 = 34 on the default h=36.
-    expect($html)
-        ->toContain('<svg')
-        ->toContain('d="M0.0 34.0');
-});
-
-test('spark survives an empty data set without erroring', function (): void {
-    $html = Blade::render('<x-aimtrack.spark :data="$data" />', ['data' => []]);
-
-    expect($html)
-        ->toContain('<svg')
-        ->toContain('d="M');
-});
-
 // ─── head-assets ─────────────────────────────────────────────────────────────
 
 test('head-assets inlines the design tokens stylesheet', function (): void {
@@ -164,20 +88,25 @@ test('head-assets inlines the design tokens stylesheet', function (): void {
         ->toContain('#64f4b3');
 });
 
-test('head-assets links the Inter and JetBrains Mono webfonts', function (): void {
+test('head-assets links the Inter and JetBrains Mono webfonts with preconnect', function (): void {
     $html = Blade::render('<x-aimtrack.head-assets />');
 
     expect($html)
-        ->toContain('rel="preconnect"')
-        ->toContain('fonts.googleapis.com')
-        ->toContain('family=Inter')
-        ->toContain('JetBrains+Mono');
+        ->toContain('<link rel="preconnect" href="https://fonts.googleapis.com">')
+        ->toContain('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')
+        ->toContain('family=Inter:wght@400;500;600;700')
+        ->toContain('family=JetBrains+Mono:wght@400;500;600;700');
 });
 
-test('head-assets emits the same token markup the panel injects', function (): void {
+test('head-assets emits the full token stylesheet verbatim', function (): void {
     $html = Blade::render('<x-aimtrack.head-assets />');
 
     $tokens = file_get_contents(resource_path('css/aimtrack-tokens.css'));
 
     expect($html)->toContain($tokens);
 });
+
+// The Filament panel injects the exact same head markup via the same component
+// (AdminPanelProvider::aimTrackDesignAssets renders <x-aimtrack.head-assets/>),
+// so panel and public landing can never drift. The panel side is asserted by
+// DesignTokensTest hitting /admin/login.

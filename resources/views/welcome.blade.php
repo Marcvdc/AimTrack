@@ -272,6 +272,11 @@
             .mk-hero-stage { transform: scale(.74); margin: -55px 0; }
             .mk-cta-row .mk-btn { flex: 1 1 auto; }
         }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            *, *::before, *::after { transition-duration: .001ms !important; animation-duration: .001ms !important; }
+        }
     </style>
 </head>
 <body class="mk-body">

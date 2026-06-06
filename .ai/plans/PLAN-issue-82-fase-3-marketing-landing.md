@@ -44,6 +44,16 @@ op verzoek van de gebruiker zijn drie beslissingen herzien. Deze amendment
   trial/pricing: nav "Probeer gratis" → **"Aan de slag"**, hero "30 dagen gratis
   proberen" → **"Gratis aan de slag"** (beide → `/admin/login`).
 
+- **R4 — Componenten-correctie (integratie-audit sessie 2).** `target-rings`
+  stond al op main (Fase 1) en wordt ongewijzigd hergebruikt; mijn duplicaat
+  `spark` is **verwijderd** t.g.v. main's `sparkline` (met `:fill="true"`, ook
+  voor de Stap-3 Trends-kaart). Écht nieuw op deze branch zijn alleen `icon` +
+  `head-assets`. `head-assets` is nu de **enige** bron voor fonts + tokens — ook
+  `AdminPanelProvider::aimTrackDesignAssets()` rendert die component, zodat panel
+  en landing niet driften. De bestandsboom verderop is op die punten verouderd.
+  Stap-3 Trends-sparkline gebruikt `SessionWeapon.rounds_fired` per datum (niet
+  de in de praktijk lege `SessionShot`-tabel).
+
 Tests groeien per stap mee; suite blijft per commit groen.
 
 ## Beslissingen vooraf (sessie 2026-05-30)
