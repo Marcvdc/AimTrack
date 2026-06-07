@@ -104,6 +104,16 @@
                                 {{ $turnReview[$currentTurnIndex]['review_reason'] }}
                             </p>
                         @endif
+                        @if ($canEdit)
+                            <x-filament::button
+                                size="sm"
+                                color="success"
+                                icon="heroicon-m-check"
+                                wire:click="confirmTurnReview({{ $currentTurnIndex }})"
+                            >
+                                Bevestigd
+                            </x-filament::button>
+                        @endif
                     </div>
                 @endif
             </div>
