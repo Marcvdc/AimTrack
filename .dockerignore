@@ -1,0 +1,26 @@
+# Build-context parity tussen lokale en CI-build, en een kleinere/snellere context.
+# vendor/ en node_modules/ worden in de image-stages opnieuw opgebouwd
+# (composer install --no-dev resp. npm ci); .git/ en .env* horen niet in de image.
+# public/build wordt door de frontend-stage (vite) gegenereerd.
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Dependencies (worden in de image opnieuw opgebouwd)
+/vendor
+/node_modules
+
+# Secrets / lokale env (runtime-geïnjecteerd via compose env_file)
+.env
+.env.*
+
+# Gegenereerde frontend-assets
+/public/build
+/public/hot
+
+# Logs en OS-rommel
+*.log
+.DS_Store
+Thumbs.db
