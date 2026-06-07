@@ -31,7 +31,7 @@ def _fake_result() -> AnalysisResult:
 
 class TestV2Endpoint:
     def test_returns_scored_shots(self, monkeypatch):
-        monkeypatch.setattr(routes, "analyze_target_v2", lambda image, spec, n: _fake_result())
+        monkeypatch.setattr(routes, "analyze_target_v2", lambda image, spec, n, api_key=None: _fake_result())
         resp = client.post(
             "/api/v2/analyze-target",
             files={"file": ("t.png", _png_bytes(), "image/png")},

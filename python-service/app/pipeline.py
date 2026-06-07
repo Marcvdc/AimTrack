@@ -40,9 +40,9 @@ def _build_review_reason(
     """Concrete Dutch reason why a turn was flagged for review (empty if it wasn't)."""
     if not vision_ok:
         return (
-            "AI-herkenning niet beschikbaar (geen of ongeldige ANTHROPIC_API_KEY) — "
-            "alleen ruwe detectie; stickers en gedrukte cijfers zijn NIET uitgefilterd. "
-            "Controleer de schoten handmatig."
+            "AI-herkenning niet beschikbaar (geen geldige Claude-key) — stel je Claude-key "
+            "in bij AI-instellingen. Er draaide alleen ruwe detectie; stickers en gedrukte "
+            "cijfers zijn NIET uitgefilterd. Controleer de schoten handmatig."
         )
     reasons: list[str] = []
     if not count_ok and expected is not None:
@@ -56,7 +56,7 @@ def _build_review_reason(
     return " ".join(reasons) or "Controleer de gedetecteerde schoten."
 
 
-def analyze_target_v2(image: np.ndarray, spec: TargetSpec, expected_shot_count: int | None) -> AnalysisResult:
+def analyze_target_v2(image: np.ndarray, spec: TargetSpec, expected_shot_count: int | None, api_key: str | None = None) -> AnalysisResult:
     """5-stage pipeline: calibrate -> CV candidates -> Claude discrimination ->
     reconcile -> discipline-correct scoring. Never raises for normal failure modes;
     degrades to needs_review so the user's photo is never lost."""
@@ -85,7 +85,7 @@ def analyze_target_v2(image: np.ndarray, spec: TargetSpec, expected_shot_count: 
     candidates = detect_candidates(cal.canonical_image, spec)
 
     try:
-        vision = detect_holes(cal.canonical_image, spec, expected_shot_count)
+        vision = detect_holes(cal.canonical_image, spec, expected_shot_count, api_key)
         holes = reconcile(vision["shots"], candidates, spec, expected_shot_count)
         overall_conf = vision["overall_confidence"]
         orientation = vision["orientation_note"]

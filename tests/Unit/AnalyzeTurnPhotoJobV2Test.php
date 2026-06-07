@@ -102,6 +102,32 @@ test('job records review without calling python when target_type missing', funct
     Http::assertNothingSent();
 });
 
+test('job forwards the user BYO Claude key to the python service as a header', function () {
+    $user = User::factory()->create();
+    $user->anthropic_api_key = 'sk-ant-byok-test';
+    $user->save();
+    $session = Session::factory()->create(['user_id' => $user->id, 'target_type' => 'kkp_25m']);
+    $imagePath = 'session-photos/test.jpg';
+    Storage::disk('private')->put($imagePath, 'x');
+
+    Http::fake([
+        '*/api/v2/analyze-target' => Http::response([
+            'success' => true, 'shots' => [], 'total_detected' => 0,
+            'expected_shot_count' => 5, 'detected_count' => 0, 'count_matches_expected' => false,
+            'overall_confidence' => 0.0, 'needs_review' => true, 'orientation_note' => '',
+            'review_reason' => '', 'vision_model' => 'claude-opus-4-8',
+            'calibration' => ['ok' => true, 'rms_error_mm' => 8.0, 'confidence' => 0.18, 'rings_detected' => 7, 'error' => null],
+        ], 200),
+    ]);
+
+    (new AnalyzeTurnPhotoJob($session, 0, $imagePath, 5))->handle();
+
+    Http::assertSent(function (Request $request) {
+        return str_contains($request->url(), '/api/v2/analyze-target')
+            && $request->header('X-Anthropic-Api-Key') === ['sk-ant-byok-test'];
+    });
+});
+
 test('omits expected_shot_count from the request when it is null', function () {
     $user = User::factory()->create();
     $session = Session::factory()->create(['user_id' => $user->id, 'target_type' => 'kkp_25m']);

@@ -26,7 +26,7 @@ class TestDetectHoles:
             "overall_confidence": 0.92,
             "count_matches_expected": True,
         }
-        monkeypatch.setattr(claude_detector, "_call_claude", lambda b64, system: json.dumps(payload))
+        monkeypatch.setattr(claude_detector, "_call_claude", lambda b64, system, api_key=None: json.dumps(payload))
         result = detect_holes(_canonical(), KKP_25M, expected_shot_count=2)
         assert len(result["shots"]) == 2
         assert result["shots"][0]["confidence"] == 1.0  # clamped
@@ -35,13 +35,13 @@ class TestDetectHoles:
         assert result["count_matches_expected"] is True
 
     def test_raises_vision_error_on_api_failure(self, monkeypatch):
-        def boom(b64, system):
+        def boom(b64, system, api_key=None):
             raise RuntimeError("api down")
         monkeypatch.setattr(claude_detector, "_call_claude", boom)
         with pytest.raises(VisionError):
             detect_holes(_canonical(), KKP_25M, expected_shot_count=2)
 
     def test_raises_vision_error_on_bad_json(self, monkeypatch):
-        monkeypatch.setattr(claude_detector, "_call_claude", lambda b64, system: "not json")
+        monkeypatch.setattr(claude_detector, "_call_claude", lambda b64, system, api_key=None: "not json")
         with pytest.raises(VisionError):
             detect_holes(_canonical(), KKP_25M, expected_shot_count=2)

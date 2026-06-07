@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from typing import Union
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 from app.calibration.target_intrinsic import (
@@ -90,6 +90,7 @@ async def analyze_target_v2_endpoint(
     file: UploadFile = File(...),
     target_type: str = Form(...),
     expected_shot_count: int | None = Form(default=None),
+    x_anthropic_api_key: str | None = Header(default=None),
 ) -> AnalyzeV2Response:
     """Hybrid CV + Claude shot detection on a perspective-corrected target.
 
@@ -109,7 +110,7 @@ async def analyze_target_v2_endpoint(
     image_data = await file.read()
     image = _decode_image(image_data)
 
-    result = analyze_target_v2(image, spec, expected_shot_count)
+    result = analyze_target_v2(image, spec, expected_shot_count, api_key=x_anthropic_api_key)
 
     return AnalyzeV2Response(
         success=True,

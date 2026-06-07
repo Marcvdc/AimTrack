@@ -60,12 +60,15 @@ def _system_prompt(spec: TargetSpec, expected_shot_count: int | None) -> str:
     )
 
 
-def _call_claude(canonical_b64: str, system: str) -> str:
+def _call_claude(canonical_b64: str, system: str, api_key: str | None = None) -> str:
     """Single network call. Isolated so tests can monkeypatch it. Returns the raw
-    JSON text the model produced under the structured-output format constraint."""
+    JSON text the model produced under the structured-output format constraint.
+
+    ``api_key`` is the per-user BYO Claude key (resolved by Laravel, forwarded per
+    request); it takes precedence over the optional service-level env key."""
     from anthropic import Anthropic
 
-    client = Anthropic(api_key=settings.anthropic_api_key or None)
+    client = Anthropic(api_key=api_key or settings.anthropic_api_key or None)
     response = client.messages.create(
         model=settings.vision_model,
         max_tokens=4096,
@@ -94,18 +97,19 @@ def _call_claude(canonical_b64: str, system: str) -> str:
     raise VisionError("Geen tekst-antwoord van het vision-model")
 
 
-def detect_holes(canonical: np.ndarray, spec: TargetSpec, expected_shot_count: int | None) -> dict:
+def detect_holes(canonical: np.ndarray, spec: TargetSpec, expected_shot_count: int | None, api_key: str | None = None) -> dict:
     """Send the canonical image to Claude; return validated/clamped hole detections.
 
-    Returns: {shots: [{x_px,y_px,confidence,kind}], orientation_note, overall_confidence,
-              count_matches_expected}. Raises VisionError on any failure."""
+    ``api_key`` is the per-user BYO Claude key (resolved by Laravel, forwarded per
+    request). Returns: {shots: [{x_px,y_px,confidence,kind}], orientation_note,
+    overall_confidence, count_matches_expected}. Raises VisionError on any failure."""
     ok, buf = cv2.imencode(".png", canonical)
     if not ok:
         raise VisionError("PNG-codering mislukt")
     b64 = base64.b64encode(buf.tobytes()).decode("ascii")
 
     try:
-        raw = _call_claude(b64, _system_prompt(spec, expected_shot_count))
+        raw = _call_claude(b64, _system_prompt(spec, expected_shot_count), api_key)
     except VisionError:
         raise
     except Exception as exc:  # anthropic.APIError, network, etc.

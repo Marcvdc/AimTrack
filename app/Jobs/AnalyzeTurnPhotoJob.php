@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Session;
 use App\Models\SessionShot;
 use App\Models\SessionTurnAnalysis;
+use App\Services\Ai\AiKeyResolver;
 use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -77,7 +78,17 @@ class AnalyzeTurnPhotoJob implements ShouldQueue
                 $payload['expected_shot_count'] = $this->expectedShotCount;
             }
 
-            $response = Http::timeout(90)
+            // Per-user BYO Claude-key (#95): de python-service gebruikt déze sleutel
+            // voor de AI-herkenning, niet een globale env-key.
+            $claudeKey = app(AiKeyResolver::class)->forUser($this->session->user);
+
+            $request = Http::timeout(90);
+
+            if (filled($claudeKey)) {
+                $request = $request->withHeaders(['X-Anthropic-Api-Key' => $claudeKey]);
+            }
+
+            $response = $request
                 ->attach('file', $imageContent, basename($this->photoPath))
                 ->post($baseUrl.'/api/v2/analyze-target', $payload);
 
