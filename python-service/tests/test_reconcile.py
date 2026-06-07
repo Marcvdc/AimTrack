@@ -45,3 +45,23 @@ class TestReconcile:
         holes = reconcile(claude, candidates, KKP_25M, expected_shot_count=2)
         snapped = [h for h in holes if h.x_px == 700.0 and h.y_px == 500.0]
         assert len(snapped) == 1
+
+    def test_drops_shots_below_confidence_floor(self):
+        # confidence 0.2 < default floor 0.4 -> dropped, even though count would allow it
+        claude = [
+            {"x_px": 500, "y_px": 500, "confidence": 0.9, "kind": "hole"},
+            {"x_px": 600, "y_px": 500, "confidence": 0.2, "kind": "uncertain"},
+        ]
+        holes = reconcile(claude, [], KKP_25M, expected_shot_count=2)
+        assert len(holes) == 1
+        assert holes[0].confidence == 0.9
+
+    def test_does_not_pad_to_expected_with_low_confidence(self):
+        # only one confident hole; do NOT force a second to reach expected=3
+        claude = [
+            {"x_px": 500, "y_px": 500, "confidence": 0.8, "kind": "hole"},
+            {"x_px": 600, "y_px": 500, "confidence": 0.1, "kind": "uncertain"},
+            {"x_px": 700, "y_px": 500, "confidence": 0.1, "kind": "uncertain"},
+        ]
+        holes = reconcile(claude, [], KKP_25M, expected_shot_count=3)
+        assert len(holes) == 1
