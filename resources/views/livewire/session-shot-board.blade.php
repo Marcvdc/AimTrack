@@ -157,7 +157,8 @@
         </div>
     </div>
 
-    <!-- Photo Upload Modal -->
+    <!-- Photo Upload Modal (alleen bij een specifieke beurt) -->
+    @if ($currentTurnIndex !== \App\Livewire\SessionShotBoard::ALL_TURNS_VALUE)
     <x-filament::modal
         id="photo-upload-modal"
         width="2xl"
@@ -368,6 +369,7 @@
             </div>
         </div>
     </x-filament::modal>
+    @endif
 </div>
 @pushOnce('scripts')
 <script>
