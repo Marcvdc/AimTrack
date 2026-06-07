@@ -2,13 +2,6 @@
 
 namespace App\Providers\Filament;
 
-use Illuminate\Cookie\Middleware\EncryptCookies;
-use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use Illuminate\Session\Middleware\StartSession;
-use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
-use Illuminate\Routing\Middleware\SubstituteBindings;
-use Illuminate\Auth\Middleware\Authenticate;
 use App\Filament\Widgets\FailedJobsWidget;
 use App\Support\Features\AimtrackFeatureToggle;
 use EslamRedaDiv\FilamentCopilot\FilamentCopilotPlugin;
@@ -17,7 +10,14 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\View\PanelsRenderHook;
+use Illuminate\Auth\Middleware\Authenticate;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\HtmlString;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -80,6 +80,10 @@ class AdminPanelProvider extends PanelProvider
                 FilamentCopilotPlugin::make()
                     ->provider('anthropic')
                     ->model('claude-haiku-4-5-20251001')
+                    // De system prompt staat in config/filament-copilot.php. Met een lege
+                    // "extra" prompt voorkomen we dat het package diezelfde config-prompt
+                    // nog een tweede keer als "## Additional Instructions" toevoegt.
+                    ->systemPrompt('')
                     ->rateLimitEnabled()
                     ->memoryEnabled()
                     ->authorizeUsing(fn (): bool => app(AimtrackFeatureToggle::class)->aiEnabled()),
