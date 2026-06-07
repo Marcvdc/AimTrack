@@ -95,9 +95,16 @@
                 </select>
 
                 @if ($currentTurnIndex !== \App\Livewire\SessionShotBoard::ALL_TURNS_VALUE && ($turnReview[$currentTurnIndex]['needs_review'] ?? false))
-                    <x-filament::badge color="warning" icon="heroicon-m-exclamation-triangle">
-                        Controleren — foto-analyse onzeker voor deze beurt
-                    </x-filament::badge>
+                    <div class="space-y-1">
+                        <x-filament::badge color="warning" icon="heroicon-m-exclamation-triangle">
+                            Controleren — foto-analyse onzeker
+                        </x-filament::badge>
+                        @if (filled($turnReview[$currentTurnIndex]['review_reason'] ?? null))
+                            <p class="text-sm text-warning-700 dark:text-warning-400">
+                                {{ $turnReview[$currentTurnIndex]['review_reason'] }}
+                            </p>
+                        @endif
+                    </div>
                 @endif
             </div>
         </x-filament::section>

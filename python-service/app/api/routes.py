@@ -120,6 +120,7 @@ async def analyze_target_v2_endpoint(
         count_matches_expected=result.count_matches_expected,
         overall_confidence=result.overall_confidence,
         needs_review=result.needs_review,
+        review_reason=result.review_reason,
         orientation_note=result.orientation_note,
         vision_model=result.vision_model,
         calibration=result.calibration,

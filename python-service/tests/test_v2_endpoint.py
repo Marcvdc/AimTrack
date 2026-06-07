@@ -23,7 +23,7 @@ def _fake_result() -> AnalysisResult:
     return AnalysisResult(
         shots=[{"x": 0.0, "y": 0.0, "ring": 10, "score": 10, "confidence": 0.9, "kind": "hole"}],
         expected_shot_count=1, detected_count=1, count_matches_expected=True,
-        overall_confidence=0.9, needs_review=False, orientation_note="ok",
+        overall_confidence=0.9, needs_review=False, review_reason="", orientation_note="ok",
         vision_model="claude-opus-4-8",
         calibration={"ok": True, "error": None, "rms_error_mm": 8.0, "confidence": 0.18, "rings_detected": 7},
     )

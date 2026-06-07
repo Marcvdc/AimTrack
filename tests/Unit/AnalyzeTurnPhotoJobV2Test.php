@@ -73,6 +73,7 @@ test('job flags needs_review when python says so', function () {
             'success' => true, 'shots' => [], 'total_detected' => 0,
             'expected_shot_count' => 5, 'detected_count' => 0, 'count_matches_expected' => false,
             'overall_confidence' => 0.0, 'needs_review' => true, 'orientation_note' => '',
+            'review_reason' => 'AI-herkenning niet beschikbaar — controleer de schoten handmatig.',
             'vision_model' => 'claude-opus-4-8',
             'calibration' => ['ok' => false, 'rms_error_mm' => null, 'confidence' => null, 'rings_detected' => 1, 'error' => 'te weinig ringen'],
         ], 200),
@@ -83,6 +84,7 @@ test('job flags needs_review when python says so', function () {
     $analysis = SessionTurnAnalysis::where('session_id', $session->id)->where('turn_index', 0)->first();
     expect($analysis->needs_review)->toBeTrue();
     expect($analysis->detected_count)->toBe(0);
+    expect($analysis->review_reason)->toBe('AI-herkenning niet beschikbaar — controleer de schoten handmatig.');
 });
 
 test('job records review without calling python when target_type missing', function () {
@@ -96,6 +98,7 @@ test('job records review without calling python when target_type missing', funct
 
     $analysis = SessionTurnAnalysis::where('session_id', $session->id)->where('turn_index', 0)->first();
     expect($analysis->needs_review)->toBeTrue();
+    expect($analysis->review_reason)->toContain('discipline');
     Http::assertNothingSent();
 });
 

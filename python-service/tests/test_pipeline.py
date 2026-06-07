@@ -34,6 +34,7 @@ class TestPipeline:
         assert result.shots[0]["ring"] == 10
         assert result.count_matches_expected is True
         assert result.needs_review is False
+        assert result.review_reason == ""
 
     def test_count_mismatch_flags_review(self, monkeypatch):
         monkeypatch.setattr(pipeline, "calibrate", lambda img, spec: _fake_cal())
@@ -46,6 +47,7 @@ class TestPipeline:
         assert result.detected_count == 1
         assert result.count_matches_expected is False
         assert result.needs_review is True
+        assert "Aantal gedetecteerd" in result.review_reason
 
     def test_vision_failure_degrades_to_candidates(self, monkeypatch):
         monkeypatch.setattr(pipeline, "calibrate", lambda img, spec: _fake_cal())
@@ -57,6 +59,7 @@ class TestPipeline:
         assert result.detected_count == 2
         assert result.overall_confidence == 0.0
         assert result.needs_review is True
+        assert "ANTHROPIC_API_KEY" in result.review_reason
 
     def test_calibration_failure_returns_empty_review(self, monkeypatch):
         def boom(img, spec):
@@ -66,3 +69,4 @@ class TestPipeline:
         assert result.shots == []
         assert result.needs_review is True
         assert result.calibration["ok"] is False
+        assert "Kalibratie mislukt" in result.review_reason

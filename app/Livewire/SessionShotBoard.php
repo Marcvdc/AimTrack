@@ -445,6 +445,7 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
             ->get()
             ->mapWithKeys(fn (SessionTurnAnalysis $analysis) => [$analysis->turn_index => [
                 'needs_review' => (bool) $analysis->needs_review,
+                'review_reason' => $analysis->review_reason,
                 'detected_count' => (int) $analysis->detected_count,
                 'overall_confidence' => $analysis->overall_confidence,
             ]])

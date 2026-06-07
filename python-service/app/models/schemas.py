@@ -65,6 +65,7 @@ class AnalyzeV2Response(BaseModel):
     count_matches_expected: bool
     overall_confidence: float
     needs_review: bool
+    review_reason: str
     orientation_note: str
     vision_model: str
     calibration: dict

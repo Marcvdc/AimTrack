@@ -22,9 +22,38 @@ class AnalysisResult:
     count_matches_expected: bool
     overall_confidence: float
     needs_review: bool
+    review_reason: str
     orientation_note: str
     vision_model: str
     calibration: dict
+
+
+def _build_review_reason(
+    *,
+    vision_ok: bool,
+    count_ok: bool,
+    detected: int,
+    expected: int | None,
+    overall_conf: float,
+    rms: float,
+) -> str:
+    """Concrete Dutch reason why a turn was flagged for review (empty if it wasn't)."""
+    if not vision_ok:
+        return (
+            "AI-herkenning niet beschikbaar (geen of ongeldige ANTHROPIC_API_KEY) — "
+            "alleen ruwe detectie; stickers en gedrukte cijfers zijn NIET uitgefilterd. "
+            "Controleer de schoten handmatig."
+        )
+    reasons: list[str] = []
+    if not count_ok and expected is not None:
+        reasons.append(
+            f"Aantal gedetecteerd ({detected}) wijkt af van het ingevulde aantal ({expected})."
+        )
+    if overall_conf < settings.review_confidence_threshold:
+        reasons.append(f"Lage zekerheid ({round(overall_conf * 100)}%).")
+    if rms > settings.cal_rms_review_mm:
+        reasons.append(f"Onnauwkeurige uitlijning van de roos ({round(rms)} mm afwijking).")
+    return " ".join(reasons) or "Controleer de gedetecteerde schoten."
 
 
 def analyze_target_v2(image: np.ndarray, spec: TargetSpec, expected_shot_count: int | None) -> AnalysisResult:
@@ -41,6 +70,7 @@ def analyze_target_v2(image: np.ndarray, spec: TargetSpec, expected_shot_count: 
             count_matches_expected=False,
             overall_confidence=0.0,
             needs_review=True,
+            review_reason="Kalibratie mislukt — de roos kon niet worden uitgelijnd. Maak een rechtere, scherpere foto van het hele schietbord.",
             orientation_note="",
             vision_model=settings.vision_model,
             calibration={
@@ -84,6 +114,18 @@ def analyze_target_v2(image: np.ndarray, spec: TargetSpec, expected_shot_count: 
         or overall_conf < settings.review_confidence_threshold
         or cal.rms_error_mm > settings.cal_rms_review_mm
     )
+    review_reason = (
+        _build_review_reason(
+            vision_ok=vision_ok,
+            count_ok=count_ok,
+            detected=detected,
+            expected=expected_shot_count,
+            overall_conf=overall_conf,
+            rms=cal.rms_error_mm,
+        )
+        if needs_review
+        else ""
+    )
 
     return AnalysisResult(
         shots=shots,
@@ -92,6 +134,7 @@ def analyze_target_v2(image: np.ndarray, spec: TargetSpec, expected_shot_count: 
         count_matches_expected=count_ok,
         overall_confidence=round(overall_conf, 3),
         needs_review=needs_review,
+        review_reason=review_reason,
         orientation_note=orientation,
         vision_model=settings.vision_model,
         calibration={

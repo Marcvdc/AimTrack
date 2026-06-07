@@ -13,6 +13,7 @@ test('shot board shows a review badge when the current turn needs review', funct
         'session_id' => $session->id,
         'turn_index' => 0,
         'needs_review' => true,
+        'review_reason' => 'Aantal gedetecteerd (4) wijkt af van het ingevulde aantal (5).',
         'detected_count' => 4,
         'overall_confidence' => 0.3,
     ]);
@@ -20,7 +21,8 @@ test('shot board shows a review badge when the current turn needs review', funct
     Livewire::actingAs($user)
         ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session])
         ->assertSet('currentTurnIndex', 0)
-        ->assertSee('Controleren');
+        ->assertSee('Controleren')
+        ->assertSee('Aantal gedetecteerd (4) wijkt af van het ingevulde aantal (5).');
 });
 
 test('shot board shows no review badge when the turn analysis is clean', function () {

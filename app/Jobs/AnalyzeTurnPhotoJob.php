@@ -62,6 +62,7 @@ class AnalyzeTurnPhotoJob implements ShouldQueue
                     countMatchesExpected: false,
                     calibrationRmsMm: null,
                     visionModel: null,
+                    reviewReason: 'Geen discipline ingesteld op deze sessie — kies een discipline en upload de foto opnieuw.',
                 );
 
                 return;
@@ -134,6 +135,7 @@ class AnalyzeTurnPhotoJob implements ShouldQueue
                 countMatchesExpected: (bool) ($data['count_matches_expected'] ?? false),
                 calibrationRmsMm: $data['calibration']['rms_error_mm'] ?? null,
                 visionModel: $data['vision_model'] ?? null,
+                reviewReason: $data['review_reason'] ?? null,
             );
 
             Log::info('Successfully processed turn photo (v2)', [
@@ -166,6 +168,7 @@ class AnalyzeTurnPhotoJob implements ShouldQueue
         bool $countMatchesExpected,
         ?float $calibrationRmsMm,
         ?string $visionModel,
+        ?string $reviewReason,
     ): void {
         SessionTurnAnalysis::updateOrCreate(
             [
@@ -174,6 +177,7 @@ class AnalyzeTurnPhotoJob implements ShouldQueue
             ],
             [
                 'needs_review' => $needsReview,
+                'review_reason' => $reviewReason,
                 'overall_confidence' => $overallConfidence,
                 'expected_shot_count' => $this->expectedShotCount,
                 'detected_count' => $detectedCount,

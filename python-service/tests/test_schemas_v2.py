@@ -19,6 +19,7 @@ class TestV2Schemas:
             count_matches_expected=True,
             overall_confidence=0.9,
             needs_review=False,
+            review_reason="",
             orientation_note="",
             vision_model="claude-opus-4-8",
             calibration={"ok": True, "rms_error_mm": 8.2, "confidence": 0.18, "rings_detected": 7, "error": None},

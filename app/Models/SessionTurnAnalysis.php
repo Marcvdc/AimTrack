@@ -10,6 +10,7 @@ class SessionTurnAnalysis extends Model
         'session_id',
         'turn_index',
         'needs_review',
+        'review_reason',
         'overall_confidence',
         'expected_shot_count',
         'detected_count',
