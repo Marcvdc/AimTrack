@@ -101,17 +101,34 @@
 
         <div>
             <div class="at-label">OPTIES</div>
+            @php
+                // Echte, persisterende user-voorkeuren (CreateSession::$boardPreferences).
+                // Label-volgorde conform new-session-wizard.jsx.
+                $optionRows = [
+                    ['key' => 'auto_ai_reflection', 'label' => 'AI-reflectie'],
+                    ['key' => 'decimal_notation', 'label' => 'Decimaal-notatie'],
+                    ['key' => 'board_show_rings', 'label' => 'Toon ringen-view'],
+                ];
+            @endphp
             <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
-                @foreach ([['AI-reflectie', true], ['Decimaal-notatie', true], ['Toon ringen-view', false]] as [$label, $on])
-                    <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--at-text);">
-                        <div style="width: 30px; height: 18px; border-radius: 999px; background: {{ $on ? 'var(--at-accent)' : 'var(--at-line)' }}; position: relative; flex-shrink: 0;">
-                            <div style="position: absolute; top: 2px; left: {{ $on ? '14px' : '2px' }}; width: 14px; height: 14px; border-radius: 50%; background: var(--at-cta-text);"></div>
-                        </div>
-                        <span>{{ $label }}</span>
-                    </div>
+                @foreach ($optionRows as $option)
+                    @php $on = (bool) ($this->boardPreferences[$option['key']] ?? false); @endphp
+                    <button
+                        type="button"
+                        wire:click="togglePreference('{{ $option['key'] }}')"
+                        role="switch"
+                        aria-checked="{{ $on ? 'true' : 'false' }}"
+                        aria-label="{{ $option['label'] }}"
+                        style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--at-text); background: none; border: none; padding: 2px 0; cursor: pointer; text-align: left; width: 100%;"
+                    >
+                        <span style="width: 30px; height: 18px; border-radius: 999px; background: {{ $on ? 'var(--at-accent)' : 'var(--at-line)' }}; position: relative; flex-shrink: 0; transition: background 0.15s ease;">
+                            <span style="position: absolute; top: 2px; left: {{ $on ? '14px' : '2px' }}; width: 14px; height: 14px; border-radius: 50%; background: var(--at-cta-text); transition: left 0.15s ease;"></span>
+                        </span>
+                        <span>{{ $option['label'] }}</span>
+                    </button>
                 @endforeach
             </div>
-            <div style="margin-top: 8px; font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.08em;">VOORKEUREN · BINNENKORT INSTELBAAR</div>
+            <div style="margin-top: 8px; font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.08em;">VOORKEUREN · GELDEN VOOR AL JE SESSIES</div>
         </div>
 
         <x-aimtrack.bracket-frame :rounded="8" :padding="14" style="background: var(--at-accent-12); display: flex; flex-direction: column; gap: 6px;">

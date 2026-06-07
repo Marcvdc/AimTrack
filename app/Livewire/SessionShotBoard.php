@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Session;
 use App\Models\SessionShot;
 use App\Services\Sessions\SessionShotService;
+use App\Services\Sessions\ShotScoringService;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
@@ -12,9 +13,8 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Support\Contracts\TranslatableContentDriver;
-use Filament\Tables\Columns\Summarizers\Average;
 use Filament\Tables\Columns\Summarizers\Count;
-use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -64,9 +64,15 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
 
     public bool $canEdit = false;
 
+    public bool $showRings = false;
+
+    public bool $decimalNotation = true;
+
     public ?int $pendingDeleteShotId = null;
 
     protected SessionShotService $shotService;
+
+    protected ShotScoringService $scoringService;
 
     private const TURN_COLOR_PALETTE = [
         '#0ea5e9', // sky
@@ -79,9 +85,10 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
         '#14b8a6', // teal
     ];
 
-    public function boot(SessionShotService $shotService): void
+    public function boot(SessionShotService $shotService, ShotScoringService $scoringService): void
     {
         $this->shotService = $shotService;
+        $this->scoringService = $scoringService;
     }
 
     public function mount(Session $session): void
@@ -92,6 +99,12 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
 
         if ($this->readOnly) {
             $this->canEdit = false;
+        }
+
+        $user = auth()->user();
+        if ($user) {
+            $this->showRings = (bool) $user->preference('board_show_rings');
+            $this->decimalNotation = (bool) $user->preference('decimal_notation');
         }
 
         $this->refreshData();
@@ -148,6 +161,55 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
             'turn_index' => $next,
             'turn_options' => $this->turnOptions,
         ]);
+    }
+
+    /**
+     * Wissel het tonen van de ringnummers op de roos en persisteer de
+     * voorkeur op de gebruiker (geldt voor al z'n borden).
+     */
+    public function toggleRings(): void
+    {
+        $this->showRings = ! $this->showRings;
+
+        auth()->user()?->setPreference('board_show_rings', $this->showRings);
+    }
+
+    /**
+     * Score-weergave voor de tabel: één decimaal (afgeleid uit de afstand)
+     * wanneer decimaal-notatie aan staat, anders de hele ring.
+     */
+    public function formatScore(?int $state, SessionShot $record): string
+    {
+        if ($this->decimalNotation) {
+            $decimal = $this->scoringService->decimalScore((float) $record->distance_from_center);
+
+            return '+'.number_format($decimal, 1, '.', '');
+        }
+
+        return $state ? '+'.$state : '+0';
+    }
+
+    /**
+     * Aggregeer de score-kolom voor de tabelvoet. Volgt dezelfde decimaal- vs
+     * hele-ring-weergave als de rijen (en de KPI-strook), zodat voet, rijen en
+     * paginakop niet uiteenlopen.
+     *
+     * @param  Collection<int, mixed>  $shots
+     */
+    public function summarizeScores(Collection $shots, bool $average): string
+    {
+        if ($shots->isEmpty()) {
+            return $average ? '—' : number_format(0, $this->decimalNotation ? 1 : 0, '.', '');
+        }
+
+        $values = $this->decimalNotation
+            ? $shots->map(fn ($shot): float => $this->scoringService->decimalScore((float) ($shot->distance_from_center ?? 0)))
+            : $shots->map(fn ($shot): float => (float) ($shot->score ?? 0));
+
+        $result = $average ? (float) $values->avg() : (float) $values->sum();
+        $decimals = ($average || $this->decimalNotation) ? 1 : 0;
+
+        return number_format($result, $decimals, '.', '');
     }
 
     public function recordShot(float $xNormalized, float $yNormalized): void
@@ -368,10 +430,14 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
                     ->sortable(),
                 TextColumn::make('score')
                     ->label('Score')
-                    ->formatStateUsing(fn (?int $state) => $state ? '+'.$state : '+0')
+                    ->formatStateUsing(fn (?int $state, SessionShot $record): string => $this->formatScore($state, $record))
                     ->summarize([
-                        Sum::make()->label('Totaal'),
-                        Average::make()->label('Gemiddelde')->formatStateUsing(fn ($state) => number_format((float) $state, 2)),
+                        Summarizer::make()
+                            ->label('Totaal')
+                            ->using(fn ($query): string => $this->summarizeScores(collect($query->get()), false)),
+                        Summarizer::make()
+                            ->label('Gem.')
+                            ->using(fn ($query): string => $this->summarizeScores(collect($query->get()), true)),
                     ]),
                 TextColumn::make('created_at')
                     ->label('Tijd')

@@ -31,6 +31,20 @@ class ShotScoringService
     }
 
     /**
+     * Decimaal-score (één decimaal) afgeleid uit de afstand tot het midden.
+     * Puur weergave: dezelfde lineaire schaal als scoreShot(), maar zonder de
+     * ceil()-afronding naar hele ringen. Wijzigt de opgeslagen score niet.
+     */
+    public function decimalScore(float $distanceFromCenter, array $options = []): float
+    {
+        $maxRadius = $options['max_radius'] ?? 0.5;
+        $normalizedDistance = min(max($distanceFromCenter, 0) / $maxRadius, 1);
+        $rawScore = (1 - $normalizedDistance) * self::MAX_SCORE;
+
+        return round(max(0, $rawScore), 1);
+    }
+
+    /**
      * Bereken aggregaties per sessie.
      */
     public function aggregate(Collection $shots): array

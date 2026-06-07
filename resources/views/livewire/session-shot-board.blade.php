@@ -8,6 +8,7 @@
             turns: @entangle('turnOptions').live,
             currentTurn: @entangle('currentTurnIndex').live,
             turnLegend: @entangle('turnLegend').live,
+            showRings: @entangle('showRings').live,
             allTurnsValue: @js(\App\Livewire\SessionShotBoard::ALL_TURNS_VALUE),
         })
     }">
@@ -48,60 +49,56 @@
         </x-slot>
     </x-filament::modal>
 
-    <!-- Beurt Selectie -->
-    <div class="mb-6">
-        <x-filament::section>
-            <x-slot name="heading">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-100">Beurt selectie</span>
-                    @if ($canEdit)
+    <!-- Controlebalk: beurt-selectie · nieuwe beurt · ringnummers-toggle -->
+    <div class="mb-5" style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; padding: 16px; background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-2xl);">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+            <span class="at-label">Beurt</span>
+            <select wire:model.live="currentTurnIndex"
+                style="background: var(--at-bg); border: 1px solid var(--at-line); color: var(--at-text); border-radius: var(--at-r-lg); padding: 8px 14px; font-size: 13px; font-family: var(--at-font-mono);">
+                <option value="{{ \App\Livewire\SessionShotBoard::ALL_TURNS_VALUE }}">Alle beurten</option>
+                @foreach ($turnOptions as $turn)
+                    <option value="{{ $turn }}">Beurt {{ $turn + 1 }}</option>
+                @endforeach
+            </select>
+        </div>
 
+        @if ($canEdit)
+            <button type="button" wire:click="addTurn"
+                style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: var(--at-r-lg); background: var(--at-accent); color: var(--at-cta-text); font-weight: 600; font-size: 13px; border: none; cursor: pointer;">
+                <x-filament::icon icon="heroicon-m-plus" class="h-4 w-4" />
+                Nieuwe beurt
+            </button>
+        @endif
 
-                     <x-slot name="afterHeader">
-                         <x-filament::button
-                            type="button"
-                            size="sm"
-                            color="primary"
-                            icon="heroicon-m-plus"
-                            wire:click="addTurn"
-                        >
-                            Nieuwe beurt
-                        </x-filament::button>
-                    </x-slot>
-                       
-                    @endif
-                </div>
-            </x-slot>
-            
-            <div class="space-y-2">
-                <select wire:model.live="currentTurnIndex" class="rounded-lg border-gray-300 bg-white px-4 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                    <option value="{{ \App\Livewire\SessionShotBoard::ALL_TURNS_VALUE }}">Alle beurten</option>
-                    @foreach ($turnOptions as $turn)
-                        <option value="{{ $turn }}">Beurt {{ $turn + 1 }}</option>
-                    @endforeach
-                </select>
-            </div>
-        </x-filament::section>
+        <button type="button" wire:click="toggleRings" role="switch" aria-checked="{{ $showRings ? 'true' : 'false' }}" aria-label="Toon ringnummers op de roos"
+            style="display: inline-flex; align-items: center; gap: 10px; margin-left: auto; padding: 8px 12px; border-radius: var(--at-r-lg); background: var(--at-panel-2); border: 1px solid var(--at-line); color: var(--at-text); font-size: 13px; cursor: pointer;">
+            <span style="width: 30px; height: 18px; border-radius: 999px; background: {{ $showRings ? 'var(--at-accent)' : 'var(--at-line)' }}; position: relative; flex-shrink: 0; transition: background .15s ease;">
+                <span style="position: absolute; top: 2px; left: {{ $showRings ? '14px' : '2px' }}; width: 14px; height: 14px; border-radius: 50%; background: var(--at-cta-text); transition: left .15s ease;"></span>
+            </span>
+            Ringnummers
+        </button>
     </div>
 
-    <div class="mx-10 rounded-3xl border border-gray-200/70 bg-white/80 px-5 py-5 shadow-sm dark:border-gray-800/60 dark:bg-gray-900/60">
-        <div class="mt-6"
+    <div style="display: flex; flex-direction: column; gap: 20px; padding: 20px; background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-2xl);">
+        <div
             x-data="targetBoard({
-            recordShot: (x, y) => $wire.recordShot(x, y),
-            canEdit: @js($canEdit),
-            rawMarkers: @entangle('markers').live,
-            turns: @entangle('turnOptions').live,
-            currentTurn: @entangle('currentTurnIndex').live,
-            turnLegend: @entangle('turnLegend').live,
-            allTurnsValue: @js(\App\Livewire\SessionShotBoard::ALL_TURNS_VALUE),
-        })"
+                recordShot: (x, y) => $wire.recordShot(x, y),
+                canEdit: @js($canEdit),
+                rawMarkers: @entangle('markers').live,
+                turns: @entangle('turnOptions').live,
+                currentTurn: @entangle('currentTurnIndex').live,
+                turnLegend: @entangle('turnLegend').live,
+                showRings: @entangle('showRings').live,
+                allTurnsValue: @js(\App\Livewire\SessionShotBoard::ALL_TURNS_VALUE),
+            })"
             class="w-full flex flex-col lg:flex-row gap-6"
             x-on:keydown.escape.window="closeContextMenu()"
         >
-            <!-- Interactieve Roos -->
-            <div class="w-full max-w-xl space-y-4">
+            <!-- Interactieve Roos — canvas-techniek ongewijzigd (klik=schot, long-press/rechtsklik=verwijderen) -->
+            <div class="w-full max-w-xl space-y-3">
                 <div
-                    class="relative w-full aspect-square bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-800/60"
+                    class="relative w-full aspect-square overflow-hidden"
+                    style="border-radius: var(--at-r-2xl); border: 1px solid var(--at-line); box-shadow: 0 18px 44px -26px rgba(0,0,0,0.85);"
                     x-ref="board"
                     wire:ignore
                 >
@@ -110,30 +107,24 @@
                     @contextmenu.prevent="handleCanvasRightClick($event)"
                 ></canvas>
                 </div>
+                <p style="font-size: 11px; color: var(--at-muted); font-family: var(--at-font-mono); letter-spacing: 0.04em;">
+                    @if ($canEdit)
+                        KLIK = SCHOT · LANG INDRUKKEN OF RECHTSKLIK OP EEN MARKER = VERWIJDEREN
+                    @else
+                        ALLEEN-LEZEN WEERGAVE
+                    @endif
+                </p>
             </div>
 
             <!-- Doelgebied & Schoten -->
-            <div class="flex-1 space-y-4">
-                <x-filament::section>
-                    <x-slot name="heading">
-                        <div class="flex items-center gap-2">
-                            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-100">Doelgebied & schoten</h3>
-                        </div>
-                    </x-slot>
-
-                     <x-slot name="description">
-                        Beheer beurten en bekijk gedetailleerde schotinformatie. Gebruik de filters om specifieke beurten te tonen.
-                    </x-slot>
-                    
-                    <div class="space-y-2">
-                        <p class="text-xs text-gray-500 mb-0"></p>
-                        <div class="p-2">
-                            {{ $this->table }}
-                        </div>
-                    </div>
-                </x-filament::section>
-
-                
+            <div class="flex-1 space-y-3" style="min-width: 0;">
+                <div class="at-label">Doelgebied &amp; schoten</div>
+                <p style="font-size: 12px; color: var(--at-muted); margin: 0;">
+                    Beheer beurten en bekijk schotinformatie. Gebruik de filters om specifieke beurten te tonen.
+                </p>
+                <div>
+                    {{ $this->table }}
+                </div>
             </div>
         </div>
     </div>
@@ -170,7 +161,7 @@
         const registerTargetBoard = () => {
             console.log('[SessionShotBoard] registerTargetBoard executed');
 
-            window.targetBoard = ({ recordShot, canEdit, rawMarkers, turns, currentTurn, turnLegend, allTurnsValue }) => ({
+            window.targetBoard = ({ recordShot, canEdit, rawMarkers, turns, currentTurn, turnLegend, showRings, allTurnsValue }) => ({
                 rawMarkers,
                 renderMarkers: [],
                 currentMarkers: [],
@@ -178,6 +169,7 @@
                 currentTurn: Number(currentTurn ?? 0),
                 turnLegend: Array.isArray(turnLegend) ? [...turnLegend] : [],
                 allTurnsValue: allTurnsValue ?? -1,
+                showRings: showRings ?? false,
                 canEdit,
                 longPressTimeout: null,
                 longPressTarget: null,
@@ -207,6 +199,10 @@
                     this.$watch('turnLegend', (value) => {
                         console.log('[SessionShotBoard] turnLegend updated', value);
                         this.turnLegend = Array.isArray(value) ? [...value] : [];
+                    });
+                    this.$watch('showRings', (value) => {
+                        this.showRings = Boolean(value);
+                        this.scheduleDraw();
                     });
                     this.$watch('currentTurn', (value) => {
                         const normalizedValue = this.normalizeTurnValue(value);
@@ -317,20 +313,22 @@
                         ctx.stroke();
                     });
 
-                    ctx.fillStyle = '#f8fafc';
-                    ctx.font = `${Math.floor(size * 0.034)}px 'Space Grotesk', sans-serif`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
+                    if (this.showRings) {
+                        ctx.fillStyle = '#f8fafc';
+                        ctx.font = `${Math.floor(size * 0.034)}px 'Space Grotesk', sans-serif`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
 
-                    rings.forEach((ring, index) => {
-                        const radius = outerRadius - (index + 0.5) * ringThickness;
-                        const angles = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
-                        angles.forEach((angle) => {
-                            const x = center + Math.cos(angle) * radius;
-                            const y = center + Math.sin(angle) * radius;
-                            ctx.fillText(ring.label, x, y);
+                        rings.forEach((ring, index) => {
+                            const radius = outerRadius - (index + 0.5) * ringThickness;
+                            const angles = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
+                            angles.forEach((angle) => {
+                                const x = center + Math.cos(angle) * radius;
+                                const y = center + Math.sin(angle) * radius;
+                                ctx.fillText(ring.label, x, y);
+                            });
                         });
-                    });
+                    }
 
                     ctx.lineWidth = size * 0.004;
                     ctx.strokeStyle = '#0f172a';

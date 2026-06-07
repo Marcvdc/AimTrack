@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\SessionResource\Pages;
 
 use App\Filament\Resources\SessionResource;
+use App\Models\User;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Resources\Pages\CreateRecord\Concerns\HasWizard;
 use Filament\Schemas\Components\View as ViewComponent;
@@ -16,6 +17,50 @@ class CreateSession extends CreateRecord
     use HasWizard;
 
     protected static string $resource = SessionResource::class;
+
+    /**
+     * Per-gebruiker bordvoorkeuren, getoond als echte toggles in de
+     * "Schoten"-stap. Gespiegeld vanuit User::preferences zodat de blade
+     * de actuele stand toont en togglePreference() direct persisteert.
+     *
+     * @var array<string, bool>
+     */
+    public array $boardPreferences = [];
+
+    public function mount(): void
+    {
+        parent::mount();
+
+        $this->loadBoardPreferences();
+    }
+
+    /**
+     * Wissel een bekende bordvoorkeur en persisteer 'm op de gebruiker.
+     */
+    public function togglePreference(string $key): void
+    {
+        $user = auth()->user();
+
+        if (! $user || ! array_key_exists($key, User::PREFERENCE_DEFAULTS)) {
+            return;
+        }
+
+        $value = ! $user->preference($key);
+
+        $user->setPreference($key, $value);
+        $this->boardPreferences[$key] = $value;
+    }
+
+    private function loadBoardPreferences(): void
+    {
+        $user = auth()->user();
+
+        $this->boardPreferences = collect(array_keys(User::PREFERENCE_DEFAULTS))
+            ->mapWithKeys(fn (string $key): array => [
+                $key => (bool) $user?->preference($key),
+            ])
+            ->all();
+    }
 
     /**
      * Range Console nieuwe-sessie wizard — 4 stappen conform
