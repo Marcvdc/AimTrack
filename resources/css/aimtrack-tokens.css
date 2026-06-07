@@ -1,0 +1,96 @@
+/*
+ * AimTrack design tokens · v1.0 · Signal Mint dark
+ *
+ * Source of truth: .ai/design-handoff/project/design-tokens.jsx
+ * Issue: #82 · Fase 0 — Design Foundation
+ *
+ * Andere paletten (Range Amber, Steel Cyan, Daylight) zitten bewust nog
+ * niet in scope. Verwacht: toekomstige paletten worden toegevoegd als
+ * losse `[data-at-palette="range"]` selectors die deze :root-defaults
+ * overschrijven.
+ */
+
+:root {
+    /* Signal Mint is dark-only — laat de UA form controls/scrollbars meekleuren. */
+    color-scheme: dark;
+
+    /* ── Color tokens (Signal Mint dark) ─────────────────────────── */
+    --at-bg:        #040711;
+    --at-panel:     #0c1428;
+    --at-panel-2:   #131c34;
+    --at-line:      #1c2543;
+    --at-text:      #e3ecff;
+    --at-muted:     #94a3c5;
+    --at-accent:    #64f4b3;
+    --at-accent-2:  #7a8cff;
+    --at-warn:      #f87171;
+    --at-cta-text:  #051810;
+
+    /* Accent met alpha-suffixen (uit design-tokens.jsx, alpha-varianten) */
+    --at-accent-12: rgba(100, 244, 179, 0.12);
+    --at-accent-25: rgba(100, 244, 179, 0.25);
+    --at-accent-50: rgba(100, 244, 179, 0.50);
+    --at-accent-80: rgba(100, 244, 179, 0.80);
+
+    /* ── Typography ──────────────────────────────────────────────── */
+    --at-font-display: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --at-font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --at-font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+    /* Display sizes (uit design-tokens.jsx TYPE rules) */
+    --at-display-xl: 64px;
+    --at-display-lg: 44px;
+    --at-display-md: 28px;
+
+    --at-text-heading:    22px;
+    --at-text-subheading: 17px;
+    --at-text-body:       13px;
+    --at-text-small:      12px;
+    --at-text-micro:      11px;
+
+    --at-data-xl: 44px;
+    --at-data-lg: 26px;
+    --at-data-md: 18px;
+    --at-label:   10px;
+
+    /* ── Spacing (4-punts basis, 7 stappen) ──────────────────────── */
+    --at-space-1: 4px;
+    --at-space-2: 8px;
+    --at-space-3: 12px;
+    --at-space-4: 16px;
+    --at-space-5: 24px;
+    --at-space-6: 32px;
+    --at-space-7: 48px;
+
+    /* ── Border radius (6 stappen) ───────────────────────────────── */
+    --at-r-sm:   4px;
+    --at-r-md:   6px;
+    --at-r-lg:   8px;
+    --at-r-xl:   12px;
+    --at-r-2xl:  18px;
+    --at-r-pill: 999px;
+}
+
+/*
+ * Optionele utility-classes voor componenten die geen Tailwind krijgen.
+ * Bewust minimaal — uitgebreid utility-systeem hoort bij een latere fase.
+ */
+.at-mono {
+    font-family: var(--at-font-mono);
+}
+
+.at-label {
+    font-family: var(--at-font-mono);
+    font-size: var(--at-label);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--at-muted);
+}
+
+.at-muted {
+    color: var(--at-muted);
+}
+
+.at-accent {
+    color: var(--at-accent);
+}

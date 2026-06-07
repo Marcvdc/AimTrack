@@ -2,12 +2,11 @@
 
 namespace App\Filament\Resources\SessionResource\Pages;
 
-use Filament\Actions\EditAction;
-use Filament\Actions\Action;
 use App\Filament\Resources\SessionResource;
 use App\Jobs\GenerateSessionReflectionJob;
 use App\Support\Features\AimtrackFeatureToggle;
-use Filament\Actions;
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Enums\Width;
@@ -16,11 +15,18 @@ class ViewSession extends ViewRecord
 {
     protected static string $resource = SessionResource::class;
 
+    protected string $view = 'filament.resources.sessions.view-session';
+
     protected Width|string|null $maxContentWidth = Width::Full;
 
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('shotBoard')
+                ->label('Schotenbord (roos)')
+                ->icon('heroicon-m-viewfinder-circle')
+                ->color('primary')
+                ->url(fn (): string => SessionResource::getUrl('shots', ['record' => $this->record])),
             EditAction::make()
                 ->label('Bewerken'),
             Action::make('regenerateAi')
@@ -49,6 +55,26 @@ class ViewSession extends ViewRecord
                         ->send();
                 }),
         ];
+    }
+
+    /**
+     * Markeer de AI-reflectie van deze sessie als gelezen (design: "Markeer").
+     */
+    public function acknowledgeReflection(): void
+    {
+        $reflection = $this->record->aiReflection;
+
+        if ($reflection === null || $reflection->acknowledged_at !== null) {
+            return;
+        }
+
+        $reflection->update(['acknowledged_at' => now()]);
+        $this->record->load('aiReflection');
+
+        Notification::make()
+            ->title('Reflectie gemarkeerd als gelezen')
+            ->success()
+            ->send();
     }
 
     protected function features(): AimtrackFeatureToggle

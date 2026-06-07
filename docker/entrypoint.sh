@@ -19,6 +19,11 @@ fi
 
 php artisan storage:link --ansi >/dev/null 2>&1 || true
 
+# FilamentCopilot publiceert zijn CSS/JS naar public/vendor/filament-copilot via
+# vendor:publish (niet via filament:assets). Zonder deze stap rendert de
+# AI-chat-widget niet. In alle omgevingen draaien (idempotent met --force).
+php artisan vendor:publish --tag=filament-copilot-assets --force --ansi >/dev/null 2>&1 || true
+
 if [ "${APP_ENV:-local}" = "local" ]; then
     php artisan filament:assets --ansi >/dev/null 2>&1 || true
 fi

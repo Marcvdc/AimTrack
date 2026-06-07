@@ -1,0 +1,166 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+/*
+ * Filament importeert Tailwind met source(none): alléén deze @source-paden
+ * worden gescand. Dek daarom ALLE Blade-views (incl. resources/views/livewire,
+ * waar o.a. het interactieve schotenbord staat) + app/**, anders worden
+ * utility-classes als aspect-square / lg:flex-row / inset-0 weggepurged en
+ * klapt de roos-canvas in.
+ */
+@source '../../../../app/**/*.php';
+@source '../../../../resources/views/**/*.blade.php';
+
+/*
+ * AimTrack · Signal Mint dark — Filament admin theme
+ *
+ * Bron van waarheid voor de tokens: resources/css/aimtrack-tokens.css en
+ * .ai/design-handoff/project/design-tokens.jsx (issue #82).
+ *
+ * Strategie: Filament's chrome (sidebar/topbar/tabellen/badges/wizard/velden)
+ * gebruikt Tailwind's grijs-schaal (dark:bg-gray-900, border-gray-700, ...).
+ * Door --color-gray-* te hermappen naar de Signal-Mint darks rendert de hele
+ * panel-chrome in het juiste palet i.p.v. Filament's neutrale default —
+ * dat lost root cause R1 op zonder per-component te vechten met specificity.
+ */
+@theme {
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono-font-family: 'JetBrains Mono';
+
+    /* Grijs-schaal → Signal Mint (50 = lichtste tekst, 950 = diepste bg) */
+    --color-gray-50: #e9f0ff;
+    --color-gray-100: #dbe5fb;
+    --color-gray-200: #c2d0ee;
+    --color-gray-300: #a7b6dc;
+    --color-gray-400: #94a3c5; /* --muted */
+    --color-gray-500: #6f7ea6;
+    --color-gray-600: #4a5780;
+    --color-gray-700: #1c2543; /* --line */
+    --color-gray-800: #131c34; /* --panel-2 */
+    --color-gray-900: #0c1428; /* --panel */
+    --color-gray-950: #040711; /* --bg */
+}
+
+/*
+ * Tactical-shell accenten die niet uit de grijs-hermapping volgen.
+ * Bewust beperkt en op stabiele Filament v5 .fi-* hooks.
+ */
+@layer components {
+    /* Nav-groeplabels: mono, uppercase, wijd gespatieerd (LOG / INZICHT / BEHEER) */
+    .fi-sidebar-group-label {
+        font-family: var(--at-font-mono);
+        font-size: 0.625rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--at-muted);
+    }
+
+    /* Actief nav-item: 2px accent-rand links + zwaardere tekst */
+    .fi-sidebar-item.fi-active > .fi-sidebar-item-button,
+    .fi-sidebar-item-active > .fi-sidebar-item-button {
+        border-left: 2px solid var(--at-accent);
+        background-color: var(--at-panel-2);
+        font-weight: 600;
+    }
+
+    /* Nav-badges in mono */
+    .fi-sidebar-item-badge,
+    .fi-badge {
+        font-family: var(--at-font-mono);
+        letter-spacing: 0.05em;
+    }
+
+    /* Topbar + sidebar: scherpe 1px hairlines in --line */
+    .fi-topbar,
+    .fi-sidebar {
+        border-color: var(--at-line);
+    }
+
+    /* Mono op numerieke data: KPI-waardes, tabel-cijferkolommen */
+    .fi-ta-text-item.fi-ta-text-item-numeric,
+    .fi-in-text-item-numeric {
+        font-family: var(--at-font-mono);
+        letter-spacing: -0.01em;
+    }
+}
+
+/*
+ * Filament dark gebruikt witte alpha-kleuren (white/5, white/10, white/20)
+ * voor randen, scheidingen, rings en hover-tints. Op het Signal-Mint donker
+ * geven die een "gewassen" lichte look i.p.v. de scherpe --line/--panel-2.
+ * --color-white kan niet globaal hergemapt worden (tekst gebruikt text-white),
+ * dus we herkleuren de zichtbare oppervlakken gericht. Laatste in de
+ * components-layer → wint op gelijke specificiteit van de vendor-regels.
+ */
+@layer components {
+    /* Omkaderde oppervlakken: vervang de witte ring + schaduw door --line */
+    .fi-section:not(.fi-section-not-contained),
+    .fi-ta-ctn,
+    .fi-dropdown-panel,
+    .fi-modal-window,
+    .fi-wi-stats-overview-stat {
+        --tw-ring-color: var(--at-line);
+        box-shadow: none;
+    }
+
+    /* Section/widget header- en footer-scheidingen + header-tint */
+    .fi-section-header,
+    .fi-section-footer,
+    .fi-section-content-ctn,
+    .fi-ta-header,
+    .fi-ta-footer {
+        border-color: var(--at-line) !important;
+    }
+
+    .fi-section.fi-collapsible > .fi-section-header:hover,
+    .fi-ta-header-toolbar {
+        background-color: transparent;
+    }
+
+    /* Tabel: rij-scheidingen + header-cel-randen → --line; hover → --panel-2 */
+    .fi-ta-table {
+        border-color: var(--at-line) !important;
+    }
+
+    .fi-ta-table > tbody > tr,
+    .fi-ta-table > thead > tr > th,
+    .fi-ta-header-cell {
+        border-color: var(--at-line) !important;
+    }
+
+    .fi-ta-row:hover,
+    .fi-ta-row.fi-selected {
+        background-color: var(--at-panel-2) !important;
+    }
+
+    /* Tabel-kolomkoppen in mono-uppercase (design: dense tactical grid) */
+    .fi-ta-header-cell-label {
+        font-family: var(--at-font-mono);
+        font-size: 0.625rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--at-muted);
+        font-weight: 500;
+    }
+
+    /* Inputs / search: donkere achtergrond + --line rand i.p.v. witte ring */
+    .fi-input-wrp {
+        --tw-ring-color: var(--at-line);
+        background-color: var(--at-bg);
+    }
+
+    .fi-input-wrp:focus-within {
+        --tw-ring-color: var(--at-accent);
+    }
+
+    /* Dropdown-items hover-tint */
+    .fi-dropdown-list-item:hover {
+        background-color: var(--at-panel-2);
+    }
+
+    /* Paginatie-knoppen + tab-pills randen */
+    .fi-pagination .fi-btn,
+    .fi-tabs {
+        --tw-ring-color: var(--at-line);
+        border-color: var(--at-line);
+    }
+}

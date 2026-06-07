@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+
+/*
+ * Algemene front-end entry (welcome/landing). De Filament-admin gebruikt een
+ * eigen theme: resources/css/filament/admin/theme.css (via ->viteTheme()).
+ */

@@ -2,10 +2,9 @@
 
 namespace App\Filament\Resources\SessionResource\Pages;
 
-use Filament\Actions\DeleteAction;
-use Filament\Actions\Action;
 use App\Filament\Resources\SessionResource;
-use Filament\Actions;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditSession extends EditRecord

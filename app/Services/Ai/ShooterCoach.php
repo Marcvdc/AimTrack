@@ -6,10 +6,9 @@ use App\Models\AiReflection;
 use App\Models\AiWeaponInsight;
 use App\Models\Session;
 use App\Models\SessionWeapon;
-use App\Models\User;
 use App\Models\Weapon;
 use App\Notifications\AiCoachFailureNotification;
-use Carbon\Carbon;
+use App\Services\SessionStatsService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -55,14 +54,6 @@ class ShooterCoach
         $parsed = $this->parseWeaponPayload($rawContent);
 
         return $weapon->aiWeaponInsight()->updateOrCreate([], $parsed);
-    }
-
-    public function answerCoachQuestion(User $user, string $question, ?int $weaponId = null, ?Carbon $from = null, ?Carbon $to = null): string
-    {
-        $context = $this->buildCoachContext($user, $weaponId, $from, $to);
-        $prompt = $this->buildCoachPrompt($question, $context);
-
-        return $this->callModel($prompt, expectsJson: false);
     }
 
     private function callModel(string $prompt, bool $expectsJson = true): string
@@ -136,7 +127,7 @@ class ShooterCoach
                 $entry->distance_m ?? 'n.v.t.',
                 $entry->rounds_fired ?? '0',
                 $entry->ammo_type ?? 'onbekend',
-                $entry->deviation ?? 'n.v.t.',
+                $entry->deviation?->value ?? 'n.v.t.',
                 Str::limit($entry->group_quality_text ?? '-', 120)
             ))
             ->filter()
@@ -145,8 +136,11 @@ class ShooterCoach
 
         $manualReflection = $session->manual_reflection ? "Handmatige reflectie gebruiker: {$session->manual_reflection}" : 'Geen handmatige reflectie ingevoerd.';
 
+        $shotStatistics = $this->buildShotStatistics($session);
+
         return trim(<<<PROMPT
 Je bent een AI-coach voor sportschutters. Geef veilige, constructieve adviezen, geen illegale of gevaarlijke tips.
+Baseer je analyse op de concrete schotstatistiek hieronder: benoem reeksen, dips en cijfers expliciet (bv. "serie 4 zakt naar 87").
 
 Context sessie:
 - Datum: {$session->date?->format('Y-m-d')}
@@ -154,10 +148,60 @@ Context sessie:
 - Ruwe notities: {$session->notes_raw}
 - Wapenregels:
 {$weaponLines}
+{$shotStatistics}
 - {$manualReflection}
 
 Gevraagde output: JSON met velden summary (string), positives (array van strings), improvements (array van strings), next_focus (string).
 PROMPT);
+    }
+
+    /**
+     * Numerieke schotstatistiek voor de reflectie-prompt. Zonder deze cijfers
+     * kan de AI alleen op de ruwe notities leunen en de data-gegronde inzichten
+     * uit het ontwerp (serie-scores, concentratiedip, groepering) niet maken.
+     */
+    private function buildShotStatistics(Session $session): string
+    {
+        $stats = new SessionStatsService($session);
+
+        if ($stats->totalShots() === 0) {
+            return '- Schotstatistiek: geen individuele schoten geregistreerd.';
+        }
+
+        $series = $stats->seriesScores();
+        $seriesText = $series === []
+            ? 'n.v.t.'
+            : implode(' · ', array_map(static fn (int $sum): string => (string) $sum, $series));
+
+        $dip = $stats->dipRange();
+        $dipText = $dip === null
+            ? 'geen duidelijke concentratiedip'
+            : sprintf('zwakste reeks rond schot %d–%d', $dip[0] + 1, $dip[1] + 1);
+
+        $group = $stats->groupMm();
+        $cadans = $stats->avgCadansSec();
+        $best = $stats->bestShot();
+
+        return trim(sprintf(
+            "- Schotstatistiek (uit %d geregistreerde schoten):\n".
+            "  · Totaalscore: %d\n".
+            "  · Tienen: %d · Negens: %d\n".
+            "  · Beste schot: %s\n".
+            "  · Groepering: %s\n".
+            "  · Gem. cadans: %s\n".
+            "  · Serie-scores (per %d): %s\n".
+            '  · Concentratie: %s',
+            $stats->totalShots(),
+            $stats->totalScore(),
+            $stats->tienen(),
+            $stats->negens(),
+            $best !== null ? (string) $best : 'n.v.t.',
+            $group !== null ? number_format($group, 1).' mm' : 'n.v.t.',
+            $cadans !== null ? number_format($cadans, 0).'s' : 'n.v.t.',
+            $stats->shotsPerSerie(),
+            $seriesText,
+            $dipText,
+        ));
     }
 
     private function buildWeaponPrompt(Weapon $weapon): string
@@ -169,7 +213,7 @@ PROMPT);
                 $entry->session?->date?->format('Y-m-d') ?? 'onbekende datum',
                 $entry->distance_m ?? 'n.v.t.',
                 $entry->rounds_fired ?? '0',
-                $entry->deviation ?? 'n.v.t.',
+                $entry->deviation?->value ?? 'n.v.t.',
                 Str::limit($entry->group_quality_text ?? '-', 120)
             ))
             ->filter()
@@ -191,64 +235,6 @@ Recente sessies (max 5):
 
 Gevraagde output: JSON met velden summary (string), patterns (array van strings), suggestions (array van strings).
 PROMPT);
-    }
-
-    private function buildCoachPrompt(string $question, string $context): string
-    {
-        return trim(<<<PROMPT
-Je bent een persoonlijke AI-schietcoach. Antwoord beknopt in het Nederlands, focus op veiligheid en legaal handelen. Je bent geen vervanging voor erkende instructeurs of officiële instanties en weigert onveilige of illegale adviezen.
-
-Gebruikerscontext:
-{$context}
-
-Vraag van gebruiker: {$question}
-
-Antwoord in maximaal 150 woorden en verwijs naar naleving van baanregels en wetgeving waar relevant.
-PROMPT);
-    }
-
-    private function buildCoachContext(User $user, ?int $weaponId, ?Carbon $from, ?Carbon $to): string
-    {
-        $sessions = Session::query()
-            ->with(['sessionWeapons.weapon'])
-            ->where('user_id', $user->id)
-            ->when($weaponId, fn ($query) => $query->whereHas(
-                'sessionWeapons',
-                fn ($subQuery) => $subQuery->where('weapon_id', $weaponId)
-            ))
-            ->when($from, fn ($query) => $query->whereDate('date', '>=', $from))
-            ->when($to, fn ($query) => $query->whereDate('date', '<=', $to))
-            ->latest('date')
-            ->take(10)
-            ->get();
-
-        if ($sessions->isEmpty()) {
-            return 'Geen sessies gevonden voor deze gebruiker binnen de geselecteerde filters.';
-        }
-
-        $sessionLines = $sessions->map(function (Session $session) {
-            $weaponDetails = $session->sessionWeapons
-                ->map(fn (SessionWeapon $entry) => sprintf(
-                    '%s | %sm | %s schoten | afwijking: %s | notitie: %s',
-                    $entry->weapon?->name ?? 'Onbekend wapen',
-                    $entry->distance_m ?? '-',
-                    $entry->rounds_fired ?? '-',
-                    $entry->deviation?->value ?? '-',
-                    Str::limit($entry->group_quality_text ?? '-', 80)
-                ))
-                ->filter()
-                ->implode("\n");
-
-            return sprintf(
-                "Sessie %s (%s)\n%s\n%s",
-                $session->date->format('d-m-Y'),
-                $session->location ?? 'Onbekende locatie',
-                $weaponDetails,
-                $session->notes ? "Notities: " . Str::limit($session->notes, 200) : ''
-            );
-        })->implode("\n\n");
-
-        return "Recente sessies:\n{$sessionLines}";
     }
 
     private function parseReflectionPayload(string $raw): array
