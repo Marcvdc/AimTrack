@@ -28,6 +28,7 @@ RUN apt-get update \
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 COPY docker/php/uploads.ini $PHP_INI_DIR/conf.d/uploads.ini
+COPY docker/php/zz-www-override.conf $PHP_INI_DIR/../php-fpm.d/zz-www-override.conf
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
@@ -48,6 +49,7 @@ RUN mkdir -p /opt/artifacts/public-build \
        fi
 
 FROM base AS dev
+RUN groupadd -g 1000 appuser && useradd -u 1000 -g appuser -s /bin/bash -d /var/www/html appuser
 COPY composer.json composer.lock* ./
 RUN composer install --prefer-dist --no-progress --no-scripts
 COPY . .

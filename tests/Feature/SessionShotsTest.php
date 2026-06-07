@@ -3,6 +3,9 @@
 use App\Models\Session;
 use App\Models\SessionShot;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 test('renders session shot board with initial data', function () {
@@ -170,4 +173,84 @@ test('cannot delete shots when not editable', function () {
 
     // Shot should still exist
     $this->assertDatabaseHas('session_shots', ['id' => $shot->id]);
+});
+
+test('can upload photo for turn', function () {
+    Storage::fake('private');
+    Queue::fake();
+
+    $user = User::factory()->create();
+    $session = Session::factory()->create(['user_id' => $user->id]);
+
+    $component = Livewire::actingAs($user)
+        ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session]);
+
+    // Create fake image file
+    $file = UploadedFile::fake()->image('target.jpg', 800, 800);
+
+    // Upload the photo
+    $component
+        ->set('photo', $file)
+        ->call('uploadPhoto')
+        ->assertNotified('Foto wordt verwerkt');
+
+    // Photo should be stored in private disk
+    Storage::disk('private')->assertExists('session-photos/'.$file->hashName());
+
+    // Job should be dispatched
+    Queue::assertPushed(\App\Jobs\AnalyzeTurnPhotoJob::class);
+});
+
+test('prevents photo upload when all turns is selected', function () {
+    $user = User::factory()->create();
+    $session = Session::factory()->create(['user_id' => $user->id]);
+
+    $component = Livewire::actingAs($user)
+        ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session]);
+
+    // Set to all turns
+    $component->set('currentTurnIndex', -1);
+
+    // Try to upload photo
+    $file = UploadedFile::fake()->image('target.jpg');
+    $component
+        ->set('photo', $file)
+        ->call('uploadPhoto')
+        ->assertNotified('Selecteer eerst een specifieke beurt');
+});
+
+test('validates photo upload requirements', function () {
+    $user = User::factory()->create();
+    $session = Session::factory()->create(['user_id' => $user->id]);
+
+    $component = Livewire::actingAs($user)
+        ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session]);
+
+    // Try to upload without selecting a photo
+    $component
+        ->call('uploadPhoto')
+        ->assertNotified('Geen foto geselecteerd');
+
+    // Try to upload non-image file
+    $file = UploadedFile::fake()->create('document.pdf', 100);
+    $component
+        ->set('photo', $file)
+        ->call('uploadPhoto')
+        ->assertHasErrors(['photo' => 'image']);
+});
+
+test('shows photo upload button only for specific turn', function () {
+    $user = User::factory()->create();
+    $session = Session::factory()->create(['user_id' => $user->id]);
+
+    $component = Livewire::actingAs($user)
+        ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session]);
+
+    // On specific turn, button should be visible
+    $component->assertSet('currentTurnIndex', 0);
+    $component->assertSee('Foto uploaden');
+
+    // On all turns, button should not be visible
+    $component->set('currentTurnIndex', -1);
+    $component->assertDontSee('Foto uploaden');
 });

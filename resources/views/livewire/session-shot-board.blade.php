@@ -11,7 +11,8 @@
             allTurnsValue: @js(\App\Livewire\SessionShotBoard::ALL_TURNS_VALUE),
         })
     }">
-    @php
+    <div>
+        @php
         $legendEntries = collect($turnLegend ?? [])->map(fn ($entry) => [
             'label' => $entry['label'] ?? 'Beurt',
             'color' => $entry['color'] ?? '#3b82f6',
@@ -55,18 +56,30 @@
                 <div class="flex items-center justify-between">
                     <span class="text-sm font-semibold text-gray-700 dark:text-gray-100">Beurt selectie</span>
                     @if ($canEdit)
-
-
                      <x-slot name="afterHeader">
-                         <x-filament::button
-                            type="button"
-                            size="sm"
-                            color="primary"
-                            icon="heroicon-m-plus"
-                            wire:click="addTurn"
-                        >
-                            Nieuwe beurt
-                        </x-filament::button>
+                         <div class="flex space-x-2">
+                            <x-filament::button
+                                type="button"
+                                size="sm"
+                                color="primary"
+                                icon="heroicon-m-plus"
+                                wire:click="addTurn"
+                            >
+                                Nieuwe beurt
+                            </x-filament::button>
+                            
+                            @if ($currentTurnIndex !== \App\Livewire\SessionShotBoard::ALL_TURNS_VALUE)
+                                <x-filament::button
+                                    type="button"
+                                    size="sm"
+                                    color="success"
+                                    icon="heroicon-m-photo"
+                                    wire:click="openPhotoUploadModal"
+                                >
+                                    Foto uploaden
+                                </x-filament::button>
+                            @endif
+                         </div>
                     </x-slot>
                        
                     @endif
@@ -80,6 +93,29 @@
                         <option value="{{ $turn }}">Beurt {{ $turn + 1 }}</option>
                     @endforeach
                 </select>
+
+                @if ($currentTurnIndex !== \App\Livewire\SessionShotBoard::ALL_TURNS_VALUE && ($turnReview[$currentTurnIndex]['needs_review'] ?? false))
+                    <div class="space-y-1">
+                        <x-filament::badge color="warning" icon="heroicon-m-exclamation-triangle">
+                            Controleren — foto-analyse onzeker
+                        </x-filament::badge>
+                        @if (filled($turnReview[$currentTurnIndex]['review_reason'] ?? null))
+                            <p class="text-sm text-warning-700 dark:text-warning-400">
+                                {{ $turnReview[$currentTurnIndex]['review_reason'] }}
+                            </p>
+                        @endif
+                        @if ($canEdit)
+                            <x-filament::button
+                                size="sm"
+                                color="success"
+                                icon="heroicon-m-check"
+                                wire:click="confirmTurnReview({{ $currentTurnIndex }})"
+                            >
+                                Bevestigd
+                            </x-filament::button>
+                        @endif
+                    </div>
+                @endif
             </div>
         </x-filament::section>
     </div>
@@ -105,7 +141,11 @@
                     x-ref="board"
                     wire:ignore
                 >
-                    <canvas x-ref="canvas" class="absolute inset-0 w-full h-full" style="cursor: crosshair;"
+                    <canvas x-ref="canvas" class="absolute inset-0 w-full h-full" style="cursor: crosshair; touch-action: none;"
+                    @pointerdown="onPointerDown($event)"
+                    @pointermove="onPointerMove($event)"
+                    @pointerup="onPointerUp($event)"
+                    @pointercancel="drag = null"
                     @click="handleCanvasClick($event)"
                     @contextmenu.prevent="handleCanvasRightClick($event)"
                 ></canvas>
@@ -137,8 +177,221 @@
             </div>
         </div>
     </div>
-</div>
 
+    <!-- Photo Upload Modal (alleen bij een specifieke beurt) -->
+    @if ($currentTurnIndex !== \App\Livewire\SessionShotBoard::ALL_TURNS_VALUE)
+    <x-filament::modal
+        id="photo-upload-modal"
+        width="2xl"
+    >
+        <x-slot name="heading">
+            Foto uploaden
+        </x-slot>
+
+        <div
+            x-data="{
+                showPreview: false,
+                previewUrl: null,
+                isDragging: false,
+                selectedFile: null,
+                uploading: false,
+
+                init() {
+                    this.$watch('$wire.photo', (value) => {
+                        if (!value) {
+                            this.resetPreview();
+                        }
+                    });
+                },
+
+                handleFileSelect(event) {
+                    const file = event.target.files[0];
+                    if (file && file.type.startsWith('image/')) {
+                        this.selectedFile = file;
+                        this.showPreviewImage(file);
+                        // Trigger Livewire file upload immediately to sync
+                        this.$wire.upload('photo', file);
+                    }
+                },
+
+                handleDrop(event) {
+                    this.isDragging = false;
+                    const files = event.dataTransfer.files;
+                    if (files.length > 0) {
+                        const file = files[0];
+                        if (file.type.startsWith('image/')) {
+                            this.$refs.photoInput.files = files;
+                            this.selectedFile = file;
+                            this.showPreviewImage(file);
+                            // Trigger Livewire file upload immediately to sync
+                            this.$wire.upload('photo', file);
+                        }
+                    }
+                },
+
+                showPreviewImage(file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.previewUrl = e.target.result;
+                        this.showPreview = true;
+                    };
+                    reader.readAsDataURL(file);
+                },
+
+                async handleUpload() {
+                    if (!this.selectedFile) {
+                        return;
+                    }
+
+                    this.uploading = true;
+
+                    // File is already uploaded to Livewire, just call the processing method
+                    this.$wire.uploadPhoto().then(() => {
+                        // Reset state after upload completes
+                        this.uploading = false;
+                        this.resetPreview();
+                    }).catch((error) => {
+                        console.error('Upload processing failed:', error);
+                        this.uploading = false;
+                    });
+                },
+
+                resetPreview() {
+                    this.showPreview = false;
+                    this.previewUrl = null;
+                    this.selectedFile = null;
+                    this.uploading = false;
+                    if (this.$refs.photoInput) {
+                        this.$refs.photoInput.value = '';
+                    }
+                }
+            }"
+            @open-modal.window="if ($event.detail.id === 'photo-upload-modal') resetPreview()"
+            @close-modal.window="if ($event.detail.id === 'photo-upload-modal') resetPreview()"
+            @photo-upload-complete.window="uploading = false; resetPreview()"
+            class="space-y-4"
+        >
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                Foto van schotbord
+            </label>
+
+            <!-- Preview Area (shows when file is selected) -->
+            <div x-show="showPreview" x-cloak class="mb-4">
+                <div class="relative border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                    <img :src="previewUrl"
+                         alt="Preview"
+                         class="w-full h-64 object-contain bg-gray-100 dark:bg-gray-800">
+                    <button
+                        type="button"
+                        @click="showPreview = false; previewUrl = null; selectedFile = null; $refs.photoInput.value = ''; $wire.set('photo', null)"
+                        class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dropzone Area (shows when no file is selected) -->
+            <div x-show="!showPreview" x-cloak>
+                <div
+                    @dragover.prevent="isDragging = true"
+                    @dragleave.prevent="isDragging = false"
+                    @drop.prevent="handleDrop($event)"
+                    @click="$refs.photoInput.click()"
+                    :class="isDragging ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800'"
+                    class="border-2 border-dashed rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
+
+                    <div class="space-y-3">
+                        <!-- Upload Icon -->
+                        <div class="mx-auto w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                            <svg class="h-8 w-8 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                        </div>
+
+                        <div class="text-sm text-gray-600 dark:text-gray-300">
+                            <span class="font-semibold text-blue-600 dark:text-blue-400">Klik om een foto te uploaden</span>
+                            <br>
+                            <span>of sleep een foto hierheen</span>
+                        </div>
+
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            PNG, JPG, JPEG tot 10MB
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden file input -->
+            <input
+                type="file"
+                x-ref="photoInput"
+                @change="handleFileSelect($event)"
+                accept="image/jpeg,image/jpg,image/png"
+                class="hidden">
+
+            @error('photo')
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+            @enderror
+
+            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                Upload een foto van het schotbord voor Beurt {{ $this->currentTurnIndex + 1 }}.
+                Maximaal 10MB. Ondersteunde formaten: JPEG, PNG.
+            </p>
+
+            <div class="mt-4">
+                <label for="expectedShotCount" class="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Aantal schoten deze beurt <span class="text-gray-400">(optioneel)</span>
+                </label>
+                <input
+                    id="expectedShotCount"
+                    type="number"
+                    min="1"
+                    max="50"
+                    inputmode="numeric"
+                    wire:model="expectedShotCount"
+                    placeholder="bijv. 5"
+                    class="mt-1 w-32 rounded-lg border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Vul het aantal geloste schoten in voor betrouwbaardere detectie. Leeg laten mag.
+                </p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">
+                <x-filament::button
+                    type="button"
+                    color="gray"
+                    x-on:click="$dispatch('close-modal', { id: 'photo-upload-modal' }); resetPreview()"
+                >
+                    Annuleren
+                </x-filament::button>
+
+                <x-filament::button
+                    type="button"
+                    x-on:click="handleUpload()"
+                    x-bind:disabled="!selectedFile || uploading"
+                    color="primary"
+                >
+                    <template x-if="uploading">
+                        <span class="flex items-center">
+                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Bezig met uploaden...
+                        </span>
+                    </template>
+                    <template x-if="!uploading">
+                        <span>Uploaden</span>
+                    </template>
+                </x-filament::button>
+            </div>
+        </div>
+    </x-filament::modal>
+    @endif
+</div>
 @pushOnce('scripts')
 <script>
     (() => {
@@ -189,6 +442,8 @@
                     y: 0,
                     marker: null,
                 },
+                drag: null,
+                suppressClick: false,
                 init() {
                     console.log('[SessionShotBoard] targetBoard init', {
                         markersCount: this.renderMarkers?.length ?? 0,
@@ -414,6 +669,10 @@
                     }
                 },
                 handleCanvasClick(event) {
+                    if (this.suppressClick) {
+                        this.suppressClick = false;
+                        return;
+                    }
                     // Check if click is on a marker
                     const clickedMarker = this.getMarkerAtPosition(event);
                     
@@ -480,6 +739,71 @@
                     recordShot(xNormalized, yNormalized);
 
                     console.log('[SessionShotBoard] recordShot dispatched');
+                },
+                boardCoords(event) {
+                    const rect = this.$refs.board.getBoundingClientRect();
+                    return {
+                        x: Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1),
+                        y: Math.min(Math.max((event.clientY - rect.top) / rect.height, 0), 1),
+                    };
+                },
+                onPointerDown(event) {
+                    this.suppressClick = false;
+                    if (! this.canEdit) {
+                        this.drag = null;
+                        return;
+                    }
+                    const marker = this.getMarkerAtPosition(event);
+                    if (! marker) {
+                        this.drag = null;
+                        return;
+                    }
+                    this.drag = {
+                        id: marker.id,
+                        moved: false,
+                        startX: event.clientX,
+                        startY: event.clientY,
+                    };
+                    if (this.$refs.canvas) {
+                        this.$refs.canvas.setPointerCapture(event.pointerId);
+                    }
+                },
+                onPointerMove(event) {
+                    if (! this.drag) {
+                        return;
+                    }
+                    if (! this.drag.moved) {
+                        const dx = event.clientX - this.drag.startX;
+                        const dy = event.clientY - this.drag.startY;
+                        if (Math.sqrt(dx * dx + dy * dy) < 4) {
+                            return;
+                        }
+                        this.drag.moved = true;
+                    }
+                    const { x, y } = this.boardCoords(event);
+                    const m = this.currentMarkers.find((mk) => mk.id === this.drag.id);
+                    if (m) {
+                        m.x = x;
+                        m.y = y;
+                        this.scheduleDraw();
+                    }
+                },
+                onPointerUp(event) {
+                    if (! this.drag) {
+                        return;
+                    }
+                    const drag = this.drag;
+                    this.drag = null;
+                    if (! drag.moved) {
+                        const marker = this.getMarkerAtPosition(event);
+                        if (marker) {
+                            this.startLongPress(marker);
+                        }
+                        return;
+                    }
+                    this.suppressClick = true;
+                    const { x, y } = this.boardCoords(event);
+                    this.$wire.moveShot(drag.id, x, y);
                 },
                 normalizeMarker(marker, index) {
                     if (! marker) {

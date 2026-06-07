@@ -18,6 +18,7 @@ class SessionShot extends Model
         'distance_from_center',
         'ring',
         'score',
+        'source',
         'metadata',
     ];
 

@@ -115,6 +115,17 @@ class SessionResource extends Resource implements CopilotResourceContract
                 ->label('Datum')
                 ->native(false)
                 ->required(),
+            Select::make('target_type')
+                ->label('Discipline')
+                ->options([
+                    'kkp_25m' => 'KKP 25m (klein kaliber pistool)',
+                    'gkp_25m' => 'GKP 25m (groot kaliber pistool)',
+                    'kkg_50m' => 'KKG 50m (klein kaliber geweer)',
+                    'kkg_100m' => 'KKG 100m (klein kaliber geweer)',
+                    'gkg_100m' => 'GKG 100m (groot kaliber geweer)',
+                ])
+                ->helperText('Vereist om foto-analyse te kunnen uitvoeren.')
+                ->native(false),
             Select::make('range_location_id')
                 ->label('Baan/vereniging')
                 ->options(fn () => Location::query()

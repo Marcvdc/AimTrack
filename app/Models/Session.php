@@ -18,10 +18,14 @@ class Session extends Model
         'range_location_id',
         'notes_raw',
         'manual_reflection',
+        'turn_count',
+        'target_type',
     ];
 
     protected $casts = [
         'date' => 'date',
+        'turn_count' => 'integer',
+        'target_type' => \App\Enums\TargetType::class,
     ];
 
     public function user()
@@ -37,6 +41,11 @@ class Session extends Model
     public function shots()
     {
         return $this->hasMany(SessionShot::class);
+    }
+
+    public function turnAnalyses()
+    {
+        return $this->hasMany(SessionTurnAnalysis::class);
     }
 
     public function attachments()

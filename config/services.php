@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'image_processor' => [
+        'url' => env('IMAGE_PROCESSOR_URL', 'http://localhost:8000'),
+    ],
+
 ];

@@ -37,6 +37,27 @@ class SessionShotService
         });
     }
 
+    public function moveShot(SessionShot $shot, float $xNormalized, float $yNormalized): SessionShot
+    {
+        $x = $this->clamp($xNormalized);
+        $y = $this->clamp($yNormalized);
+
+        return DB::transaction(function () use ($shot, $x, $y) {
+            $scoreData = $this->scoringService->scoreShot($x, $y);
+
+            $shot->update([
+                'x_normalized' => $x,
+                'y_normalized' => $y,
+                'distance_from_center' => $scoreData['distance_from_center'],
+                'ring' => $scoreData['ring'],
+                'score' => $scoreData['score'],
+                'source' => 'photo_corrected',
+            ]);
+
+            return $shot;
+        });
+    }
+
     public function deleteShot(SessionShot $shot): void
     {
         $shot->delete();
