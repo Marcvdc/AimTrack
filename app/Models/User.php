@@ -16,11 +16,14 @@ class User extends Authenticatable
         'email',
         'password',
         'is_admin',
+        'anthropic_api_key',
+        'ai_key_verified_at',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'anthropic_api_key',
     ];
 
     protected $casts = [
@@ -28,6 +31,8 @@ class User extends Authenticatable
         'demo_data_seeded_at' => 'datetime',
         'password' => 'hashed',
         'is_admin' => 'boolean',
+        'anthropic_api_key' => 'encrypted',
+        'ai_key_verified_at' => 'datetime',
     ];
 
     public function isAdmin(): bool

@@ -6,7 +6,7 @@ use App\Models\User;
 use Laravel\Pennant\Feature;
 
 beforeEach(function () {
-    $this->user = User::factory()->create();
+    $this->user = User::factory()->withAnthropicKey()->create();
     $this->actingAs($this->user);
 });
 
