@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AdminLogoutController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\LandingPageController;
 use App\Services\Export\SessionExportService;
@@ -9,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', LandingPageController::class)->name('welcome');
+
+Route::get('/contact', ContactController::class)->name('contact');
 
 Route::redirect('/login', '/admin/login')->name('login');
 

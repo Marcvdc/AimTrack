@@ -33,9 +33,18 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
+FROM base AS vendor
+COPY composer.json composer.lock* ./
+RUN composer install --no-dev --prefer-dist --no-progress --optimize-autoloader --no-scripts
+
 FROM node:20-bookworm AS frontend
 WORKDIR /app
 COPY . .
+# De Filament theme (resources/css/filament/admin/theme.css) importeert CSS uit
+# vendor/filament/...; bij een verse CI-checkout bestaat vendor/ nog niet, dus
+# kopieer 'm uit de vendor-stage vóór de vite/Tailwind-build. De vendor-stage
+# staat daarom bewust vóór deze stage (BuildKit vereist eerdere definitie).
+COPY --from=vendor /var/www/html/vendor ./vendor
 RUN mkdir -p /opt/artifacts/public-build \
     && if [ -f package.json ]; then \
          npm ci --no-progress --fund=false --audit=false; \
@@ -51,10 +60,6 @@ FROM base AS dev
 COPY composer.json composer.lock* ./
 RUN composer install --prefer-dist --no-progress --no-scripts
 COPY . .
-
-FROM base AS vendor
-COPY composer.json composer.lock* ./
-RUN composer install --no-dev --prefer-dist --no-progress --optimize-autoloader --no-scripts
 
 FROM base AS production
 ENV APP_ENV=production \

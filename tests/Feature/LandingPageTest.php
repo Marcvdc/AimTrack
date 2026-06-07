@@ -147,6 +147,24 @@ test('landing page renders a footer with the MIT meta line', function (): void {
         ->assertSee('MIT · open-source · NL', escape: false);
 });
 
+test('landing page footer links Docs, Changelog and Contact are live, not muted placeholders', function (): void {
+    $this->get('/')
+        ->assertOk()
+        // Docs → GitHub user-docs map; Changelog → GitHub releases; Contact → eigen route.
+        ->assertSee('https://github.com/Marcvdc/AimTrack/tree/main/docs/user', escape: false)
+        ->assertSee('https://github.com/Marcvdc/AimTrack/releases', escape: false)
+        ->assertSee(route('contact'), escape: false)
+        // De bewust-dode placeholders zijn weg.
+        ->assertDontSee('mk-footer-muted');
+});
+
+test('landing page GitHub links use the canonical Marcvdc casing', function (): void {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('github.com/Marcvdc/AimTrack', escape: false)
+        ->assertDontSee('github.com/marcvdc/AimTrack');
+});
+
 test('landing page carries no pricing section, tiers or trial language', function (): void {
     $this->get('/')
         ->assertOk()
