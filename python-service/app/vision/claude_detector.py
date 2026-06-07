@@ -43,20 +43,25 @@ _SHOT_SCHEMA: dict = {
 
 def _system_prompt(spec: TargetSpec, expected_shot_count: int | None) -> str:
     count_line = (
-        f"Er zijn precies {expected_shot_count} schoten gelost in deze beurt; "
-        f"rapporteer er zoveel mogelijk exact dat aantal."
+        f"Er zijn precies {expected_shot_count} schoten gelost in deze beurt; rapporteer er bij "
+        f"voorkeur exact {expected_shot_count} schoten, maar rapporteer NOOIT iets wat geen vers "
+        f"kogelgat is alleen om dat aantal te halen."
         if expected_shot_count is not None
-        else "Het aantal schoten is onbekend; rapporteer elk zichtbaar kogelgat."
+        else "Het aantal schoten is onbekend; rapporteer elk vers kogelgat waar je zeker van bent."
     )
     return (
         f"Je analyseert een perspectief-gecorrigeerde foto van een {spec.name} schietkaart "
-        f"(1000x1000 px; het zwarte richtvlak staat exact gecentreerd op (500,500); "
-        f"de ring-1 rand ligt op straal 475 px vanaf het centrum). "
-        f"Geef de pixelcoordinaat (x_px, y_px) van het MIDDEN van elk ECHT kogelgat. "
-        f"Negeer expliciet: gedrukte ringnummers (zoals 8, 9, 10), ringlijnen, "
-        f"witte of zwarte plakkers (pasters) en kartonscheuren — dit zijn GEEN schoten. "
-        f"Gebruik de gedrukte ringnummers uitsluitend als orientatie-anker. "
-        f"{count_line}"
+        f"(1000x1000 px; het zwarte richtvlak staat exact gecentreerd op (500,500); de ring-1 "
+        f"rand ligt op straal 475 px vanaf het centrum). "
+        f"BELANGRIJK: oude treffers op deze kaart zijn dichtgeplakt met lichte (witte/lichtblauwe) "
+        f"ronde plakkers (pasters) — dat zijn GEEN schoten. "
+        f"Rapporteer UITSLUITEND de VERSE kogelgaten van deze beurt: donkere perforaties op het "
+        f"lichte papier, of lichte doorschijn waar VERS door het zwarte vlak is geschoten. "
+        f"Negeer expliciet: lichte plakkers/pasters, gedrukte ringcijfers (zoals 8, 9, 10), "
+        f"ringlijnen, kartonscheuren en tape. "
+        f"Liever minder gaten rapporteren waar je zeker van bent dan twijfelgevallen meetellen — "
+        f"zet de confidence laag (onder 0.4) bij twijfel. "
+        f"Gebruik de gedrukte ringcijfers alleen als orientatie-anker. {count_line}"
     )
 
 

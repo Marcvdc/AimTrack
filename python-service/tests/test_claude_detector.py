@@ -8,7 +8,7 @@ import pytest
 
 from app.config import KKP_25M
 from app.vision import claude_detector
-from app.vision.claude_detector import VisionError, detect_holes
+from app.vision.claude_detector import VisionError, _system_prompt, detect_holes
 
 
 def _canonical() -> np.ndarray:
@@ -45,3 +45,12 @@ class TestDetectHoles:
         monkeypatch.setattr(claude_detector, "_call_claude", lambda b64, system, api_key=None: "not json")
         with pytest.raises(VisionError):
             detect_holes(_canonical(), KKP_25M, expected_shot_count=2)
+
+
+class TestSystemPrompt:
+    def test_targets_fresh_holes_and_ignores_pasters(self):
+        prompt = _system_prompt(KKP_25M, expected_shot_count=5).lower()
+        assert "plakker" in prompt          # tells the model pasters are not shots
+        assert "vers" in prompt             # only fresh holes
+        assert "ringcijfers" in prompt      # ignore printed numbers
+        assert "5 schoten" in prompt        # count guidance present
