@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\LocationResource\Pages\CreateLocation;
+use App\Filament\Resources\LocationResource\Pages\EditLocation;
+use App\Filament\Resources\LocationResource\Pages\ListLocations;
 use App\Models\Location;
-use BackedEnum;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -16,13 +18,12 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use UnitEnum;
 
 class LocationResource extends Resource
 {
     protected static ?string $model = Location::class;
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-map-pin';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-map-pin';
 
     protected static ?string $navigationLabel = 'Locaties';
 
@@ -30,12 +31,12 @@ class LocationResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Locaties';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Beheer';
+    protected static string|\UnitEnum|null $navigationGroup = 'BEHEER';
 
     public static function form(Schema $schema): Schema
     {
         return $schema
-            ->schema([
+            ->components([
                 Hidden::make('user_id')
                     ->default(fn () => auth()->id())
                     ->required()
@@ -89,9 +90,9 @@ class LocationResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => LocationResource\Pages\ListLocations::route('/'),
-            'create' => LocationResource\Pages\CreateLocation::route('/create'),
-            'edit' => LocationResource\Pages\EditLocation::route('/{record}/edit'),
+            'index' => ListLocations::route('/'),
+            'create' => CreateLocation::route('/create'),
+            'edit' => EditLocation::route('/{record}/edit'),
         ];
     }
 

@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\WeaponResource\Pages;
 
 use App\Filament\Resources\WeaponResource;
-use Filament\Actions;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditWeapon extends EditRecord
@@ -13,7 +13,7 @@ class EditWeapon extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make()
+            DeleteAction::make()
                 ->label('Verwijderen'),
         ];
     }

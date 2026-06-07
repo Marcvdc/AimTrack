@@ -34,6 +34,11 @@ class Session extends Model
         return $this->hasMany(SessionWeapon::class);
     }
 
+    public function shots()
+    {
+        return $this->hasMany(SessionShot::class);
+    }
+
     public function attachments()
     {
         return $this->hasMany(Attachment::class);

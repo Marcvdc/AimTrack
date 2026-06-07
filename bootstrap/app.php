@@ -4,6 +4,7 @@ use App\Providers\AppServiceProvider;
 use App\Providers\AuthServiceProvider;
 use App\Providers\BroadcastServiceProvider;
 use App\Providers\EventServiceProvider;
+use App\Providers\FeatureServiceProvider;
 use App\Providers\Filament\AdminPanelProvider;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Foundation\Application;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         EventServiceProvider::class,
         RouteServiceProvider::class,
         AdminPanelProvider::class,
+        FeatureServiceProvider::class,
     ])
     ->withRouting(
         web: __DIR__.'/../routes/web.php',

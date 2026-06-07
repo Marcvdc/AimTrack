@@ -15,11 +15,13 @@ class AiReflection extends Model
         'positives',
         'improvements',
         'next_focus',
+        'acknowledged_at',
     ];
 
     protected $casts = [
         'positives' => 'array',
         'improvements' => 'array',
+        'acknowledged_at' => 'datetime',
     ];
 
     public function session()

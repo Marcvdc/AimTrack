@@ -6,22 +6,24 @@ use App\Models\AiReflection;
 use App\Models\AiWeaponInsight;
 use App\Models\Session;
 use App\Models\SessionWeapon;
-use App\Models\User;
 use App\Models\Weapon;
-use Carbon\Carbon;
+use App\Notifications\AiCoachFailureNotification;
+use App\Services\SessionStatsService;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Throwable;
 
 class ShooterCoach
 {
     public function __construct(
-        private readonly string $driver = '',
-        private readonly string $model = '',
-        private readonly ?string $baseUrl = null,
-        private readonly ?string $apiKey = null,
+        private readonly string $model = 'claude-haiku-4-5-20251001',
+        private readonly string $baseUrl = 'https://api.anthropic.com',
+        private readonly int $maxTokens = 1024,
+        private readonly string $anthropicVersion = '2023-06-01',
     ) {}
 
     public static function make(): self
@@ -29,17 +31,17 @@ class ShooterCoach
         $config = config('ai');
 
         return new self(
-            driver: $config['driver'] ?? 'openai',
-            model: $config['model'] ?? 'gpt-4.1-mini',
-            baseUrl: $config['base_url'] ?? null,
-            apiKey: $config['api_key'] ?? env('OPENAI_API_KEY'),
+            model: $config['model'] ?? 'claude-haiku-4-5-20251001',
+            baseUrl: $config['base_url'] ?? 'https://api.anthropic.com',
+            maxTokens: (int) ($config['max_tokens'] ?? 1024),
+            anthropicVersion: $config['anthropic_version'] ?? '2023-06-01',
         );
     }
 
     public function generateSessionReflection(Session $session): AiReflection
     {
         $prompt = $this->buildSessionPrompt($session);
-        $rawContent = $this->callModel($prompt);
+        $rawContent = $this->callModel($prompt, app(AiKeyResolver::class)->forUser($session->user));
         $parsed = $this->parseReflectionPayload($rawContent);
 
         return $session->aiReflection()->updateOrCreate([], $parsed);
@@ -48,35 +50,25 @@ class ShooterCoach
     public function generateWeaponInsight(Weapon $weapon): AiWeaponInsight
     {
         $prompt = $this->buildWeaponPrompt($weapon);
-        $rawContent = $this->callModel($prompt);
+        $rawContent = $this->callModel($prompt, app(AiKeyResolver::class)->forUser($weapon->user));
         $parsed = $this->parseWeaponPayload($rawContent);
 
         return $weapon->aiWeaponInsight()->updateOrCreate([], $parsed);
     }
 
-    public function answerCoachQuestion(User $user, string $question, ?int $weaponId = null, ?Carbon $from = null, ?Carbon $to = null): string
+    private function callModel(string $prompt, ?string $apiKey): string
     {
-        $context = $this->buildCoachContext($user, $weaponId, $from, $to);
-        $prompt = $this->buildCoachPrompt($question, $context);
+        if (blank($apiKey)) {
+            Log::warning('AI: geen Claude API key voor deze gebruiker.');
 
-        return $this->callModel($prompt, expectsJson: false);
-    }
-
-    private function callModel(string $prompt, bool $expectsJson = true): string
-    {
-        if (blank($this->apiKey)) {
-            Log::error('AI: geen API key geconfigureerd.');
-
-            return 'AI-configuratie ontbreekt. Voeg een API key toe om antwoorden te genereren.';
+            return 'AI-configuratie ontbreekt. Voeg je Claude API-key toe bij AI-instellingen om antwoorden te genereren.';
         }
 
         $payload = [
             'model' => $this->model,
+            'max_tokens' => $this->maxTokens,
+            'system' => $this->systemContext(),
             'messages' => [
-                [
-                    'role' => 'system',
-                    'content' => $this->systemContext(),
-                ],
                 [
                     'role' => 'user',
                     'content' => $prompt,
@@ -84,18 +76,17 @@ class ShooterCoach
             ],
         ];
 
-        if ($expectsJson) {
-            $payload['response_format'] = ['type' => 'json_object'];
-        }
-
         try {
-            $response = Http::baseUrl($this->baseUrl ?: 'https://api.openai.com/v1')
+            $response = Http::baseUrl($this->baseUrl)
                 ->acceptJson()
-                ->withToken($this->apiKey)
+                ->withHeaders([
+                    'x-api-key' => $apiKey,
+                    'anthropic-version' => $this->anthropicVersion,
+                ])
                 ->connectTimeout(5)
                 ->timeout(20)
                 ->retry(2, 500, throw: false)
-                ->post('/chat/completions', $payload);
+                ->post('/v1/messages', $payload);
 
             if (! $response->successful()) {
                 Log::error('AI: fout bij API-call', [
@@ -103,19 +94,12 @@ class ShooterCoach
                     'body' => $response->body(),
                 ]);
 
-                if (app()->bound('sentry')) {
-                    app('sentry')->captureMessage('AI API-call mislukt', [
-                        'level' => 'error',
-                        'extra' => [
-                            'status' => $response->status(),
-                        ],
-                    ]);
-                }
+                $this->maybeAlert('API-fout', ['status' => $response->status()]);
 
                 return 'Geen AI-antwoord beschikbaar (API-fout of timeout). Probeer het later opnieuw.';
             }
 
-            $content = data_get($response->json(), 'choices.0.message.content');
+            $content = data_get($response->json(), 'content.0.text');
 
             return is_string($content)
                 ? $content
@@ -125,9 +109,7 @@ class ShooterCoach
                 'message' => $exception->getMessage(),
             ]);
 
-            if (app()->bound('sentry')) {
-                app('sentry')->captureException($exception);
-            }
+            $this->maybeAlert('Exception', ['exception' => $exception->getMessage()]);
 
             return 'Geen AI-antwoord beschikbaar (timeout of netwerkfout). Probeer het opnieuw of controleer de provider.';
         }
@@ -142,7 +124,7 @@ class ShooterCoach
                 $entry->distance_m ?? 'n.v.t.',
                 $entry->rounds_fired ?? '0',
                 $entry->ammo_type ?? 'onbekend',
-                $entry->deviation ?? 'n.v.t.',
+                $entry->deviation?->value ?? 'n.v.t.',
                 Str::limit($entry->group_quality_text ?? '-', 120)
             ))
             ->filter()
@@ -151,8 +133,11 @@ class ShooterCoach
 
         $manualReflection = $session->manual_reflection ? "Handmatige reflectie gebruiker: {$session->manual_reflection}" : 'Geen handmatige reflectie ingevoerd.';
 
+        $shotStatistics = $this->buildShotStatistics($session);
+
         return trim(<<<PROMPT
 Je bent een AI-coach voor sportschutters. Geef veilige, constructieve adviezen, geen illegale of gevaarlijke tips.
+Baseer je analyse op de concrete schotstatistiek hieronder: benoem reeksen, dips en cijfers expliciet (bv. "serie 4 zakt naar 87").
 
 Context sessie:
 - Datum: {$session->date?->format('Y-m-d')}
@@ -160,10 +145,61 @@ Context sessie:
 - Ruwe notities: {$session->notes_raw}
 - Wapenregels:
 {$weaponLines}
+{$shotStatistics}
 - {$manualReflection}
 
 Gevraagde output: JSON met velden summary (string), positives (array van strings), improvements (array van strings), next_focus (string).
+Antwoord uitsluitend met het JSON-object, zonder enige tekst eromheen.
 PROMPT);
+    }
+
+    /**
+     * Numerieke schotstatistiek voor de reflectie-prompt. Zonder deze cijfers
+     * kan de AI alleen op de ruwe notities leunen en de data-gegronde inzichten
+     * uit het ontwerp (serie-scores, concentratiedip, groepering) niet maken.
+     */
+    private function buildShotStatistics(Session $session): string
+    {
+        $stats = new SessionStatsService($session);
+
+        if ($stats->totalShots() === 0) {
+            return '- Schotstatistiek: geen individuele schoten geregistreerd.';
+        }
+
+        $series = $stats->seriesScores();
+        $seriesText = $series === []
+            ? 'n.v.t.'
+            : implode(' · ', array_map(static fn (int $sum): string => (string) $sum, $series));
+
+        $dip = $stats->dipRange();
+        $dipText = $dip === null
+            ? 'geen duidelijke concentratiedip'
+            : sprintf('zwakste reeks rond schot %d–%d', $dip[0] + 1, $dip[1] + 1);
+
+        $group = $stats->groupMm();
+        $cadans = $stats->avgCadansSec();
+        $best = $stats->bestShot();
+
+        return trim(sprintf(
+            "- Schotstatistiek (uit %d geregistreerde schoten):\n".
+            "  · Totaalscore: %d\n".
+            "  · Tienen: %d · Negens: %d\n".
+            "  · Beste schot: %s\n".
+            "  · Groepering: %s\n".
+            "  · Gem. cadans: %s\n".
+            "  · Serie-scores (per %d): %s\n".
+            '  · Concentratie: %s',
+            $stats->totalShots(),
+            $stats->totalScore(),
+            $stats->tienen(),
+            $stats->negens(),
+            $best !== null ? (string) $best : 'n.v.t.',
+            $group !== null ? number_format($group, 1).' mm' : 'n.v.t.',
+            $cadans !== null ? number_format($cadans, 0).'s' : 'n.v.t.',
+            $stats->shotsPerSerie(),
+            $seriesText,
+            $dipText,
+        ));
     }
 
     private function buildWeaponPrompt(Weapon $weapon): string
@@ -175,7 +211,7 @@ PROMPT);
                 $entry->session?->date?->format('Y-m-d') ?? 'onbekende datum',
                 $entry->distance_m ?? 'n.v.t.',
                 $entry->rounds_fired ?? '0',
-                $entry->deviation ?? 'n.v.t.',
+                $entry->deviation?->value ?? 'n.v.t.',
                 Str::limit($entry->group_quality_text ?? '-', 120)
             ))
             ->filter()
@@ -196,67 +232,8 @@ Recente sessies (max 5):
 {$entriesText}
 
 Gevraagde output: JSON met velden summary (string), patterns (array van strings), suggestions (array van strings).
+Antwoord uitsluitend met het JSON-object, zonder enige tekst eromheen.
 PROMPT);
-    }
-
-    private function buildCoachPrompt(string $question, string $context): string
-    {
-        return trim(<<<PROMPT
-Je bent een persoonlijke AI-schietcoach. Antwoord beknopt in het Nederlands, focus op veiligheid en legaal handelen. Je bent geen vervanging voor erkende instructeurs of officiële instanties en weigert onveilige of illegale adviezen.
-
-Gebruikerscontext:
-{$context}
-
-Vraag van gebruiker: {$question}
-
-Antwoord in maximaal 150 woorden en verwijs naar naleving van baanregels en wetgeving waar relevant.
-PROMPT);
-    }
-
-    private function buildCoachContext(User $user, ?int $weaponId, ?Carbon $from, ?Carbon $to): string
-    {
-        $sessions = Session::query()
-            ->with(['sessionWeapons.weapon'])
-            ->where('user_id', $user->id)
-            ->when($weaponId, fn ($query) => $query->whereHas(
-                'sessionWeapons',
-                fn ($subQuery) => $subQuery->where('weapon_id', $weaponId)
-            ))
-            ->when($from, fn ($query) => $query->whereDate('date', '>=', $from))
-            ->when($to, fn ($query) => $query->whereDate('date', '<=', $to))
-            ->latest('date')
-            ->take(10)
-            ->get();
-
-        if ($sessions->isEmpty()) {
-            return 'Geen sessies gevonden voor deze gebruiker binnen de geselecteerde filters.';
-        }
-
-        $sessionLines = $sessions->map(function (Session $session) {
-            $weaponDetails = $session->sessionWeapons
-                ->map(fn (SessionWeapon $entry) => sprintf(
-                    '%s | %sm | %s schoten | afwijking: %s | notitie: %s',
-                    $entry->weapon?->name ?? 'Onbekend wapen',
-                    $entry->distance_m ?? '-',
-                    $entry->rounds_fired ?? '-',
-                    $entry->deviation ?? '-',
-                    Str::limit($entry->group_quality_text ?? '-', 80)
-                ))
-                ->filter()
-                ->values()
-                ->join('; ');
-
-            return sprintf(
-                '- %s @ %s (%s): %s | Reflectie: %s',
-                $session->date?->format('Y-m-d') ?? 'onbekende datum',
-                $session->range_name,
-                $session->location,
-                $weaponDetails ?: 'geen wapenregistraties',
-                Str::limit($session->manual_reflection ?? $session->notes_raw ?? '-', 120)
-            );
-        })->join("\n");
-
-        return "Recente sessies:\n{$sessionLines}";
     }
 
     private function parseReflectionPayload(string $raw): array
@@ -311,5 +288,21 @@ PROMPT);
     private function systemContext(): string
     {
         return 'Je bent een zorgvuldige AI-schietcoach. Weiger illegale of gevaarlijke instructies en focus op veiligheid, discipline en wettelijk toegestane adviezen.';
+    }
+
+    private function maybeAlert(string $reason, array $context = []): void
+    {
+        $threshold = config('ai.alert_failure_threshold', 3);
+        $cooldownMinutes = config('ai.alert_cooldown_minutes', 15);
+        $cacheKey = 'ai_failure_alert_sent_at';
+
+        $count = Cache::increment('ai_failure_count', 1, $cooldownMinutes * 60);
+        if ($count >= $threshold && ! Cache::has($cacheKey)) {
+            $email = config('ai.alert_email');
+            if ($email) {
+                Notification::route('mail', $email)->notify(new AiCoachFailureNotification($reason, $context));
+                Cache::put($cacheKey, now(), $cooldownMinutes * 60);
+            }
+        }
     }
 }

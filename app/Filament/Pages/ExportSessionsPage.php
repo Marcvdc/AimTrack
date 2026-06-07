@@ -3,8 +3,6 @@
 namespace App\Filament\Pages;
 
 use App\Models\Weapon;
-use App\Services\Export\SessionExportService;
-use BackedEnum;
 use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -19,19 +17,18 @@ use Filament\Schemas\Components\Form as FormSchema;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Collection;
-use UnitEnum;
 
 class ExportSessionsPage extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-arrow-down-tray';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-arrow-down-tray';
 
     protected static ?string $navigationLabel = 'Export sessies';
 
     protected static ?string $title = 'Export sessies';
 
-    protected static UnitEnum|string|null $navigationGroup = 'Exports & rapportage';
+    protected static string|\UnitEnum|null $navigationGroup = 'BEHEER';
 
     protected string $view = 'filament.pages.export-sessions-page';
 
@@ -49,7 +46,7 @@ class ExportSessionsPage extends Page implements HasForms
     public function form(Schema $schema): Schema
     {
         return $schema
-            ->schema([
+            ->components([
                 Section::make('Parameters')
                     ->schema([
                         DatePicker::make('from_date')

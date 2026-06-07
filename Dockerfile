@@ -8,6 +8,7 @@ ENV COMPOSER_ALLOW_SUPERUSER=1 \
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
+        cron \
         git \
         unzip \
         libpq-dev \
@@ -18,6 +19,7 @@ RUN apt-get update \
         libicu-dev \
         locales \
         libonig-dev \
+        postgresql-client \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" gd intl mbstring pdo pdo_pgsql pdo_mysql zip exif \
     && docker-php-ext-enable opcache \
@@ -64,6 +66,7 @@ WORKDIR /var/www/html
 
 COPY --from=vendor /var/www/html/vendor ./vendor
 COPY . .
+RUN chmod +x docker/backup/*.sh scripts/backup-dev-db.sh
 COPY --from=frontend /opt/artifacts/public-build ./public/build
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint

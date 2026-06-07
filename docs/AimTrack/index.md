@@ -1,0 +1,18 @@
+# AimTrack Knowledge Base
+
+## Overview
+Deze map bevat alle documentatie voor het AimTrack-project volgens het PLAN-FIRST proces. Zie `docs/plans/` voor lopende plannen en `docs/AimTrack/tech/` voor technische referenties.
+
+## Recent
+- 2026-01-26 — GH-51 CI storage directories en view cache pad gefixt (StoragePathInitializer, CI mkdir stap, doc update)
+- 2026-01-26 — GH-37 Sessies-export herbouwd (shared dataset, shots samenvatting, PDF lay-out fixes + tests)
+- 2026-01-26 — GH-49 Export downloads forceren HTTPS via configuratie + tests
+- 2026-01-26 — UI landing CTA + profielmenu-link naar marketingpagina (UI-VERBETERING-USER)
+- 2026-01-26 — GH-38 Backup services + cron jobs toegevoegd (staging/prod compose, runbook)
+- 2026-01-24 — GH-42 Laravel logrotatie ingericht (daily channel, tests, runbook)
+- 2026-01-24 — Filament logout flow gefixed (signed GET fallback + melding) — GH-33
+- 2026-01-24 — GH-41 Pennant fallback helper + Filament aanpassingen (features-table resilience)
+- 2026-01-24 — Laravel Boost tooling geïnstalleerd en geconfigureerd voor dev (GitHub #34)
+- 2026-01-07 — Bootstrap structuur aangemaakt door Cascade (sessie aimtrack-8)
+- 2026-01-08 — Security contactadressen geünificeerd naar security@aimrack.nl (sessie aimtrack-8)
+- 2026-01-08 — Landing hub plan + design spec en nieuwe welcome page geïmplementeerd (AIMTRACK-landing-hub)

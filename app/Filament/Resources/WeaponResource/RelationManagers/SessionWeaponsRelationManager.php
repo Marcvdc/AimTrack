@@ -27,7 +27,7 @@ class SessionWeaponsRelationManager extends RelationManager
     public function form(Schema $schema): Schema
     {
         return $schema
-            ->schema([
+            ->components([
                 Select::make('session_id')
                     ->label('Sessie')
                     ->relationship(
@@ -108,7 +108,7 @@ class SessionWeaponsRelationManager extends RelationManager
             ])
             ->filters([
                 Filter::make('periode')
-                    ->form([
+                    ->schema([
                         DatePicker::make('from')->label('Vanaf'),
                         DatePicker::make('until')->label('Tot'),
                     ])
@@ -122,7 +122,7 @@ class SessionWeaponsRelationManager extends RelationManager
                 CreateAction::make()
                     ->label('Sessieregel toevoegen'),
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),
             ])

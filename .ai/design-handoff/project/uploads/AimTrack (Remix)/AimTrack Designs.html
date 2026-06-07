@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AimTrack — design directions</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #f0eee9; font-family: 'Inter', system-ui, sans-serif; color: #1a1a1a; }
+  #root { width: 100vw; height: 100vh; }
+  :root {
+    --at-display: 'Inter', system-ui, sans-serif;
+    --at-body:    'Inter', system-ui, sans-serif;
+    --at-mono:    'JetBrains Mono', ui-monospace, monospace;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.3 } }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="shared.jsx"></script>
+<script type="text/babel" src="logo-treatments.jsx"></script>
+<script type="text/babel" src="a-styles.jsx"></script>
+<script type="text/babel" src="range-console.jsx"></script>
+<script type="text/babel" src="a-screens.jsx"></script>
+<script type="text/babel" src="new-session-wizard.jsx"></script>
+<script type="text/babel" src="empty-states.jsx"></script>
+<script type="text/babel" src="design-tokens.jsx"></script>
+<script type="text/babel" src="field-journal.jsx"></script>
+<script type="text/babel" src="tactical-hud.jsx"></script>
+<script type="text/babel" src="marketing.jsx"></script>
+<script type="text/babel" src="mobile.jsx"></script>
+
+<script type="text/babel">
+const { useEffect } = React;
+
+// ── Palettes ────────────────────────────────────────────────────────
+const PALETTES = {
+  signal: { name:'Signal Mint', bg:'#040711', panel:'#0c1428', panel2:'#131c34', line:'#1c2543', text:'#e3ecff', muted:'#94a3c5', accent:'#64f4b3', accent2:'#7a8cff', warn:'#f87171', ctaText:'#051810' },
+  range:  { name:'Range Amber', bg:'#0a0907', panel:'#16140f', panel2:'#201d16', line:'#2c2820', text:'#f0e9d8', muted:'#a39880', accent:'#ffb648', accent2:'#7a8cff', warn:'#ef6b4f', ctaText:'#1a1304' },
+  steel:  { name:'Steel Cyan',  bg:'#06090c', panel:'#0d141a', panel2:'#141d26', line:'#1f2a36', text:'#e6eef5', muted:'#8aa0b3', accent:'#5ac8d8', accent2:'#a5b4fc', warn:'#f87171', ctaText:'#031218' },
+  light:  { name:'Daylight',    bg:'#f6f5f1', panel:'#ffffff', panel2:'#f0eee9', line:'#e2dfd6', text:'#1a1f2e', muted:'#6b7280', accent:'#0f9968', accent2:'#4f46e5', warn:'#dc2626', ctaText:'#ffffff' },
+};
+
+const PALETTE_SWATCHES = {
+  signal: ['#64f4b3', '#040711', '#7a8cff'],
+  range:  ['#ffb648', '#0a0907', '#7a8cff'],
+  steel:  ['#5ac8d8', '#06090c', '#a5b4fc'],
+};
+
+const FONT_PRESETS = {
+  'Inter + JetBrains':    { display: "'Inter', system-ui, sans-serif",          body: "'Inter', system-ui, sans-serif",       mono: "'JetBrains Mono', ui-monospace, monospace" },
+  'Space Grotesk + IBM':  { display: "'Space Grotesk', system-ui, sans-serif",  body: "'Space Grotesk', system-ui, sans-serif", mono: "'IBM Plex Mono', ui-monospace, monospace" },
+  'Instrument + DM Sans': { display: "'Instrument Serif', Georgia, serif",      body: "'DM Sans', system-ui, sans-serif",     mono: "'JetBrains Mono', ui-monospace, monospace" },
+};
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "palette": "signal",
+  "fonts":   "Inter + JetBrains",
+  "theme":   "dark"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [tweaks, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
+  const paletteKey = tweaks.theme === 'light' ? 'light' : tweaks.palette;
+  const palette = PALETTES[paletteKey] || PALETTES.signal;
+  const fonts = FONT_PRESETS[tweaks.fonts] || FONT_PRESETS['Inter + JetBrains'];
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--at-display', fonts.display);
+    document.documentElement.style.setProperty('--at-body',    fonts.body);
+    document.documentElement.style.setProperty('--at-mono',    fonts.mono);
+  }, [fonts]);
+
+  const D = 1440, H = 900;
+
+  return (
+    <>
+      <window.DesignCanvas>
+        {/* ── LOGO TREATMENTS ───────────────────────────────────────── */}
+        <window.DCSection
+          id="logo"
+          title="1 · Logo als grafisch element"
+          subtitle="Vier voorstellen om de DNA van het logo (ring + crosshair-ticks + AT-monogram) terug te laten komen in het product. Kies er één en die wordt de visuele rode draad.">
+          <window.DCArtboard id="t1" label="T1 · Reticle watermark" subtitle="Logo subtiel groot achter KPI's" width={360} height={280}>
+            <window.LogoT1_Watermark palette={palette} fonts={fonts} />
+          </window.DCArtboard>
+          <window.DCArtboard id="t2" label="T2 · Ring-as-frame" subtitle="De ring is het kader rond stats" width={360} height={280}>
+            <window.LogoT2_RingFrame palette={palette} fonts={fonts} />
+          </window.DCArtboard>
+          <window.DCArtboard id="t3" label="T3 · Crosshair brackets" subtitle="N/S/E/W ticks als hoekmarkers" width={360} height={280}>
+            <window.LogoT3_Brackets palette={palette} fonts={fonts} />
+          </window.DCArtboard>
+          <window.DCArtboard id="t4" label="T4 · Monogram stamp" subtitle="AT-mark als 'verified' stempel" width={360} height={280}>
+            <window.LogoT4_Stamp palette={palette} fonts={fonts} />
+          </window.DCArtboard>
+        </window.DCSection>
+
+        {/* ── A · RANGE CONSOLE — screens ──────────────────────────── */}
+        <window.DCSection
+          id="a-screens"
+          title="2 · Range Console — uitgewerkt"
+          subtitle="Richting A doorgetrokken naar de belangrijkste schermen. T1 reticle-watermark als hoofdpatroon, T3 crosshair-brackets als accent op AI-elementen.">
+          <window.DCArtboard id="a-overview" label="Sessies (overzicht)" subtitle="Lijst · KPI's · trend · AI-reflectie" width={D} height={H}>
+            <window.RangeConsole palette={palette} fonts={fonts} />
+          </window.DCArtboard>
+          <window.DCArtboard id="a-detail" label="Sessie-detail · S-0247" subtitle="Schot-voor-schot · series · hit-patroon · AI" width={D} height={H}>
+            <window.SessionDetail palette={palette} fonts={fonts} />
+          </window.DCArtboard>
+          <window.DCArtboard id="a-weapon" label="Wapen-detail · LP500" subtitle="Identiteit · trend · sessies · kalibratie" width={D} height={H}>
+            <window.WeaponDetail palette={palette} fonts={fonts} />
+          </window.DCArtboard>
+          <window.DCArtboard id="a-coach" label="AI-coach" subtitle="Volledig gesprek met context-rail" width={D} height={H}>
+            <window.AICoachView palette={palette} fonts={fonts} />
+          </window.DCArtboard>
+          <window.DCArtboard id="a-wizard" label="Nieuwe sessie · wizard" subtitle="Modal flow · stap 3 (schoten loggen)" width={D} height={H}>
+            <window.NewSessionWizard palette={palette} fonts={fonts} />
+          </window.DCArtboard>
+        </window.DCSection>
+
+        {/* Empty states */}
+        <window.DCSection
+          id="empty-states"
+          title="3 · Empty states & first-run"
+          subtitle="Hoe de app aanvoelt vóór er data is. Elke staat geeft de volgende stap.">
+          <window.DCArtboard id="es-firstrun" label="Eerste run · welkom" subtitle="Onboarding-card met 3 stappen" width={D} height={H}>
+            <window.EmptyStates palette={palette} fonts={fonts} state="first-run" />
+          </window.DCArtboard>
+          <window.DCArtboard id="es-sessions" label="Geen sessies" subtitle="Eerste-sessie nudge" width={D} height={H}>
+            <window.EmptyStates palette={palette} fonts={fonts} state="no-sessions" />
+          </window.DCArtboard>
+          <window.DCArtboard id="es-weapons" label="Geen wapens" subtitle="Met starter-sjablonen" width={D} height={H}>
+            <window.EmptyStates palette={palette} fonts={fonts} state="no-weapons" />
+          </window.DCArtboard>
+          <window.DCArtboard id="es-ai" label="AI-coach · te weinig data" subtitle="Voortgang naar 3 sessies" width={D} height={H}>
+            <window.EmptyStates palette={palette} fonts={fonts} state="no-ai" />
+          </window.DCArtboard>
+        </window.DCSection>
+
+        {/* ── MARKETING ─────────────────────────────────────────────── */}
+        <window.DCSection
+          id="marketing"
+          title="4 · Marketing landing page"
+          subtitle="Eén lange pagina in dezelfde taal als de app. Open fullscreen om door te scrollen.">
+          <window.DCArtboard id="mkt" label="aimtrack.nl" subtitle="Hero · features · AI · self-hosted · prijzen" width={D} height={H}>
+            <window.MarketingLanding palette={palette} fonts={fonts} />
+          </window.DCArtboard>
+        </window.DCSection>
+
+        {/* ── MOBILE ────────────────────────────────────────────────── */}
+        <window.DCSection
+          id="mobile"
+          title="5 · Mobile companion"
+          subtitle="Drie kernschermen: snel inzien, live tijdens een sessie loggen, en de coach onderweg.">
+          <window.DCArtboard id="mobile-3" label="Mobile · 3 schermen" subtitle="Vandaag · Live loggen · AI-coach" width={1280} height={880}>
+            <window.MobileScreens palette={palette} fonts={fonts} />
+          </window.DCArtboard>
+        </window.DCSection>
+
+        {/* Design tokens */}
+        <window.DCSection
+          id="tokens"
+          title="6 · Design tokens — voor de developer"
+          subtitle="Alle bouwstenen op één plek: kleuren, typografie, ruimte, radius, componenten, iconografie, brand-marks, data-viz. Schuift mee met je Tweaks.">
+          <window.DCArtboard id="tokens-card" label="Tokens · v1.0" subtitle="Build-ready voor Filament 3.x / Tailwind" width={D} height={1900}>
+            <window.DesignTokens palette={palette} fonts={fonts} />
+          </window.DCArtboard>
+        </window.DCSection>
+
+        {/* Alternatives */}
+        <window.DCSection
+          id="alts"
+          title="Alternatieven · fase 1 (ter referentie)"
+          subtitle="De twee andere richtingen die je niet hebt gekozen — laat staan voor vergelijking, of weg te klikken via het kebab-menu.">
+          <window.DCArtboard id="alt-b" label="B · Field Journal" subtitle="Editorial / dagboek" width={D} height={H}>
+            <window.FieldJournal palette={palette} fonts={fonts} />
+          </window.DCArtboard>
+          <window.DCArtboard id="alt-c" label="C · Tactical HUD" subtitle="Scope-readout" width={D} height={H}>
+            <window.TacticalHUD palette={palette} fonts={fonts} />
+          </window.DCArtboard>
+        </window.DCSection>
+      </window.DesignCanvas>
+
+      <window.TweaksPanel title="Tweaks">
+        <window.TweakSection title="Palette">
+          <window.TweakColor
+            label="Kleurpalet"
+            value={PALETTE_SWATCHES[tweaks.palette]}
+            options={Object.values(PALETTE_SWATCHES)}
+            onChange={(v) => {
+              const key = Object.keys(PALETTE_SWATCHES).find(
+                (k) => JSON.stringify(PALETTE_SWATCHES[k]) === JSON.stringify(v)
+              );
+              if (key) setTweak('palette', key);
+            }}
+          />
+          <window.TweakRadio
+            label="Theme"
+            value={tweaks.theme}
+            options={['dark', 'light']}
+            onChange={(v) => setTweak('theme', v)}
+          />
+        </window.TweakSection>
+
+        <window.TweakSection title="Typografie">
+          <window.TweakSelect
+            label="Font preset"
+            value={tweaks.fonts}
+            options={Object.keys(FONT_PRESETS)}
+            onChange={(v) => setTweak('fonts', v)}
+          />
+          <div style={{ fontSize: 11, color: '#6b6960', lineHeight: 1.5, padding: '4px 0' }}>
+            Display & body komen uit hetzelfde preset; mono wordt voor scores en data gebruikt.
+          </div>
+        </window.TweakSection>
+      </window.TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
