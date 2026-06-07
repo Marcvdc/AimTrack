@@ -141,7 +141,11 @@
                     x-ref="board"
                     wire:ignore
                 >
-                    <canvas x-ref="canvas" class="absolute inset-0 w-full h-full" style="cursor: crosshair;"
+                    <canvas x-ref="canvas" class="absolute inset-0 w-full h-full" style="cursor: crosshair; touch-action: none;"
+                    @pointerdown="onPointerDown($event)"
+                    @pointermove="onPointerMove($event)"
+                    @pointerup="onPointerUp($event)"
+                    @pointercancel="drag = null"
                     @click="handleCanvasClick($event)"
                     @contextmenu.prevent="handleCanvasRightClick($event)"
                 ></canvas>
@@ -438,6 +442,8 @@
                     y: 0,
                     marker: null,
                 },
+                drag: null,
+                suppressClick: false,
                 init() {
                     console.log('[SessionShotBoard] targetBoard init', {
                         markersCount: this.renderMarkers?.length ?? 0,
@@ -663,6 +669,10 @@
                     }
                 },
                 handleCanvasClick(event) {
+                    if (this.suppressClick) {
+                        this.suppressClick = false;
+                        return;
+                    }
                     // Check if click is on a marker
                     const clickedMarker = this.getMarkerAtPosition(event);
                     
@@ -729,6 +739,71 @@
                     recordShot(xNormalized, yNormalized);
 
                     console.log('[SessionShotBoard] recordShot dispatched');
+                },
+                boardCoords(event) {
+                    const rect = this.$refs.board.getBoundingClientRect();
+                    return {
+                        x: Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1),
+                        y: Math.min(Math.max((event.clientY - rect.top) / rect.height, 0), 1),
+                    };
+                },
+                onPointerDown(event) {
+                    this.suppressClick = false;
+                    if (! this.canEdit) {
+                        this.drag = null;
+                        return;
+                    }
+                    const marker = this.getMarkerAtPosition(event);
+                    if (! marker) {
+                        this.drag = null;
+                        return;
+                    }
+                    this.drag = {
+                        id: marker.id,
+                        moved: false,
+                        startX: event.clientX,
+                        startY: event.clientY,
+                    };
+                    if (this.$refs.canvas) {
+                        this.$refs.canvas.setPointerCapture(event.pointerId);
+                    }
+                },
+                onPointerMove(event) {
+                    if (! this.drag) {
+                        return;
+                    }
+                    if (! this.drag.moved) {
+                        const dx = event.clientX - this.drag.startX;
+                        const dy = event.clientY - this.drag.startY;
+                        if (Math.sqrt(dx * dx + dy * dy) < 4) {
+                            return;
+                        }
+                        this.drag.moved = true;
+                    }
+                    const { x, y } = this.boardCoords(event);
+                    const m = this.currentMarkers.find((mk) => mk.id === this.drag.id);
+                    if (m) {
+                        m.x = x;
+                        m.y = y;
+                        this.scheduleDraw();
+                    }
+                },
+                onPointerUp(event) {
+                    if (! this.drag) {
+                        return;
+                    }
+                    const drag = this.drag;
+                    this.drag = null;
+                    if (! drag.moved) {
+                        const marker = this.getMarkerAtPosition(event);
+                        if (marker) {
+                            this.startLongPress(marker);
+                        }
+                        return;
+                    }
+                    this.suppressClick = true;
+                    const { x, y } = this.boardCoords(event);
+                    this.$wire.moveShot(drag.id, x, y);
                 },
                 normalizeMarker(marker, index) {
                     if (! marker) {
