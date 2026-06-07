@@ -1,90 +1,62 @@
 <x-filament::page>
     @php
-        $totalShots = $record->shots()->count();
-        $totalPoints = $record->shots()->sum('score');
+        $decimal = (bool) (auth()->user()?->preference('decimal_notation') ?? true);
+        $scoring = app(\App\Services\Sessions\ShotScoringService::class);
+        $shots = $record->shots()->get();
+        $totalShots = $shots->count();
+        $totalPoints = $decimal
+            ? round($shots->sum(fn ($shot) => $scoring->decimalScore((float) $shot->distance_from_center)), 1)
+            : (int) $shots->sum('score');
         $average = $totalShots > 0 ? round($totalPoints / $totalShots, 1) : 0;
-        
-        // Get turn options for the dropdown
-        $turnOptions = range(0, max(0, $record->shots()->max('turn_index') ?? 0));
-        
-        $sessionLabel = $record->date?->format('d-m-Y') ? 'Sessie: ' . $record->date->format('d-m-Y') : 'Sessie #' . $record->getKey();
+        $fmt = fn ($value): string => number_format((float) $value, $decimal ? 1 : 0, '.', '');
+
+        $turnOptions = range(0, max(0, (int) ($record->shots()->max('turn_index') ?? 0)));
+        $sessionLabel = $record->date ? 'Sessie · ' . $record->date->format('d-m-Y') : 'Sessie #' . $record->getKey();
     @endphp
 
     
 
-    <div class="mb-6">
-        <div class="flex items-center gap-3">
-            <x-filament::badge color="info" size="md">
-                Modus Bewerken
-            </x-filament::badge>
-            <x-filament::badge color="success" size="md">
-                Punten {{ number_format($totalPoints) }}
-            </x-filament::badge>
-            <x-filament::badge color="warning" size="md">
-                Schoten {{ number_format($totalShots) }}
-            </x-filament::badge>
-            <x-filament::badge color="danger" size="md">
-                Gemiddelde {{ number_format($average, 1, ',', '.') }}
-            </x-filament::badge>
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+        <div>
+            <div class="at-label">Schoten registreren</div>
+            <div style="font-size: 18px; font-weight: 600; color: var(--at-text); margin-top: 4px;">{{ $sessionLabel }}</div>
         </div>
+        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--at-r-pill); background: var(--at-accent-12); border: 1px solid var(--at-accent-25); font-family: var(--at-font-mono); font-size: 10px; letter-spacing: 0.14em; color: var(--at-accent);">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--at-accent);"></span>
+            MODUS BEWERKEN
+        </span>
     </div>
 
-    <div class="mb-4">
-        <x-filament::section icon="heroicon-o-calendar-days" icon-size="sm" class="bg-white/85 dark:bg-gray-900/60 rounded-2xl p-4 shadow-sm">
-            <x-slot name="heading">
-                {{ $sessionLabel }}
-            </x-slot>
-        </x-filament::section>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px;">
+        <x-aimtrack.stat-card label="Punten" :value="$fmt($totalPoints)" valueTone="accent" />
+        <x-aimtrack.stat-card label="Schoten" :value="(string) $totalShots" />
+        <x-aimtrack.stat-card label="Gemiddelde / schot" :value="$totalShots > 0 ? $fmt($average) : '—'" />
     </div>
 
-    <!-- Beurt Selectie -->
-    <div class="mb-6 rounded-3xl border border-gray-200/70 bg-white/80 px-5 py-4 shadow-sm dark:border-gray-800/60 dark:bg-gray-900/60">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        
+    <!-- Info / beurt-legenda -->
+    <div x-data="{ expanded: false }" style="margin-bottom: 20px; padding: 14px 16px; background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-2xl);">
+        <button type="button" x-on:click="expanded = ! expanded"
+            style="display: flex; align-items: center; justify-content: space-between; width: 100%; background: none; border: none; color: var(--at-text); cursor: pointer; padding: 0;">
+            <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;">
+                <x-filament::icon icon="heroicon-o-information-circle" class="h-4 w-4" style="color: var(--at-muted);" />
+                Hoe werkt de interactieve roos?
+            </span>
+            <x-filament::icon icon="heroicon-m-chevron-down" x-bind:class="expanded ? 'rotate-180' : ''" class="h-4 w-4 transition-transform duration-200" style="color: var(--at-muted);" />
+        </button>
 
-            <div x-data="{ expanded: false }" class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <x-filament::section icon="heroicon-o-information-circle" icon-size="sm" class="flex-1 bg-white/85 dark:bg-gray-900/60">
-                    <x-slot name="heading">
-                        <div class="flex items-center gap-2 cursor-pointer" x-on:click="expanded = ! expanded">
-                            <span>Interactieve roos</span>
-                        </div>
-                    </x-slot>
-                    
-                    <x-slot name="description">
-                        Open dit panel voor extra informatie over de interactieve roos
-                    </x-slot>
-                    
-                    <x-slot name="afterHeader">
-                        <div class="cursor-pointer" x-on:click="expanded = ! expanded">
-                            <x-filament::icon 
-                                icon="heroicon-m-chevron-down" 
-                                x-bind:class="expanded ? 'rotate-180' : ''"
-                                class="transition-transform duration-200 text-gray-500 dark:text-gray-400"
-                            />
-                        </div>
-                    </x-slot>
+        <div x-show="expanded" x-collapse.duration.300ms style="margin-top: 12px; font-size: 13px; color: var(--at-muted); line-height: 1.6;">
+            Klik op de roos om een schot te plaatsen, wissel tussen beurten met de selector, en verwijder een marker met een long-press (2s) of rechtermuisklik. Score en ring worden automatisch berekend.
 
-                    <div x-show="expanded" x-collapse.duration.300ms>
-                        Klik om schoten te plaatsen, wissel tussen beurten en verwijder markers met een long-press (of rechtermuisklik).
-                        
-                        <div class="mt-4">
-                            <div class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Beurt legenda:</div>
-                            <div class="flex flex-wrap gap-2">
-                                @foreach ($turnOptions as $turn)
-                                    <div class="flex items-center gap-1">
-                                        <span class="inline-flex h-4 w-4 rounded-full border border-gray-300 dark:border-gray-600" style="background-color: {{ $this->getTurnColor($turn) }}">&nbsp;</span>
-                                        <span class="text-xs text-gray-700 dark:text-gray-300">Beurt {{ $turn + 1 }}</span>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                        
-                        <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-300">
-                            <x-filament::badge color="gray">Lang indrukken = verwijderen</x-filament::badge>
-                            <x-filament::badge color="gray">Klik om nieuwe schoten te registreren</x-filament::badge>
-                        </div>
-                    </div>
-                </x-filament::section>
+            <div style="margin-top: 14px;">
+                <div class="at-label" style="margin-bottom: 8px;">Beurt-legenda</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    @foreach ($turnOptions as $turn)
+                        <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--at-text);">
+                            <span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--at-line); background: {{ $this->getTurnColor($turn) }};"></span>
+                            Beurt {{ $turn + 1 }}
+                        </span>
+                    @endforeach
+                </div>
             </div>
         </div>
     </div>

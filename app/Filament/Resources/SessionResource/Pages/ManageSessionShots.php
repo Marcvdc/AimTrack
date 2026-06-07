@@ -3,8 +3,11 @@
 namespace App\Filament\Resources\SessionResource\Pages;
 
 use App\Filament\Resources\SessionResource;
+use App\Jobs\GenerateSessionReflectionJob;
 use App\Livewire\SessionShotBoard;
+use App\Support\Features\AimtrackFeatureToggle;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
 
@@ -36,11 +39,39 @@ class ManageSessionShots extends Page
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('finish')
+                ->label('Sessie afronden')
+                ->icon('heroicon-m-check-circle')
+                ->color('primary')
+                ->action(fn () => $this->finishSession()),
             Action::make('back')
                 ->label('Terug naar sessie')
                 ->icon('heroicon-m-arrow-uturn-left')
+                ->color('gray')
                 ->url($this->getResource()::getUrl('edit', ['record' => $this->record])),
         ];
+    }
+
+    /**
+     * Rond de sessie af. Staat de voorkeur "auto AI-reflectie" aan én is
+     * AI ingeschakeld, dan wordt de reflectie ingepland. Daarna terug naar
+     * de sessie-weergave.
+     */
+    public function finishSession(): void
+    {
+        $autoReflect = (bool) auth()->user()?->preference('auto_ai_reflection');
+
+        if ($autoReflect && app(AimtrackFeatureToggle::class)->aiEnabled()) {
+            GenerateSessionReflectionJob::dispatch($this->getRecord());
+
+            Notification::make()
+                ->title('AI-reflectie ingepland')
+                ->body('Zodra de coach klaar is verschijnt de reflectie bij de sessie.')
+                ->success()
+                ->send();
+        }
+
+        $this->redirect($this->getResource()::getUrl('view', ['record' => $this->getRecord()]));
     }
 
     /**

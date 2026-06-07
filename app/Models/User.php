@@ -11,6 +11,18 @@ class User extends Authenticatable
     use HasFactory;
     use Notifiable;
 
+    /**
+     * Bekende voorkeuren + hun defaults. Dient als whitelist: onbekende keys
+     * worden door setPreference() genegeerd.
+     *
+     * @var array<string, bool>
+     */
+    public const PREFERENCE_DEFAULTS = [
+        'board_show_rings' => false,
+        'decimal_notation' => true,
+        'auto_ai_reflection' => false,
+    ];
+
     protected $fillable = [
         'name',
         'email',
@@ -33,11 +45,39 @@ class User extends Authenticatable
         'is_admin' => 'boolean',
         'anthropic_api_key' => 'encrypted',
         'ai_key_verified_at' => 'datetime',
+        'preferences' => 'array',
     ];
 
     public function isAdmin(): bool
     {
         return (bool) $this->is_admin;
+    }
+
+    /**
+     * Lees een gebruikersvoorkeur; valt terug op de default uit
+     * PREFERENCE_DEFAULTS, of null voor een onbekende key.
+     */
+    public function preference(string $key): mixed
+    {
+        $stored = $this->preferences ?? [];
+
+        return $stored[$key] ?? self::PREFERENCE_DEFAULTS[$key] ?? null;
+    }
+
+    /**
+     * Schrijf een bekende voorkeur weg. Onbekende keys worden genegeerd
+     * (whitelist via PREFERENCE_DEFAULTS).
+     */
+    public function setPreference(string $key, mixed $value): void
+    {
+        if (! array_key_exists($key, self::PREFERENCE_DEFAULTS)) {
+            return;
+        }
+
+        $preferences = $this->preferences ?? [];
+        $preferences[$key] = $value;
+        $this->preferences = $preferences;
+        $this->save();
     }
 
     public function sessions()
