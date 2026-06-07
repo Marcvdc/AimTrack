@@ -289,6 +289,24 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
         $this->resetTable();
     }
 
+    public function confirmTurnReview(int $turnIndex): void
+    {
+        if (! $this->canEdit) {
+            return;
+        }
+
+        SessionTurnAnalysis::where('session_id', $this->session->id)
+            ->where('turn_index', $turnIndex)
+            ->update(['needs_review' => false]);
+
+        Notification::make()
+            ->title('Beurt afgetekend.')
+            ->success()
+            ->send();
+
+        $this->refreshData();
+    }
+
     public function deleteShot(int $shotId): void
     {
         if (! $this->canEdit) {
