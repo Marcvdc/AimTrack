@@ -16,6 +16,17 @@ return [
 
     'partner_clubs' => [],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Contactformulier
+    |--------------------------------------------------------------------------
+    |
+    | Ontvangstadres voor berichten uit het /contact-formulier. Per-instance
+    | overschrijfbaar via de CONTACT_TO_ADDRESS env-variabele.
+    */
+
+    'contact_to' => env('CONTACT_TO_ADDRESS', 'support@aimtrack.nl'),
+
     // Cache-TTL (seconden) voor de aggregaat-statistieken op de landingspagina.
     'stats_cache_ttl' => 3600,
 

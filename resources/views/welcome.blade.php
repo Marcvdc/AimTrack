@@ -430,7 +430,6 @@
         .mk-footer-links { margin-left: auto; display: flex; flex-wrap: wrap; gap: 22px; font-size: 12px; }
         .mk-footer-link { color: var(--at-muted); text-decoration: none; transition: color .15s ease; }
         .mk-footer-link:hover { color: var(--at-text); }
-        .mk-footer-muted { color: var(--at-muted); }
 
         /* ── Responsive ─────────────────────────────────────────────── */
         @media (max-width: 1024px) {
@@ -479,7 +478,7 @@
             <a class="mk-nav-link is-active" href="#features">Functies</a>
             <a class="mk-nav-link" href="#ai-coach">AI-coach</a>
             <a class="mk-nav-link" href="#self-hosted">Self-hosted</a>
-            <a class="mk-nav-link" href="https://github.com/marcvdc/AimTrack" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a class="mk-nav-link" href="https://github.com/Marcvdc/AimTrack" target="_blank" rel="noopener noreferrer">GitHub</a>
         </div>
         <div class="mk-nav-actions">
             <a class="mk-login-link" href="/admin/login">Inloggen</a>
@@ -502,7 +501,7 @@
                     Gratis aan de slag
                     <x-aimtrack.icon name="arrow" :size="14" color="var(--at-cta-text)" :stroke="2" />
                 </a>
-                <a class="mk-btn mk-btn-outline" href="https://github.com/marcvdc/AimTrack" target="_blank" rel="noopener noreferrer">
+                <a class="mk-btn mk-btn-outline" href="https://github.com/Marcvdc/AimTrack" target="_blank" rel="noopener noreferrer">
                     <x-aimtrack.icon name="shield" :size="14" />
                     Bekijk op GitHub
                 </a>
@@ -784,7 +783,7 @@
                 <span class="mk-terminal-dot is-muted" aria-hidden="true"></span>
                 <span class="mk-terminal-path">~/aimtrack</span>
             </div>
-            <div class="mk-terminal-line"><span class="mk-prompt">$</span> git clone github.com/marcvdc/AimTrack</div>
+            <div class="mk-terminal-line"><span class="mk-prompt">$</span> git clone github.com/Marcvdc/AimTrack</div>
             <div class="mk-terminal-line"><span class="mk-prompt">$</span> cd AimTrack && docker compose up -d</div>
             <div class="mk-terminal-ok">✓ AimTrack draait op <span class="mk-accent">http://localhost:8000</span></div>
             <div class="mk-terminal-ok">✓ Klaar voor je eerste sessie.</div>
@@ -796,12 +795,12 @@
         <x-aimtrack.wordmark :size="22" color="var(--at-muted)" />
         <div class="mk-footer-meta">MIT · open-source · NL</div>
         <div class="mk-footer-links">
-            {{-- Docs/Changelog/Contact bestaan nog niet als route → bewust geen
-                 href="#"-link (navigatieval), maar muted placeholders. --}}
-            <span class="mk-footer-muted">Docs</span>
-            <span class="mk-footer-muted">Changelog</span>
-            <a class="mk-footer-link" href="https://github.com/marcvdc/AimTrack" target="_blank" rel="noopener noreferrer">GitHub</a>
-            <span class="mk-footer-muted">Contact</span>
+            {{-- Docs/Changelog wijzen (voor nu) naar GitHub; Contact naar de eigen
+                 /contact-pagina met formulier. --}}
+            <a class="mk-footer-link" href="https://github.com/Marcvdc/AimTrack/tree/main/docs/user" target="_blank" rel="noopener noreferrer">Docs</a>
+            <a class="mk-footer-link" href="https://github.com/Marcvdc/AimTrack/releases" target="_blank" rel="noopener noreferrer">Changelog</a>
+            <a class="mk-footer-link" href="https://github.com/Marcvdc/AimTrack" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a class="mk-footer-link" href="{{ route('contact') }}">Contact</a>
         </div>
     </footer>
 
