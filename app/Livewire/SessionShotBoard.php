@@ -271,6 +271,24 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
         $this->resetTable();
     }
 
+    public function moveShot(int $shotId, float $xNormalized, float $yNormalized): void
+    {
+        if (! $this->canEdit) {
+            return;
+        }
+
+        $shot = $this->session->shots()->whereKey($shotId)->first();
+
+        if (! $shot instanceof SessionShot) {
+            return;
+        }
+
+        $this->shotService->moveShot($shot, $xNormalized, $yNormalized);
+
+        $this->refreshData();
+        $this->resetTable();
+    }
+
     public function deleteShot(int $shotId): void
     {
         if (! $this->canEdit) {

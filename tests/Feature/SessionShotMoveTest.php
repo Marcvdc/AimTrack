@@ -41,3 +41,55 @@ test('moveShot clamps out-of-range coordinates to [0,1]', function () {
     expect((float) $fresh->y_normalized)->toBe(0.0);
     expect($fresh->source)->toBe('photo_corrected');
 });
+
+test('SessionShotBoard moveShot moves a shot belonging to the session', function () {
+    $user = User::factory()->create();
+    $session = Session::factory()->create(['user_id' => $user->id]);
+    $shot = SessionShot::factory()->create([
+        'session_id' => $session->id, 'turn_index' => 0, 'shot_index' => 1,
+        'x_normalized' => 0.9, 'y_normalized' => 0.9, 'source' => 'photo_detected',
+    ]);
+
+    \Livewire\Livewire::actingAs($user)
+        ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session])
+        ->call('moveShot', $shot->id, 0.5, 0.5);
+
+    $fresh = $shot->refresh();
+    expect((float) $fresh->x_normalized)->toBe(0.5);
+    expect($fresh->ring)->toBe(10);
+    expect($fresh->source)->toBe('photo_corrected');
+});
+
+test('SessionShotBoard moveShot ignores a shot from another session', function () {
+    $user = User::factory()->create();
+    $session = Session::factory()->create(['user_id' => $user->id]);
+    $otherShot = SessionShot::factory()->create([
+        'session_id' => Session::factory()->create()->id, 'turn_index' => 0, 'shot_index' => 1,
+        'x_normalized' => 0.9, 'y_normalized' => 0.9,
+    ]);
+
+    \Livewire\Livewire::actingAs($user)
+        ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session])
+        ->call('moveShot', $otherShot->id, 0.5, 0.5);
+
+    expect((float) $otherShot->refresh()->x_normalized)->toBe(0.9); // unchanged
+});
+
+test('SessionShotBoard moveShot does nothing when the user cannot edit', function () {
+    $owner = User::factory()->create();
+    $session = Session::factory()->create(['user_id' => $owner->id]);
+    $shot = SessionShot::factory()->create([
+        'session_id' => $session->id, 'turn_index' => 0, 'shot_index' => 1,
+        'x_normalized' => 0.9, 'y_normalized' => 0.9, 'source' => 'photo_detected',
+    ]);
+
+    $intruder = User::factory()->create();
+
+    \Livewire\Livewire::actingAs($intruder)
+        ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session])
+        ->call('moveShot', $shot->id, 0.5, 0.5);
+
+    $fresh = $shot->refresh();
+    expect((float) $fresh->x_normalized)->toBe(0.9);   // unchanged
+    expect($fresh->source)->toBe('photo_detected');     // not corrected
+});
