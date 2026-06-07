@@ -19,18 +19,16 @@ class UserFactory extends Factory
             'name' => $this->faker->name(),
             'email' => $this->faker->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'password' => bcrypt('password'),
+            'password' => 'password',
             'remember_token' => Str::random(10),
         ];
     }
 
-    /**
-     * Indicate that the user's email address should be unverified.
-     */
-    public function unverified(): static
+    public function withAnthropicKey(string $key = 'sk-ant-test-key'): static
     {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
+        return $this->state(fn (): array => [
+            'anthropic_api_key' => $key,
+            'ai_key_verified_at' => now(),
         ]);
     }
 }
