@@ -15,6 +15,7 @@ class TestSettings:
         assert s.settings.vision_effort == "high"
         assert s.settings.review_confidence_threshold == 0.6
         assert s.settings.cal_rms_review_mm == 20.0
+        assert s.settings.min_shot_confidence == 0.4
         assert s.settings.anthropic_api_key == ""
 
     def test_env_overrides(self, monkeypatch):
@@ -24,3 +25,6 @@ class TestSettings:
         importlib.reload(s)
         assert s.settings.vision_model == "claude-sonnet-4-6"
         assert s.settings.review_confidence_threshold == 0.8
+        monkeypatch.setenv("AIMTRACK_MIN_SHOT_CONFIDENCE", "0.55")
+        importlib.reload(s)
+        assert s.settings.min_shot_confidence == 0.55
