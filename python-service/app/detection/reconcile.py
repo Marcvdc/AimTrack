@@ -26,8 +26,10 @@ def reconcile(
     expected_shot_count: int | None,
 ) -> list[Hole]:
     """For each Claude hole, snap to the nearest unused CV candidate centroid for
-    sub-pixel precision; otherwise keep Claude's coordinate. Cap to expected count,
-    dropping the lowest-confidence extras."""
+    sub-pixel precision; otherwise keep Claude's coordinate. Drop holes below the
+    confidence floor (``settings.min_shot_confidence``) rather than padding up to the
+    expected count, then cap any remaining surplus to the expected count, dropping the
+    lowest-confidence extras."""
     px_per_mm = (2.0 * CANONICAL_RING1_RADIUS) / spec.ring1_diameter_mm
     bullet_radius_px = (spec.bullet_diameter_mm / 2.0) * px_per_mm
     tol = max(bullet_radius_px * 1.5, 8.0)
