@@ -152,16 +152,31 @@ verenigings-Claude-key fungeert als fallback onder de user-key:
 
 ---
 
-## Acceptatiecriteria (uit epic)
+## Acceptatiecriteria (uit epic) — status
 
-- [ ] Vereniging aanmaakbaar met naam en (optioneel) eigen Claude-key.
-- [ ] Gebruikers worden lid met een rol (member/coach/admin).
-- [ ] Coach ziet read-only sessies & voortgang van leden binnen dezelfde vereniging.
-- [ ] Coach ziet géén data van andere verenigingen; member ziet géén peer-data.
-- [ ] Key-resolutie volgt `user-key → vereniging-key → geen AI`.
-- [ ] Club-admin beheert leden (toevoegen/uitnodigen, rollen) en de gedeelde key.
-- [ ] Pest dekt membership/rollen, coach-inzage-grenzen, cross-tenant-isolatie,
-      key-precedentie.
+- [x] Vereniging aanmaakbaar met naam en (optioneel) eigen Claude-key
+      (model + factory + beheer-UI).
+- [x] Gebruikers worden lid met een rol (member/coach/admin) (pivot + service).
+- [x] Coach ziet read-only sessies & voortgang van leden binnen dezelfde
+      vereniging (CoachSessieResource + policies).
+- [x] Coach ziet géén data van andere verenigingen; member ziet géén peer-data
+      (policy-tests cross-tenant + peer).
+- [x] Key-resolutie volgt `user-key → vereniging-key → geen AI` (AiKeyResolver).
+- [x] Club-admin beheert leden (toevoegen/rollen) en de gedeelde key
+      (VerenigingBeheer + VerenigingService).
+- [x] Pest dekt membership/rollen, coach-inzage-grenzen, cross-tenant-isolatie,
+      key-precedentie (50 tests groen).
+
+## Bewust niet gedaan / aandachtspunten
+- **Demo-seeder**: project heeft geen globale seeder; demo-data is per-user en
+  on-demand (`DemoDataSeeder`). Een globale demo-vereniging zou dat patroon
+  doorbreken → bewust overgeslagen.
+- **Uitnodiging niet-bestaande e-mail**: v1 koppelt alleen bestaande accounts;
+  volledige invite-flow blijft buiten scope (zoals afgesproken).
+- **`composer audit`**: pre-existing low-severity advisory in `symfony/yaml`
+  (transitief, niet door Fase 2 geïntroduceerd).
+- **3 pre-existing testfailures** (contact-form CSRF/rate-limit, logout) staan
+  los van deze wijziging — raken geen verenigingen-code.
 
 ## Open vragen (NEEDS_INFO)
 
