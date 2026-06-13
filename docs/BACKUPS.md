@@ -90,4 +90,79 @@ Voor lokale dev draait er een aparte runner-container die `scripts/backup-dev-db
 
 ## Offsite backup
 
-Offsite-replicatie naar Backblaze B2 (rclone install + bucket + appkey + `rclone sync` append) is afgesplitst naar follow-up issue [#84](https://github.com/Marcvdc/AimTrack/issues/84).
+Een tweede kopie van `/home/madmin/aimtrack-backups/` staat buiten de prod-host in een Backblaze B2 bucket, zodat een server-rebuild of disk-failure het meest recente archief niet meeneemt. De replicatie loopt aan het einde van `scripts/backup-aimtrack.sh` via `rclone sync` en is **gated** op de env-var `RCLONE_REMOTE`: alleen wanneer die gezet is wordt er gesynct. Dev/staging laten de variabele leeg en slaan de stap over.
+
+### 1. rclone installeren op de prod-host
+
+```bash
+# als madmin op de prod-host
+curl https://rclone.org/install.sh | sudo bash
+rclone version
+```
+
+### 2. Backblaze B2 bucket + application key
+
+1. Maak in de B2-console een private bucket aan, bv. `aimtrack-prod-backups`.
+2. Maak een **application key** met scope beperkt tot uitsluitend die bucket (geen master key gebruiken).
+3. Noteer de `keyID` en `applicationKey` — die komen alleen in de rclone-config terecht, niet in de repo.
+
+### 3. rclone remote configureren
+
+Configureer een remote `b2-aimtrack` (encrypted-at-rest aanbevolen via een `crypt`-wrapper):
+
+```bash
+# als madmin
+rclone config
+#  n) new remote → naam: b2-aimtrack → type: b2
+#     account: <keyID> · key: <applicationKey>
+#  (aanbevolen) n) new remote → naam: b2-aimtrack-crypt → type: crypt
+#     remote: b2-aimtrack:aimtrack-prod-backups
+#     filename + directory name encryption: standard · wachtwoorden bewaren in secrets manager
+```
+
+De rclone-config (`~/.config/rclone/rclone.conf`, mode `600`) bevat secrets en hoort **niet** in de repo — bewaar een versleutelde kopie samen met de overige backup-secrets (zie *Config & secrets*).
+
+### 4. Sync activeren in de backup-cron
+
+`scripts/backup-aimtrack.sh` synct het hele `BACKUP_ROOT` (db + storage, logs uitgesloten) naar `RCLONE_REMOTE`. Zet de variabele alleen op de prod-host, in de crontab-regel:
+
+```cron
+0 3 * * *   RCLONE_REMOTE="b2-aimtrack-crypt:" /home/madmin/backup-aimtrack.sh >> /home/madmin/aimtrack-backups/logs/cron.log 2>&1
+```
+
+> Gebruik `b2-aimtrack-crypt:` (de crypt-remote) wanneer je encrypted-at-rest hebt geconfigureerd; anders `b2-aimtrack:aimtrack-prod-backups`. Faalt de sync, dan stopt het script met een niet-nul exitcode (pager via cron).
+
+### 5. Retentie + lifecycle policy in B2
+
+Stel op de bucket een **lifecycle policy** in met file-versies, zodat een per ongeluk verwijderd of overschreven archief terug te halen is:
+
+- Bewaar oude versies minimaal 30 dagen (`keepOnlyLastVersion` uitzetten).
+- Hard-delete pas na de minimum-bewaartermijn, afgestemd op de lokale rotatie (7 dagelijks / 4 wekelijks / 3 maandelijks).
+
+Zo voorkomt de versie-historie dat `rclone sync` (die aan de offsite-kant verwijdert wat lokaal weg is) data definitief weggooit voordat de bewaartermijn voorbij is.
+
+### 6. Eenmalige verificatie
+
+Zet een testbestand offsite en haal het lokaal weer terug:
+
+```bash
+echo "offsite-test $(date)" > /tmp/offsite-test.txt
+rclone copy /tmp/offsite-test.txt "${RCLONE_REMOTE:-b2-aimtrack-crypt:}/_verify/"
+rclone copy "${RCLONE_REMOTE:-b2-aimtrack-crypt:}/_verify/offsite-test.txt" /tmp/offsite-back/
+diff /tmp/offsite-test.txt /tmp/offsite-back/offsite-test.txt && echo "Offsite round-trip OK"
+rclone delete "${RCLONE_REMOTE:-b2-aimtrack-crypt:}/_verify/offsite-test.txt"
+```
+
+Een dry-run van de volledige backup controleer je met:
+
+```bash
+RCLONE_REMOTE="b2-aimtrack-crypt:" /home/madmin/backup-aimtrack.sh --dry-run
+```
+
+### Coverage / verificatie
+
+Net als de overige backup-scripts is dit bash-werk niet via Pest gedekt; runtime-verificatie verloopt via:
+
+1. Het cron-log (`/home/madmin/aimtrack-backups/logs/cron.log`) — de regel `Offsite sync klaar.` bij success, of een `FOUT:`-regel + niet-nul exitcode bij falen.
+2. De eenmalige round-trip uit stap 6.
+3. Steekproef in de B2-console: meest recente `db/daily-*.sql.gz` aanwezig en versie-historie zichtbaar.
