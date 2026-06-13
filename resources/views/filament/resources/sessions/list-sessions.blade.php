@@ -23,7 +23,7 @@
         :reticle-size="200"
     />
 
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+    <div class="at-kpi-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
         <x-aimtrack.stat-card
             label="Sessies / mnd"
             :value="(string) $summary->sessionsThisMonth()"
@@ -48,7 +48,7 @@
         />
     </div>
 
-    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start;">
+    <div class="at-body-2col" style="display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start;">
         <div style="min-width: 0; display: flex; flex-direction: column; gap: 16px;">
             {{ $this->table }}
 
@@ -62,7 +62,7 @@
                         <div style="font-size: 13px; font-weight: 600; color: var(--at-text);">Wapens · gebruik</div>
                         <div class="at-label" style="margin-left: auto;">{{ $weaponUsage->count() }} actief</div>
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat({{ min(3, max(1, $weaponUsage->count())) }}, 1fr);">
+                    <div class="at-weapon-usage-grid" style="display: grid; grid-template-columns: repeat({{ min(3, max(1, $weaponUsage->count())) }}, 1fr);">
                         @foreach ($weaponUsage as $weapon)
                             <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px; @if (! $loop->last) border-right: 1px solid var(--at-line); @endif">
                                 <div class="at-label">{{ $weapon['type'] }}@if ($weapon['caliber'] !== '') · {{ $weapon['caliber'] }}@endif</div>
@@ -77,6 +77,7 @@
                                             :data="$weapon['series']"
                                             :width="80"
                                             :height="32"
+                                            :fluid="true"
                                             :color="$weapon['trend'] >= 0 ? 'var(--at-accent)' : 'var(--at-warn)'"
                                         />
                                     @endif
@@ -104,7 +105,7 @@
                             ])->all();
                         @endphp
                         <x-aimtrack.target-rings :size="200" :hits="$hits" />
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%;">
+                        <div class="at-last-session-stats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%;">
                             <div>
                                 <div class="at-label" style="letter-spacing: 0.14em;">Score</div>
                                 <div style="font-family: var(--at-font-mono); font-size: 18px; font-weight: 600; color: var(--at-accent);">{{ $lastStats->totalScore() }}</div>
@@ -136,7 +137,7 @@
                     <div class="at-label" style="margin-left: auto;">30d</div>
                 </div>
                 <div style="padding: 14px;">
-                    <x-aimtrack.sparkline :data="array_values($trend)" :width="280" :height="70" :fill="true" />
+                    <x-aimtrack.sparkline :data="array_values($trend)" :width="280" :height="70" :fill="true" :fluid="true" />
                     @if (count($trend) >= 2)
                         <div style="display: flex; justify-content: space-between; margin-top: 8px; font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.08em;">
                             <span>{{ \Illuminate\Support\Carbon::parse(array_key_first($trend))->format('d M') }}</span>

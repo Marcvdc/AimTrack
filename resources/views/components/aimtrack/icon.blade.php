@@ -40,6 +40,7 @@
 
 <svg
     {{ $attributes->merge([
+        'class' => 'aimtrack-icon',
         'aria-hidden' => 'true',
         'style' => "display: inline-block; vertical-align: middle; color: {$color};",
     ]) }}

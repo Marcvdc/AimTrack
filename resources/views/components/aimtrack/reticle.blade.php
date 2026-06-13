@@ -26,7 +26,7 @@
 @endphp
 
 <svg
-    {{ $attributes->merge(['style' => 'display: block; opacity: '.$fmt($opacity).';']) }}
+    {{ $attributes->merge(['class' => 'aimtrack-reticle', 'style' => 'display: block; opacity: '.$fmt($opacity).';']) }}
     width="{{ $fmt($size) }}"
     height="{{ $fmt($size) }}"
     viewBox="0 0 {{ $fmt($size) }} {{ $fmt($size) }}"

@@ -39,8 +39,8 @@
 
     /* Display sizes (uit design-tokens.jsx TYPE rules) */
     --at-display-xl: 64px;
-    --at-display-lg: 44px;
-    --at-display-md: 28px;
+    --at-display-lg: clamp(28px, 8vw, 44px);
+    --at-display-md: clamp(20px, 5vw, 28px);
 
     --at-text-heading:    22px;
     --at-text-subheading: 17px;
@@ -48,9 +48,9 @@
     --at-text-small:      12px;
     --at-text-micro:      11px;
 
-    --at-data-xl: 44px;
-    --at-data-lg: 26px;
-    --at-data-md: 18px;
+    --at-data-xl: clamp(30px, 8vw, 44px);
+    --at-data-lg: clamp(18px, 5vw, 26px);
+    --at-data-md: clamp(14px, 3.5vw, 18px);
     --at-label:   10px;
 
     /* ── Spacing (4-punts basis, 7 stappen) ──────────────────────── */
@@ -93,4 +93,113 @@
 
 .at-accent {
     color: var(--at-accent);
+}
+
+/*
+ * ── Fluid SVG-primitieven (#104 · Fase 4 mobile) ─────────────────
+ * De SVG-componenten zetten harde pixel width/height met een correcte
+ * viewBox. Deze centrale regel zorgt dat ze nooit breder worden dan hun
+ * container; height:auto bewaart de aspect-ratio via de viewBox. Eén
+ * knop die alle gebruikers (panel + landing) tegelijk raakt.
+ */
+.aimtrack-sparkline,
+.aimtrack-target-rings,
+.aimtrack-reticle,
+.aimtrack-at-mark,
+.aimtrack-icon {
+    max-width: 100%;
+    height: auto;
+}
+
+/*
+ * ── Responsive layout-utilities (#104 · Fase 4 mobile) ───────────
+ * De custom panel-/landingschermen zetten grid-template-columns inline.
+ * Deze classes vangen de stack-breakpoints centraal op volgens de
+ * projectconventie (max-width 1024 / 768 / 520). De media-overrides
+ * gebruiken !important omdat ze de inline grid-template-columns van het
+ * style-attribuut moeten verslaan. Eén centrale plek — geladen in zowel
+ * het Filament-panel als de standalone landing via <x-aimtrack.head-assets>.
+ */
+
+/* AI-coach: 3-koloms chat-layout → 1 kolom op de stack-grens */
+@media (max-width: 768px) {
+    .at-coach-grid { grid-template-columns: 1fr !important; min-height: 0 !important; }
+}
+
+/* KPI-/stat-rijen (4-up) → 2 op de stack-grens, 1 op telefoon */
+@media (max-width: 768px) {
+    .at-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 520px) {
+    .at-kpi-grid { grid-template-columns: 1fr !important; }
+}
+
+/* Hoofd-body met vaste px-aside (320/340px) → 1 kolom op de stack-grens */
+@media (max-width: 768px) {
+    .at-body-2col,
+    .at-session-2col,
+    .at-weapon-2col { grid-template-columns: 1fr !important; }
+}
+
+/* Sessie-detail: 5-up stat-grid → 3 / 2 / 1 */
+@media (max-width: 1024px) {
+    .at-session-stat-grid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+@media (max-width: 768px) {
+    .at-session-stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 520px) {
+    .at-session-stat-grid { grid-template-columns: 1fr !important; }
+}
+
+/* Smalle sub-grids → telefoon-stack */
+@media (max-width: 520px) {
+    .at-weapon-usage-grid,
+    .at-last-session-stats,
+    .at-kalibratie-grid,
+    .at-insight-kv { grid-template-columns: 1fr !important; }
+    .at-weapon-usage-grid > div { border-right: none !important; }
+    .at-session-xysd { flex-direction: column; align-items: flex-start; gap: 2px; }
+}
+
+/* Wapen-detail: vaste 5-koloms tabel → horizontaal scrollbaar op de stack-grens */
+.at-weapon-table-scroll { overflow-x: auto; }
+@media (max-width: 768px) {
+    .at-weapon-table { min-width: 520px; }
+}
+
+/* Series-card: rigide N-koloms → fluïde auto-fit op telefoon */
+@media (max-width: 520px) {
+    .aimtrack-series-grid { grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)) !important; }
+}
+
+/* AI-reflectie-kaart: 90px label-kolom → label boven waarde op de stack-grens */
+@media (max-width: 768px) {
+    .aimtrack-ai-reflect-grid { grid-template-columns: 1fr !important; gap: 2px 6px; }
+}
+
+/* Page-header: titel + acties naast elkaar → gestapeld op de stack-grens */
+@media (max-width: 768px) {
+    .aimtrack-page-header-row { flex-direction: column; align-items: stretch; gap: 8px; }
+}
+
+/* Wizard "Schoten"-preview: aside stackt, numpad 6→3, touch-vriendelijke cellen */
+@media (max-width: 768px) {
+    .aimtrack-wizard-shots { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 520px) {
+    .aimtrack-wizard-numpad { grid-template-columns: repeat(3, 1fr) !important; }
+    .aimtrack-wizard-numpad > div { min-height: 44px; display: flex; align-items: center; justify-content: center; }
+    .aimtrack-wizard-stat-row { gap: 12px !important; }
+}
+
+/* Decoratieve T3 bracket-frame: kleinere hoeken op mobiel */
+@media (max-width: 768px) {
+    .aimtrack-bracket-frame > span[aria-hidden="true"] { width: 10px !important; height: 10px !important; }
+}
+
+/* Decoratieve T4 monogram-stempel: niet meer absoluut over de kaart op telefoon */
+@media (max-width: 520px) {
+    .aimtrack-monogram-stamp[data-corner="top-right"],
+    .aimtrack-monogram-stamp[data-corner="top-left"] { position: static !important; margin-top: -16px; }
 }

@@ -45,7 +45,7 @@
     {{-- Big ambient reticle watermark behind everything --}}
     <x-aimtrack.watermark-bg center :size="680" :opacity="0.06" :stroke="1" :dot="true" color="var(--at-accent)" />
 
-    <div style="position: relative; z-index: 1; max-width: 520px; width: 100%; text-align: center; padding: 32px 16px;">
+    <div style="position: relative; z-index: 1; max-width: clamp(280px, 90vw, 520px); width: 100%; text-align: center; padding: 32px 16px;">
         {{-- Logo in rounded panel --}}
         <div
             style="display: inline-flex; align-items: center; justify-content: center; width: 90px; height: 90px; border-radius: 22px; background: var(--at-panel); border: 1px solid var(--at-line);"
@@ -60,19 +60,19 @@
         </div>
 
         <h1
-            style="font-family: var(--at-font-display); font-size: 44px; font-weight: 600; letter-spacing: -0.025em; margin: 12px 0 14px; color: var(--at-text); line-height: 1.1;"
+            style="font-family: var(--at-font-display); font-size: var(--at-display-lg); font-weight: 600; letter-spacing: -0.025em; margin: 12px 0 14px; color: var(--at-text); line-height: 1.1;"
         >
             Klaar voor je <span style="color: var(--at-accent);">eerste sessie?</span>
         </h1>
 
         <p
-            style="font-size: 15px; color: var(--at-muted); line-height: 1.6; max-width: 420px; margin: 0 auto;"
+            style="font-size: 15px; color: var(--at-muted); line-height: 1.6; max-width: clamp(280px, 90vw, 420px); margin: 0 auto;"
         >
             Drie korte stappen — wapen toevoegen, profiel afmaken, je eerste sessie loggen. Daarna kijkt AimTrack mee.
         </p>
 
         {{-- Step checklist --}}
-        <div style="margin: 32px auto 0; display: flex; flex-direction: column; gap: 10px; max-width: 380px;">
+        <div style="margin: 32px auto 0; display: flex; flex-direction: column; gap: 10px; max-width: clamp(280px, 90vw, 380px);">
             @foreach ($steps as $i => $step)
                 @php
                     $isCurrent = $i === $currentIndex;

@@ -137,8 +137,8 @@ test('ring-medaillon renders reticle, label, value and sub readout', function ()
         ->toContain('SCORE')
         ->toContain('>547<')
         ->toContain('>/600<')
-        ->toContain('width: 200px')
-        ->toContain('height: 200px')
+        ->toContain('max-width: 200px')
+        ->toContain('aspect-ratio: 1')
         ->toContain('<svg');
 });
 
@@ -149,7 +149,13 @@ test('ring-medaillon honours custom size, label, value and sub', function (): vo
         ->toContain('GROEP')
         ->toContain('>22<')
         ->toContain('>mm<')
-        ->toContain('width: 130px');
+        ->toContain('max-width: 130px');
+});
+
+test('fluid svg primitives carry their shared class hooks (#104)', function (): void {
+    expect(Blade::render('<x-aimtrack.reticle :size="100" />'))->toContain('aimtrack-reticle');
+    expect(Blade::render('<x-aimtrack.at-mark :size="20" />'))->toContain('aimtrack-at-mark');
+    expect(Blade::render('<x-aimtrack.icon name="target" :size="16" />'))->toContain('aimtrack-icon');
 });
 
 test('monogram-stamp renders solid stamp by default with at-mark and label', function (): void {

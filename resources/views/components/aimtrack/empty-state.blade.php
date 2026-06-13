@@ -1,7 +1,7 @@
 @props([
     'reticleOpacity' => 0.05,
     'reticleSize' => 460,
-    'maxWidth' => '420px',
+    'maxWidth' => 'clamp(280px, 90vw, 420px)',
     'iconAccent' => false,
 ])
 
@@ -14,7 +14,7 @@
 <div
     {{ $attributes->merge([
         'class' => 'at-empty-state',
-        'style' => 'position: relative; display: flex; align-items: center; justify-content: center; padding: 32px 24px; min-height: 480px; width: 100%;',
+        'style' => 'position: relative; display: flex; align-items: center; justify-content: center; padding: 32px 24px; min-height: clamp(240px, 60vh, 480px); width: 100%;',
     ]) }}
 >
     {{-- T1 watermark — ambient reticle achter de content --}}
@@ -38,7 +38,7 @@
 
         @isset($title)
             <h2
-                style="font-family: var(--at-font-display); font-size: 22px; font-weight: 600; letter-spacing: -0.015em; color: var(--at-text); margin: 16px 0 0; line-height: 1.2;"
+                style="font-family: var(--at-font-display); font-size: clamp(18px, 5.5vw, 22px); font-weight: 600; letter-spacing: -0.015em; color: var(--at-text); margin: 16px 0 0; line-height: 1.2;"
             >
                 {{ $title }}
             </h2>
@@ -46,7 +46,7 @@
 
         @isset($description)
             <p
-                style="font-family: var(--at-font-body); font-size: 14px; line-height: 1.5; color: var(--at-muted); margin: 10px auto 0; max-width: 360px;"
+                style="font-family: var(--at-font-body); font-size: 14px; line-height: 1.5; color: var(--at-muted); margin: 10px auto 0;"
             >
                 {{ $description }}
             </p>

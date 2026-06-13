@@ -12,7 +12,7 @@
 
     <style>
         *, *::before, *::after { box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
+        html { scroll-behavior: smooth; overflow-x: hidden; }
 
         .mk-body {
             margin: 0;
@@ -449,12 +449,16 @@
             .mk-reticle-deco { right: -40px; opacity: .6; }
             .mk-features, .mk-ai { padding-top: 56px; padding-bottom: 56px; }
             .mk-feature-grid { grid-template-columns: 1fr; }
+            .mk-hero-stage { width: 100%; max-width: 280px; height: auto; aspect-ratio: 1; transform: none; margin: auto; }
         }
         @media (max-width: 520px) {
             .mk-nav { padding: 14px 18px; gap: 12px; }
             .mk-hero { padding: 44px 18px 36px; }
-            .mk-hero-stage { transform: scale(.74); margin: -55px 0; }
             .mk-cta-row .mk-btn { flex: 1 1 auto; }
+            .mk-reticle-deco { top: 8px; right: -120px; opacity: .35; }
+            .mk-callout-score { left: 0; }
+            .mk-callout-group { right: 0; }
+            .mk-callout-ai { right: 0; }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -635,7 +639,7 @@
                 <div class="mk-feature-demo">
                     <div class="mk-demo-trend">
                         <div class="mk-demo-trend-label">SCHOTEN · PER SESSIE</div>
-                        <x-aimtrack.sparkline :data="$trendSeries ?? []" :width="250" :height="50" color="var(--at-accent)" :stroke-width="1.8" :fill="true" />
+                        <x-aimtrack.sparkline :data="$trendSeries ?? []" :width="250" :height="50" color="var(--at-accent)" :stroke-width="1.8" :fill="true" :fluid="true" />
                     </div>
                 </div>
             </article>
@@ -750,7 +754,7 @@
                 </div>
                 <div class="mk-drift">
                     <div class="mk-drift-label">SCORE-DRIFT · SCHOT 30–40</div>
-                    <x-aimtrack.sparkline :data="[9.6, 9.5, 9.4, 9.2, 9.0, 8.9, 9.0, 9.1, 9.3, 9.4, 9.4]" :width="380" :height="50" color="var(--at-warn)" :stroke-width="1.8" />
+                    <x-aimtrack.sparkline :data="[9.6, 9.5, 9.4, 9.2, 9.0, 8.9, 9.0, 9.1, 9.3, 9.4, 9.4]" :width="380" :height="50" color="var(--at-warn)" :stroke-width="1.8" :fluid="true" />
                 </div>
                 <div class="mk-bubble mk-bubble-user">Wat raad je aan?</div>
                 <div class="mk-bubble mk-bubble-ai">
