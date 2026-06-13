@@ -1,7 +1,28 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 set -euo pipefail
 
 cd /var/www/html
+
+# De applicatiecode wordt gedeeld met de nginx-container via het named volume
+# app_code. Docker vult een named volume alleen bij de éérste keer aanmaken uit
+# de image; bij volgende deploys blijft de oude code staan. Daarom synct deze
+# entrypoint de in de image gebakken pristine kopie (/opt/aimtrack) bij elke
+# boot naar /var/www/html. storage/ en bootstrap/cache hebben eigen volumes en
+# worden expliciet uitgesloten zodat hun state behouden blijft.
+#
+# De app- en queue-container delen dit volume en draaien allebei deze entrypoint;
+# een flock op het volume serialiseert de sync zodat ze elkaar niet halverwege
+# overschrijven en de queue pas verder gaat als de code volledig vers is.
+if [ -d /opt/aimtrack ]; then
+    {
+        flock 9
+        rsync -a --delete \
+            --exclude '/.app-sync.lock' \
+            --exclude '/storage/' \
+            --exclude '/bootstrap/cache/' \
+            /opt/aimtrack/ /var/www/html/
+    } 9>/var/www/html/.app-sync.lock
+fi
 
 mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache

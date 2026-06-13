@@ -10,6 +10,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         cron \
         git \
+        rsync \
         unzip \
         libpq-dev \
         libjpeg-dev \
@@ -73,6 +74,11 @@ COPY --from=vendor /var/www/html/vendor ./vendor
 COPY . .
 RUN chmod +x docker/backup/*.sh scripts/backup-dev-db.sh
 COPY --from=frontend /opt/artifacts/public-build ./public/build
+
+# Pristine kopie van de volledige applicatie. De entrypoint synct deze bij elke
+# boot naar /var/www/html (het gedeelde app_code-volume), zodat een named volume
+# na de eerste deploy niet de oude code blijft serveren. Zie docker/entrypoint.sh.
+RUN cp -a /var/www/html /opt/aimtrack
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint
 

@@ -8,7 +8,6 @@ fi
 
 REGISTRY_IMAGE="${REGISTRY_IMAGE:-}"
 IMAGE_TAG="${IMAGE_TAG:-}"
-LATEST_TAG="${LATEST_TAG:-}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker/compose.staging.yml}"
 ENV_FILE="${ENV_FILE:-.env}"
 APP_URL="${APP_URL:-}"
@@ -37,10 +36,16 @@ if [ -n "${ENV_FILE_B64:-}" ]; then
   echo "${ENV_FILE_B64}" | base64 --decode > "${ENV_FILE}"
 fi
 
+if [ ! -f "${ENV_FILE}" ]; then
+  echo "[deploy] ${ENV_FILE} not found in ${DEPLOY_PATH} and ENV_FILE_B64 was not provided" >&2
+  echo "[deploy] Provide the ENV_FILE_B64 secret or place a ${ENV_FILE} on the host before deploying." >&2
+  exit 1
+fi
+
 echo "[deploy] Docker login"
 echo "${GHCR_TOKEN:?}" | docker login ghcr.io -u "${GHCR_USERNAME:?}" --password-stdin
 
-export REGISTRY_IMAGE IMAGE_TAG LATEST_TAG
+export REGISTRY_IMAGE IMAGE_TAG
 
 echo "[deploy] Pulling images via ${COMPOSE_FILE}"
 docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" pull
