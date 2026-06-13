@@ -59,7 +59,7 @@
                     <a
                         href="{{ $page->getCreateSessionUrl() }}"
                         data-testid="ai-coach-log-session"
-                        style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 8px; background: var(--at-accent); color: var(--at-cta-text); font-weight: 600; font-size: 13px; text-decoration: none;"
+                        style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; min-height: 44px; border-radius: 8px; background: var(--at-accent); color: var(--at-cta-text); font-weight: 600; font-size: 13px; text-decoration: none;"
                     >
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -71,7 +71,7 @@
                         type="button"
                         wire:click="explainAiCoach"
                         data-testid="ai-coach-explain"
-                        style="padding: 10px 18px; border-radius: 8px; border: 1px solid var(--at-line); background: transparent; color: var(--at-text); font-size: 13px; cursor: pointer;"
+                        style="padding: 10px 18px; min-height: 44px; border-radius: 8px; border: 1px solid var(--at-line); background: transparent; color: var(--at-text); font-size: 13px; cursor: pointer;"
                     >
                         Hoe werkt de AI?
                     </button>
@@ -98,7 +98,7 @@
             ]));
         @endphp
 
-        <div data-testid="ai-coach-chat-ready" style="display: grid; grid-template-columns: 260px minmax(0, 1fr) 280px; gap: 16px; align-items: stretch; min-height: 540px;">
+        <div data-testid="ai-coach-chat-ready" class="at-coach-grid" style="display: grid; grid-template-columns: 260px minmax(0, 1fr) 280px; gap: 16px; align-items: stretch; min-height: 540px;">
             <aside style="background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-lg); padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; overflow: auto;">
                 <div class="at-label" style="padding: 4px 8px 10px;">RECENTE GESPREKKEN</div>
                 @forelse ($conversations as $conv)
@@ -164,7 +164,7 @@
                     @if (count($scoreDrift) >= 2)
                         <x-aimtrack.bracket-frame :rounded="8" :padding="16" style="display: flex; flex-direction: column; gap: 10px;">
                             <div class="at-label" style="color: var(--at-accent);">SCORE-DRIFT · GEM. PER SCHOT · LAATSTE SESSIES</div>
-                            <x-aimtrack.sparkline :data="array_values($scoreDrift)" :width="520" :height="70" :stroke-width="2" :fill="true" color="var(--at-warn)" />
+                            <x-aimtrack.sparkline :data="array_values($scoreDrift)" :width="520" :height="70" :stroke-width="2" :fill="true" color="var(--at-warn)" :fluid="true" />
                             <div style="display: flex; justify-content: space-between; font-family: var(--at-font-mono); font-size: 9px; color: var(--at-muted); letter-spacing: 0.14em;">
                                 <span>SCHOT {{ array_key_first($scoreDrift) }}</span>
                                 <span>SCHOT {{ array_key_last($scoreDrift) }}</span>

@@ -34,7 +34,7 @@
     </div>
 
     @if (count($series) > 0)
-        <div style="display: grid; grid-template-columns: repeat({{ count($series) }}, 1fr);">
+        <div class="aimtrack-series-grid" style="display: grid; grid-template-columns: repeat({{ count($series) }}, 1fr);">
             @foreach ($series as $i => $v)
                 @php
                     $good = $v >= $goodThreshold;
@@ -44,7 +44,7 @@
                 @endphp
                 <div style="padding: 14px; border-right: {{ $rightBorder }}; display: flex; flex-direction: column; gap: 4px;">
                     <div class="at-label" style="letter-spacing: 0.12em;">SERIE {{ $i + 1 }}</div>
-                    <div style="font-family: var(--at-font-mono); font-size: 22px; font-weight: 600; color: {{ $valueColor }}; letter-spacing: -0.02em;">{{ $fmt($v) }}</div>
+                    <div style="font-family: var(--at-font-mono); font-size: clamp(16px, 5vw, 22px); font-weight: 600; color: {{ $valueColor }}; letter-spacing: -0.02em;">{{ $fmt($v) }}</div>
                     <div style="height: 4px; background: var(--at-line); border-radius: 2px; position: relative; overflow: hidden;">
                         <div style="position: absolute; inset: 0; width: {{ $fmt($pct($v), 2) }}%; background: {{ $barColor }};"></div>
                     </div>

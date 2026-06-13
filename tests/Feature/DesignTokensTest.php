@@ -62,3 +62,24 @@ test('aimtrack tokens stylesheet defines spacing and radius scales', function ()
         expect($css)->toContain($token);
     }
 });
+
+test('aimtrack tokens stylesheet defines the fluid SVG rule and responsive layout utilities (#104)', function (): void {
+    $css = file_get_contents(resource_path('css/aimtrack-tokens.css'));
+
+    expect($css)
+        ->toContain('.aimtrack-sparkline')
+        ->toContain('max-width: 100%')
+        ->toContain('.at-kpi-grid')
+        ->toContain('.at-coach-grid')
+        ->toContain('.at-session-stat-grid')
+        ->toContain('@media (max-width: 768px)')
+        ->toContain('@media (max-width: 520px)');
+});
+
+test('aimtrack data and display type tokens are fluid clamps (#104)', function (): void {
+    $css = file_get_contents(resource_path('css/aimtrack-tokens.css'));
+
+    expect($css)
+        ->toContain('--at-data-lg: clamp(')
+        ->toContain('--at-display-lg: clamp(');
+});

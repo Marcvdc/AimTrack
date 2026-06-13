@@ -36,7 +36,7 @@
 @endphp
 
 <x-filament-panels::page>
-    <div style="display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 16px; align-items: start;">
+    <div class="at-weapon-2col" style="display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 16px; align-items: start;">
         <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
             <div style="padding: 20px; background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-lg);">
                 <div style="aspect-ratio: 16/10; background: linear-gradient(135deg, var(--at-panel-2), var(--at-panel)); border: 1px solid var(--at-line); border-radius: var(--at-r-md); display: flex; align-items: center; justify-content: center; position: relative;">
@@ -71,7 +71,7 @@
 
             <div style="padding: 16px; background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-lg);">
                 <div class="at-label" style="margin-bottom: 10px;">KALIBRATIE</div>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                <div class="at-kalibratie-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
                     @foreach ($kalibratieRows as [$key, $value])
                         <div>
                             <div style="font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.12em;">{{ strtoupper($key) }}</div>
@@ -83,7 +83,7 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+            <div class="at-kpi-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
                 <x-aimtrack.stat-card label="Sessies" :value="(string) $sessionCount" :sub="$sessionCount > 0 ? 'totaal' : 'nog geen'" />
                 <x-aimtrack.stat-card label="Schoten totaal" :value="number_format($totalShots, 0, ',', '.')" />
                 <x-aimtrack.stat-card
@@ -104,7 +104,7 @@
                     <div class="at-label" style="margin-left: auto;">{{ count($trendData) }} sessies</div>
                 </div>
                 <div style="padding: 18px;">
-                    <x-aimtrack.sparkline :data="array_values($trendData)" :width="760" :height="140" :stroke-width="2" :fill="true" />
+                    <x-aimtrack.sparkline :data="array_values($trendData)" :width="760" :height="140" :stroke-width="2" :fill="true" :fluid="true" />
                     @if (count($trendData) >= 2)
                         <div style="display: flex; justify-content: space-between; margin-top: 10px; font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.12em;">
                             <span>{{ Carbon::parse(array_key_first($trendData))->translatedFormat('M Y') }}</span>
@@ -134,7 +134,7 @@
                     @endif
                     @if ($insightPatterns->isNotEmpty() || $insightSuggestions->isNotEmpty())
                         <div style="height: 1px; background: var(--at-line);"></div>
-                        <div style="display: grid; grid-template-columns: 90px 1fr; gap: 6px; font-size: 12px;">
+                        <div class="at-insight-kv" style="display: grid; grid-template-columns: 90px 1fr; gap: 6px; font-size: 12px;">
                             @if ($insightPatterns->isNotEmpty())
                                 <div class="at-label" style="color: var(--at-accent);">PATRONEN</div>
                                 <div style="color: var(--at-text);">{{ $insightPatterns->implode(' · ') }}</div>
@@ -156,7 +156,8 @@
                 @if ($recentSessions->isEmpty())
                     <div style="padding: 32px 16px; color: var(--at-muted); font-size: 12px; text-align: center;">Nog geen sessies met dit wapen.</div>
                 @else
-                    <div style="display: grid; grid-template-columns: 100px minmax(0, 1fr) 90px 80px 80px; padding: 8px 16px; font-family: var(--at-font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-muted); border-bottom: 1px solid var(--at-line);">
+                    <div class="at-weapon-table-scroll">
+                    <div class="at-weapon-table" style="display: grid; grid-template-columns: 100px minmax(0, 1fr) 90px 80px 80px; padding: 8px 16px; font-family: var(--at-font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-muted); border-bottom: 1px solid var(--at-line);">
                         <div>Datum</div><div>Locatie</div><div>Schoten</div><div>Score</div><div>Status</div>
                     </div>
                     @foreach ($recentSessions as $session)
@@ -165,7 +166,7 @@
                             $sessionScore = (int) ($session->score_total ?? 0);
                             $sessionShots = (int) ($session->rounds_total ?? 0);
                         @endphp
-                        <div style="display: grid; grid-template-columns: 100px minmax(0, 1fr) 90px 80px 80px; padding: 12px 16px; border-bottom: 1px solid var(--at-line); align-items: center; font-size: 12px;">
+                        <div class="at-weapon-table" style="display: grid; grid-template-columns: 100px minmax(0, 1fr) 90px 80px 80px; padding: 12px 16px; border-bottom: 1px solid var(--at-line); align-items: center; font-size: 12px;">
                             <div style="font-family: var(--at-font-mono); color: var(--at-muted); font-size: 11px;">
                                 {{ $session->date?->translatedFormat('d M') ?? '—' }}
                                 <div style="font-size: 9px; opacity: 0.7;">{{ $sessionLabel }}</div>
@@ -182,6 +183,7 @@
                             </div>
                         </div>
                     @endforeach
+                    </div>
                 @endif
             </div>
         </div>

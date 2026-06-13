@@ -23,7 +23,7 @@
 
 <div class="aimtrack-wizard-shots" style="display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start;">
     <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
-        <div style="display: flex; align-items: flex-end; gap: 24px; flex-wrap: wrap;">
+        <div class="aimtrack-wizard-stat-row" style="display: flex; align-items: flex-end; gap: 24px; flex-wrap: wrap;">
             <div>
                 <div class="at-label">VOORTGANG</div>
                 <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 6px;">
@@ -49,7 +49,7 @@
 
         <div>
             <div class="at-label">VOLGEND SCHOT · PREVIEW</div>
-            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 10px; opacity: 0.55; pointer-events: none;" aria-hidden="true">
+            <div class="aimtrack-wizard-numpad" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 10px; opacity: 0.55; pointer-events: none;" aria-hidden="true">
                 @foreach ($numpad as $value)
                     @php
                         $isTen = str_starts_with($value, '10');

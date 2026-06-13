@@ -46,7 +46,7 @@
     @unless ($compact)
         <div style="height: 1px; background: var(--at-line);"></div>
 
-        <div style="display: grid; grid-template-columns: 90px 1fr; gap: 6px; font-size: 12px;">
+        <div class="aimtrack-ai-reflect-grid" style="display: grid; grid-template-columns: 90px 1fr; gap: 6px; font-size: 12px;">
             <div class="at-label" style="color: var(--at-accent);">STERK</div>
             <div style="color: var(--at-text);">{{ $listOrDash($positives) }}</div>
             <div class="at-label">VERBETER</div>

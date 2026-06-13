@@ -28,6 +28,7 @@
 <span
     {{ $attributes->merge([
         'class' => 'aimtrack-monogram-stamp',
+        'data-corner' => $corner ?? '',
         'style' => "display: inline-flex; align-items: center; gap: 6px; padding: {$padding}; background: {$background}; border: {$border}; border-radius: 4px;".(($cornerStyles !== '') ? ' '.$cornerStyles : ''),
     ]) }}
 >

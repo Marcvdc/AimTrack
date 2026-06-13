@@ -5,6 +5,7 @@
     'color' => null,
     'strokeWidth' => 1.8,
     'fill' => false,
+    'fluid' => false,
 ])
 
 @php
@@ -41,9 +42,13 @@
 @endphp
 
 <svg
-    {{ $attributes->merge(['class' => 'aimtrack-sparkline', 'style' => 'display: block;']) }}
-    width="{{ $fmt($width) }}"
-    height="{{ $fmt($height) }}"
+    {{ $attributes->merge([
+        'class' => 'aimtrack-sparkline',
+        'style' => $fluid
+            ? 'display: block; width: 100%; max-width: '.$fmt($width).'px; height: auto;'
+            : 'display: block;',
+    ]) }}
+    @unless ($fluid) width="{{ $fmt($width) }}" height="{{ $fmt($height) }}" @endunless
     viewBox="0 0 {{ $fmt($width) }} {{ $fmt($height) }}"
     role="img"
     aria-label="Trend"

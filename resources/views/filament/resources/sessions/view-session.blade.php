@@ -54,7 +54,7 @@
 @endphp
 
 <x-filament-panels::page>
-    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start;">
+    <div class="at-session-2col" style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start;">
         <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
             <div style="position: relative; padding: 20px; background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-lg); overflow: hidden;">
                 <x-aimtrack.watermark-bg :size="220" :opacity="0.07" :top="-60" :right="-40" />
@@ -89,7 +89,7 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;">
+            <div class="at-session-stat-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;">
                 <x-aimtrack.stat-card label="Beste schot" :value="$bestShot !== null ? (string) $bestShot : '—'" />
                 <x-aimtrack.stat-card label="Tienen" :value="$tienen.'/'.max(1, $totalShots)" :value-tone="$tienen > 0 ? 'accent' : 'text'" />
                 <x-aimtrack.stat-card label="Negens" :value="$negens.'/'.max(1, $totalShots)" />
@@ -133,7 +133,7 @@
                     @if ($totalShots > 0)
                         <x-aimtrack.target-rings :size="240" :hits="$hits" :score-labels="true" />
                         @if ($meanXmm !== null && $meanYmm !== null && $sdMm !== null)
-                            <div style="display: flex; justify-content: space-between; width: 100%; font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.12em;">
+                            <div class="at-session-xysd" style="display: flex; justify-content: space-between; width: 100%; font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.12em;">
                                 <span>X: {{ $meanXmm >= 0 ? '+'.$meanXmm : $meanXmm }} mm</span>
                                 <span>Y: {{ $meanYmm >= 0 ? '+'.$meanYmm : $meanYmm }} mm</span>
                                 <span>SD: {{ $sdMm }} mm</span>

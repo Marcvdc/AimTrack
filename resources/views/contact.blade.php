@@ -130,6 +130,7 @@
             font-family: var(--at-font-display);
             font-weight: 600;
             font-size: 15px;
+            min-height: 44px;
             padding: var(--at-space-3) var(--at-space-5);
             cursor: pointer;
         }
@@ -142,6 +143,7 @@
             color: var(--at-accent);
             border: 1px solid var(--at-line);
             border-radius: var(--at-r-pill);
+            min-height: 44px;
             padding: var(--at-space-2) var(--at-space-4);
             cursor: pointer;
             font-family: var(--at-font-display);
@@ -157,13 +159,19 @@
 
         .mkc-success p { color: var(--at-muted); margin: 0; }
 
-        /* Honeypot — visueel verborgen, maar niet display:none zodat bots 'm vinden. */
+        /* Honeypot — visueel verborgen, maar niet display:none zodat bots 'm vinden.
+           Robuuste sr-only/clip-techniek: reserveert geen layout-ruimte en kan geen
+           horizontale page-scroll veroorzaken (i.t.t. de left:-9999px-truc). */
         .mkc-hp {
             position: absolute;
-            left: -9999px;
             width: 1px;
             height: 1px;
+            padding: 0;
+            margin: -1px;
             overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
         }
 
         .mkc-footer {

@@ -53,3 +53,24 @@ test('sparkline marks the latest point with a terminal dot', function (): void {
 
     expect($html)->toContain('<circle');
 });
+
+test('sparkline fluid prop emits a responsive width and drops the fixed pixel attributes (#104)', function (): void {
+    $html = Blade::render('<x-aimtrack.sparkline :data="[1, 2, 3]" width="380" height="50" :fluid="true" />');
+
+    expect($html)
+        ->toContain('width: 100%')
+        ->toContain('max-width: 380px')
+        ->toContain('height: auto')
+        ->toContain('viewBox="0 0 380 50"')
+        ->not->toContain('width="380"')
+        ->not->toContain('height="50"');
+});
+
+test('sparkline keeps fixed pixel dimensions when not fluid (#104)', function (): void {
+    $html = Blade::render('<x-aimtrack.sparkline :data="[1, 2, 3]" width="380" height="50" />');
+
+    expect($html)
+        ->toContain('width="380"')
+        ->toContain('height="50"')
+        ->not->toContain('width: 100%');
+});

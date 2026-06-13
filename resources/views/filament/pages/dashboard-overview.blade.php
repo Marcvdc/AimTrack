@@ -21,7 +21,7 @@
         :reticle-size="200"
     />
 
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+    <div class="at-kpi-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
         <x-aimtrack.stat-card
             label="Sessies / mnd"
             :value="(string) $summary->sessionsThisMonth()"
@@ -46,7 +46,7 @@
         />
     </div>
 
-    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start;">
+    <div class="at-body-2col" style="display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start;">
         <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
             {{-- Leergebieden · voortgang per discipline --}}
             <div style="background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-lg); overflow: hidden;">
@@ -72,6 +72,7 @@
                                 :data="$discipline['series']"
                                 :width="96"
                                 :height="36"
+                                :fluid="true"
                                 :color="$discipline['trend'] >= 0 ? 'var(--at-accent)' : 'var(--at-warn)'"
                             />
                         @endif
