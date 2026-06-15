@@ -23,7 +23,7 @@
 <div
     {{ $attributes->merge([
         'class' => 'aimtrack-ring-medaillon',
-        'style' => "position: relative; width: {$size}px; height: {$size}px;",
+        'style' => "position: relative; width: 100%; max-width: {$size}px; aspect-ratio: 1; margin-inline: auto;",
     ]) }}
 >
     <x-aimtrack.reticle :size="$size" :stroke="$stroke" :color="$color" :dot="false" opacity="0.85" />

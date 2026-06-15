@@ -9,7 +9,7 @@
 @endphp
 
 <svg
-    {{ $attributes->merge(['style' => 'display: block;']) }}
+    {{ $attributes->merge(['class' => 'aimtrack-at-mark', 'style' => 'display: block;']) }}
     width="{{ $fmt($size) }}"
     height="{{ $fmt($size) }}"
     viewBox="0 0 100 100"

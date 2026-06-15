@@ -48,10 +48,21 @@
     --at-text-small:      12px;
     --at-text-micro:      11px;
 
-    --at-data-xl: 44px;
-    --at-data-lg: 26px;
-    --at-data-md: 18px;
+    /*
+     * Numerieke data-sizes zijn fluid (clamp): op smalle viewports krimpen de
+     * KPI-/stat-waarden mee zodat ze niet uit hun kaart breken (#104). De
+     * bovengrens is de oorspronkelijke vaste maat, zodat desktop ongewijzigd
+     * blijft.
+     */
+    --at-data-xl: clamp(30px, 8vw, 44px);
+    --at-data-lg: clamp(18px, 5vw, 26px);
+    --at-data-md: clamp(14px, 3.5vw, 18px);
     --at-label:   10px;
+
+    /* Display-sizes als fluid varianten (#104) — voor koppen die op mobiel
+       anders te groot worden (first-run-welcome, empty-states). */
+    --at-display-lg-fluid: clamp(28px, 8vw, 44px);
+    --at-display-md-fluid: clamp(20px, 5vw, 28px);
 
     /* ── Spacing (4-punts basis, 7 stappen) ──────────────────────── */
     --at-space-1: 4px;
@@ -93,4 +104,160 @@
 
 .at-accent {
     color: var(--at-accent);
+}
+
+/*
+ * ── Responsive · mobile-fluid recept (#104) ─────────────────────────────
+ *
+ * Dit bestand is de single source of truth voor zowel de publieke landing
+ * (via <x-aimtrack.head-assets>) als het Filament-panel (via
+ * AdminPanelProvider::aimTrackDesignAssets()). De regels hieronder grijpen dus
+ * in beide contexten tegelijk — één centrale fix raakt alle gebruikers.
+ *
+ * Breakpoint-conventie (aansluitend op welcome.blade.php): max-width queries op
+ * 1024 / 768 / 520px. Geen mobile-first/min-width mengen.
+ */
+
+/* Globale guard: voorkom zijwaartse page-scroll als een decoratief element
+   buiten de viewport uitsteekt. body heeft dit al op de landing; html niet. */
+html {
+    overflow-x: hidden;
+}
+
+/*
+ * SVG-primitieven schalen nooit groter dan hun container. De viewBox bewaart de
+ * aspect-ratio, dus height:auto houdt ze proportioneel. Iconen (inline, vaste
+ * kleine maat) krijgen alleen max-width zodat hun inline-grootte intact blijft.
+ */
+.aimtrack-sparkline,
+.aimtrack-target-rings,
+.aimtrack-reticle,
+.aimtrack-at-mark {
+    max-width: 100%;
+    height: auto;
+}
+
+.aimtrack-icon {
+    max-width: 100%;
+}
+
+/*
+ * Fluid grid-utilities — vervangen ad-hoc inline grid-template-columns die op
+ * mobiel niet terugvallen. Toepassen via class op de bestaande grid-div.
+ */
+
+/* Hoofd-detail layout: content + aside. Stackt op de primaire stack-grens. */
+.at-grid-main-aside {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--at-aside-w, 320px);
+    gap: 16px;
+    align-items: start;
+}
+
+/* Aside-links variant (sidebar vóór content). */
+.at-grid-aside-main {
+    display: grid;
+    grid-template-columns: var(--at-aside-w, 340px) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+
+/* KPI-/stat-rij: 4 kolommen op desktop, halveert en stackt op mobiel. */
+.at-grid-stats {
+    display: grid;
+    grid-template-columns: repeat(var(--at-stats-cols, 4), minmax(0, 1fr));
+    gap: 12px;
+}
+
+/* Drie-koloms werkblad (coach): sidebar · canvas · context-aside. */
+.at-grid-triptych {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr) 280px;
+    gap: 16px;
+    align-items: stretch;
+}
+
+/* Label · waarde tweekoloms-lijst (smalle label-kolom + tekst). Op mobiel
+   stackt het label boven de waarde. */
+.at-grid-label-value {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 6px;
+}
+
+/* Touch-targets: interactieve elementen minstens 44×44px op coarse pointers. */
+.at-touch {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Wizard score-numpad: cellen zijn volwaardige touch-targets. */
+.at-wizard-numpad > * {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/*
+ * Tablet landscape: stat-rijen met >3 kolommen vallen terug naar 3 zodat de
+ * kaarten leesbaar blijven. (CSS repeat() accepteert geen min()/var() als
+ * teller, dus de stap is hier bewust met expliciete waarden uitgeschreven.)
+ */
+@media (max-width: 1024px) {
+    .at-grid-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    /* Asides stacken altijd onder de content op de primaire stack-grens. */
+    .at-grid-main-aside,
+    .at-grid-aside-main {
+        grid-template-columns: 1fr;
+    }
+
+    .at-grid-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .at-grid-triptych {
+        grid-template-columns: 1fr;
+    }
+
+    /* Label boven waarde i.p.v. naast elkaar zodra het krap wordt. */
+    .at-grid-label-value {
+        grid-template-columns: 1fr;
+        gap: 2px;
+    }
+
+    /* Page-header: titel en acties onder elkaar op smalle schermen. */
+    .aimtrack-page-header-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 520px) {
+    .at-grid-stats {
+        grid-template-columns: 1fr;
+    }
+
+    /* Wizard-numpad: 6 → 3 kolommen op telefoon. */
+    .at-wizard-numpad {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    /* Wapen-gebruik kolommen stacken; verticale scheiding wordt een hairline. */
+    .at-weapon-usage {
+        grid-template-columns: 1fr !important;
+    }
+
+    .at-weapon-usage > * {
+        border-right: none !important;
+    }
+
+    .at-weapon-usage > * + * {
+        border-top: 1px solid var(--at-line);
+    }
 }

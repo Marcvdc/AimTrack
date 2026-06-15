@@ -64,14 +64,14 @@
 
         @if ($canEdit)
             <button type="button" wire:click="addTurn"
-                style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: var(--at-r-lg); background: var(--at-accent); color: var(--at-cta-text); font-weight: 600; font-size: 13px; border: none; cursor: pointer;">
+                style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 9px 14px; border-radius: var(--at-r-lg); background: var(--at-accent); color: var(--at-cta-text); font-weight: 600; font-size: 13px; border: none; cursor: pointer;">
                 <x-filament::icon icon="heroicon-m-plus" class="h-4 w-4" />
                 Nieuwe beurt
             </button>
         @endif
 
         <button type="button" wire:click="toggleRings" role="switch" aria-checked="{{ $showRings ? 'true' : 'false' }}" aria-label="Toon ringnummers op de roos"
-            style="display: inline-flex; align-items: center; gap: 10px; margin-left: auto; padding: 8px 12px; border-radius: var(--at-r-lg); background: var(--at-panel-2); border: 1px solid var(--at-line); color: var(--at-text); font-size: 13px; cursor: pointer;">
+            style="display: inline-flex; align-items: center; gap: 10px; margin-left: auto; min-height: 44px; padding: 8px 12px; border-radius: var(--at-r-lg); background: var(--at-panel-2); border: 1px solid var(--at-line); color: var(--at-text); font-size: 13px; cursor: pointer;">
             <span style="width: 30px; height: 18px; border-radius: 999px; background: {{ $showRings ? 'var(--at-accent)' : 'var(--at-line)' }}; position: relative; flex-shrink: 0; transition: background .15s ease;">
                 <span style="position: absolute; top: 2px; left: {{ $showRings ? '14px' : '2px' }}; width: 14px; height: 14px; border-radius: 50%; background: var(--at-cta-text); transition: left .15s ease;"></span>
             </span>

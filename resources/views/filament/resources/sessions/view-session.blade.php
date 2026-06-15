@@ -54,7 +54,7 @@
 @endphp
 
 <x-filament-panels::page>
-    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start;">
+    <div class="at-grid-main-aside" style="--at-aside-w: 340px;">
         <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
             <div style="position: relative; padding: 20px; background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-lg); overflow: hidden;">
                 <x-aimtrack.watermark-bg :size="220" :opacity="0.07" :top="-60" :right="-40" />
@@ -89,7 +89,7 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;">
+            <div class="at-grid-stats" style="--at-stats-cols: 5;">
                 <x-aimtrack.stat-card label="Beste schot" :value="$bestShot !== null ? (string) $bestShot : '—'" />
                 <x-aimtrack.stat-card label="Tienen" :value="$tienen.'/'.max(1, $totalShots)" :value-tone="$tienen > 0 ? 'accent' : 'text'" />
                 <x-aimtrack.stat-card label="Negens" :value="$negens.'/'.max(1, $totalShots)" />
