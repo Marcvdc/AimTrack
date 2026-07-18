@@ -1,0 +1,160 @@
+[
+  {
+    "photo": "fixtures/IMG_5672.jpg",
+    "target_type": "kkp_25m",
+    "expected_shot_count": 5,
+    "truth": [
+      {
+        "ring": 8
+      },
+      {
+        "ring": 8
+      },
+      {
+        "ring": 7
+      },
+      {
+        "ring": 7
+      },
+      {
+        "ring": 6
+      }
+    ],
+    "_provisional": true,
+    "_discipline_guess_raw": "Pistool/geweer precisie op Nederlandse schietroos (zwaar hergebruikte kaart, bul"
+  },
+  {
+    "photo": "fixtures/IMG_5700.jpg",
+    "target_type": "gkg_100m",
+    "expected_shot_count": 0,
+    "truth": [],
+    "_provisional": true,
+    "_discipline_guess_raw": "Krale-schietsport precisieroos (KKG/luchtgeweer of pistool), staand formaat, zwa"
+  },
+  {
+    "photo": "fixtures/IMG_6277.jpg",
+    "target_type": "kkg_100m",
+    "expected_shot_count": 4,
+    "truth": [
+      {
+        "ring": 9
+      },
+      {
+        "ring": 8
+      },
+      {
+        "ring": 6
+      },
+      {
+        "ring": 6
+      }
+    ],
+    "_provisional": true,
+    "_discipline_guess_raw": "Pistool/geweer precisie op Nederlandse schietroos (zwaar hergebruikte, geplakte "
+  },
+  {
+    "photo": "fixtures/IMG_6415.jpg",
+    "target_type": "kkp_25m",
+    "expected_shot_count": 15,
+    "truth": [
+      {
+        "ring": 9
+      },
+      {
+        "ring": 9
+      },
+      {
+        "ring": 8
+      },
+      {
+        "ring": 8
+      },
+      {
+        "ring": 8
+      },
+      {
+        "ring": 7
+      },
+      {
+        "ring": 7
+      },
+      {
+        "ring": 7
+      },
+      {
+        "ring": 7
+      },
+      {
+        "ring": 6
+      },
+      {
+        "ring": 6
+      },
+      {
+        "ring": 6
+      },
+      {
+        "ring": 6
+      },
+      {
+        "ring": 6
+      },
+      {
+        "ring": 3
+      }
+    ],
+    "_provisional": true,
+    "_discipline_guess_raw": "Nederlandse ISSF-trainingsroos (krale.shop / \"training only\"), waarschijnlijk lu"
+  },
+  {
+    "photo": "fixtures/IMG_6826.jpg",
+    "target_type": "kkp_25m",
+    "expected_shot_count": 5,
+    "truth": [
+      {
+        "ring": 8
+      },
+      {
+        "ring": 7
+      },
+      {
+        "ring": 7
+      },
+      {
+        "ring": 6
+      },
+      {
+        "ring": 5
+      }
+    ],
+    "_provisional": true,
+    "_discipline_guess_raw": "Nederlandse ISSF-trainingsroos (klein kaliber / luchtdruk), zwaar hergebruikt en"
+  },
+  {
+    "photo": "fixtures/IMG_7381.jpg",
+    "target_type": "kkp_25m",
+    "expected_shot_count": 6,
+    "truth": [
+      {
+        "ring": 8
+      },
+      {
+        "ring": 8
+      },
+      {
+        "ring": 8
+      },
+      {
+        "ring": 7
+      },
+      {
+        "ring": 6
+      },
+      {
+        "ring": 6
+      }
+    ],
+    "_provisional": true,
+    "_discipline_guess_raw": "Pistool 25m/50m (ISSF, kop \"Pistool 25 m, 50 m\") - opgeplakte binnenroos over gr"
+  }
+]
