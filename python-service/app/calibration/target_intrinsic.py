@@ -24,6 +24,10 @@ CANONICAL_SIZE: int = 1000
 CANONICAL_MARGIN: float = 0.05  # 5% margin around ring-1 in canonical image
 CANONICAL_RING1_RADIUS: float = CANONICAL_SIZE / 2 * (1.0 - CANONICAL_MARGIN)
 MIN_RINGS_REQUIRED: int = 2
+# Cap input resolution before calibration. HoughCircles/findContours/fitEllipse work
+# is roughly quadratic in pixel count; the canonical target is only 1000px, so running
+# calibration on a full ~12MP phone photo costs minutes of latency for no accuracy gain.
+MAX_CALIBRATION_DIM: int = 1600
 
 
 class CalibrationError(Exception):
@@ -87,6 +91,7 @@ def calibrate(image: np.ndarray, spec: TargetSpec) -> CalibrationResult:
     Raises:
         CalibrationError: when fewer than MIN_RINGS_REQUIRED rings are detected.
     """
+    image = _downscale_for_calibration(image)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     enhanced = _apply_clahe(gray)
 
@@ -148,6 +153,19 @@ def homography_to_list(H: np.ndarray) -> list[list[float]]:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+
+def _downscale_for_calibration(image: np.ndarray, max_dim: int = MAX_CALIBRATION_DIM) -> np.ndarray:
+    """Downscale an oversized photo before calibration. Every detection threshold is
+    relative to the image dimensions and the homography maps into the fixed 1000px
+    canonical space, so results are equivalent while latency drops sharply on large
+    phone photos. Aspect ratio is preserved."""
+    h, w = image.shape[:2]
+    longest = max(h, w)
+    if longest <= max_dim:
+        return image
+    scale = max_dim / float(longest)
+    return cv2.resize(image, (int(round(w * scale)), int(round(h * scale))), interpolation=cv2.INTER_AREA)
 
 
 def _apply_clahe(gray: np.ndarray) -> np.ndarray:
@@ -268,23 +286,11 @@ def _detect_black_area(
         cx, cy, radius = best
         return (cx, cy), radius
 
-    # Fallback: use Hough circles
-    edges = cv2.Canny(gray, 30, 100)
-    circles = cv2.HoughCircles(
-        edges,
-        cv2.HOUGH_GRADIENT,
-        dp=1,
-        minDist=h // 2,
-        param1=50,
-        param2=30,
-        minRadius=int(min(h, w) * 0.15),
-        maxRadius=int(min(h, w) * 0.65),
-    )
-    if circles is not None and len(circles[0]) > 0:
-        cx, cy, r = circles[0][0]
-        return (float(cx), float(cy)), float(r)
-
-    # Last resort: image centre
+    # No clean circular black contour — typical on cluttered, sticker-covered photos.
+    # The former cv2.HoughCircles fallback was pathologically slow here (a dense Canny
+    # edge map plus a wide radius search runs for minutes) and unreliable on exactly
+    # these targets, so we return a fast image-centre estimate instead. A resulting
+    # poor calibration is caught downstream (high RMS -> vision-direct path).
     return (w / 2.0, h / 2.0), min(h, w) * 0.40
 
 

@@ -249,3 +249,19 @@ class TestCalibrateIntegration:
         result = calibrate(img, GKG_100M)
         assert result.rings_detected >= MIN_RINGS_REQUIRED
         assert result.canonical_image.shape == (CANONICAL_SIZE, CANONICAL_SIZE, 3)
+
+
+class TestDownscaleForCalibration:
+    def test_downscales_oversized_preserving_aspect(self) -> None:
+        from app.calibration.target_intrinsic import MAX_CALIBRATION_DIM, _downscale_for_calibration
+
+        big = np.zeros((4032, 3024, 3), dtype=np.uint8)  # 12MP portrait phone photo
+        out = _downscale_for_calibration(big)
+        assert max(out.shape[:2]) == MAX_CALIBRATION_DIM
+        assert out.shape[0] > out.shape[1]  # portrait aspect preserved
+
+    def test_leaves_small_image_untouched(self) -> None:
+        from app.calibration.target_intrinsic import _downscale_for_calibration
+
+        small = np.zeros((800, 600, 3), dtype=np.uint8)
+        assert _downscale_for_calibration(small).shape == (800, 600, 3)
