@@ -19,6 +19,11 @@ RETAIN_DAILY=7
 RETAIN_WEEKLY=4
 RETAIN_MONTHLY=3
 
+# Offsite-replicatie (Backblaze B2 via rclone). Alleen actief wanneer
+# RCLONE_REMOTE is gezet, bv. "b2-aimtrack:aimtrack-prod-backups". Dev/staging
+# laten de variabele leeg en slaan de sync over.
+RCLONE_REMOTE="${RCLONE_REMOTE:-}"
+
 DRY_RUN=0
 if [[ "${1:-}" == "--dry-run" ]]; then
     DRY_RUN=1
@@ -97,6 +102,27 @@ if [[ -d "${APP_STORAGE_SRC}" ]]; then
     fi
 else
     log "  WAARSCHUWING: ${APP_STORAGE_SRC} niet gevonden, storage backup overgeslagen."
+fi
+
+if [[ -n "${RCLONE_REMOTE}" ]]; then
+    log "Offsite sync: ${BACKUP_ROOT} → ${RCLONE_REMOTE}"
+    if ! command -v rclone >/dev/null 2>&1; then
+        die "RCLONE_REMOTE gezet maar rclone is niet geïnstalleerd."
+    fi
+    if [[ "${DRY_RUN}" -eq 1 ]]; then
+        log "[DRY-RUN] rclone sync ${BACKUP_ROOT} ${RCLONE_REMOTE} --exclude logs/** --fast-list"
+    else
+        if rclone sync "${BACKUP_ROOT}" "${RCLONE_REMOTE}" \
+            --exclude "logs/**" \
+            --fast-list \
+            --log-file "${LOG_FILE}" --log-level INFO; then
+            log "  Offsite sync klaar."
+        else
+            die "Offsite sync naar ${RCLONE_REMOTE} mislukt."
+        fi
+    fi
+else
+    log "Offsite sync overgeslagen (RCLONE_REMOTE niet gezet)."
 fi
 
 log "=== Backup succesvol afgerond ==="
