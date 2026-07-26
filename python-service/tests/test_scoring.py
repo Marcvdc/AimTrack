@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from app.config import KKG_50M, KKP_25M
-from app.scoring import ScoredShot, score_shot
+from app.scoring import ScoredShot, score_from_vision, score_shot
 
 RING1_RADIUS_PX = 475.0
 
@@ -57,3 +57,26 @@ class TestScoreShot:
         assert center.ring == 10
         edge = score_shot(_norm_to_px(0.99), 500.0, KKG_50M)
         assert edge.ring == 1
+
+
+class TestScoreFromVision:
+    def test_trusts_directly_read_ring(self):
+        # Position says near-centre, but the model read ring 8: we trust the ring.
+        s = score_from_vision(0.1, -0.05, 8)
+        assert isinstance(s, ScoredShot)
+        assert s.ring == 8
+        assert s.score == 8
+        assert s.x == 0.1 and s.y == -0.05
+
+    def test_passes_normalized_position_through(self):
+        s = score_from_vision(0.42, 0.37, 9)
+        assert s.x == 0.42 and s.y == 0.37
+        assert round(s.distance_norm, 4) == round((0.42 ** 2 + 0.37 ** 2) ** 0.5, 4)
+
+    def test_clamps_ring_out_of_range(self):
+        assert score_from_vision(0.0, 0.0, 11).ring == 10
+        assert score_from_vision(2.0, 0.0, -3).ring == 0
+
+    def test_miss_ring_zero(self):
+        s = score_from_vision(1.3, 0.0, 0)
+        assert s.ring == 0 and s.score == 0

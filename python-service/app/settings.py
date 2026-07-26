@@ -14,6 +14,10 @@ class Settings:
         self.vision_effort: str = os.getenv("AIMTRACK_VISION_EFFORT", "high")
         self.review_confidence_threshold: float = float(os.getenv("AIMTRACK_REVIEW_CONFIDENCE", "0.6"))
         self.cal_rms_review_mm: float = float(os.getenv("AIMTRACK_CAL_RMS_REVIEW_MM", "20.0"))
+        # Above this RMS the intrinsic homography is too inaccurate to score pixels
+        # against; the pipeline falls back to the vision-direct path (the model reads
+        # the ring straight off the printed rings) instead of losing the turn.
+        self.cal_rms_fallback_mm: float = float(os.getenv("AIMTRACK_CAL_RMS_FALLBACK_MM", "30.0"))
         self.min_shot_confidence: float = float(os.getenv("AIMTRACK_MIN_SHOT_CONFIDENCE", "0.4"))
 
 

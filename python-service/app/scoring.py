@@ -50,3 +50,21 @@ def score_shot(x_px: float, y_px: float, spec: TargetSpec, center: float = CANON
         score=ring,
         distance_norm=round(dist_norm, 4),
     )
+
+
+def score_from_vision(x_norm: float, y_norm: float, ring: int) -> ScoredShot:
+    """Score a shot from the vision-direct path (no homography available).
+
+    The model reports the ring it read straight off the printed rings plus a
+    target-normalized position (centre=(0,0), ring-1 outer edge=1.0). We trust the
+    directly-read ring rather than re-deriving it from ``x_norm``/``y_norm``: on an
+    uncalibrated, perspective-skewed photo the radial distance is not a reliable ring
+    proxy, whereas the printed rings are legible regardless of skew."""
+    r = max(0, min(10, int(ring)))
+    return ScoredShot(
+        x=round(x_norm, 4),
+        y=round(y_norm, 4),
+        ring=r,
+        score=r,
+        distance_norm=round(hypot(x_norm, y_norm), 4),
+    )
