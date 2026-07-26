@@ -119,8 +119,12 @@
  */
 
 /* Globale guard: voorkom zijwaartse page-scroll als een decoratief element
-   buiten de viewport uitsteekt. body heeft dit al op de landing; html niet. */
-html {
+   buiten de viewport uitsteekt. body heeft dit al op de landing; html niet.
+   Bewust NIET op het Filament-panel (body.fi-body): daar mag het clippen van
+   de html-scrollroot de sticky topbar/sidebar en horizontaal scrollende
+   tabellen niet raken. Matcht .fi-body niet, dan geldt de guard overal
+   (= identiek aan het vorige gedrag). */
+html:not(:has(.fi-body)) {
     overflow-x: hidden;
 }
 

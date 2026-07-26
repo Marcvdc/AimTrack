@@ -65,7 +65,7 @@ test('design tokens stylesheet defines the shared fluid svg rule and overflow gu
         ->toContain('.aimtrack-at-mark')
         ->toContain('max-width: 100%')
         ->toContain('height: auto')
-        ->toContain('html {')
+        ->toContain('html:not(:has(.fi-body)) {')
         ->toContain('overflow-x: hidden');
 });
 
