@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\VerenigingRol;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -98,5 +99,68 @@ class User extends Authenticatable
     public function coachQuestions()
     {
         return $this->hasMany(CoachQuestion::class);
+    }
+
+    public function verenigingen()
+    {
+        return $this->belongsToMany(Vereniging::class, 'vereniging_user')
+            ->withPivot('role', 'joined_at')
+            ->withTimestamps();
+    }
+
+    public function activeVereniging()
+    {
+        return $this->belongsTo(Vereniging::class, 'active_vereniging_id');
+    }
+
+    /**
+     * De rol van deze user binnen een vereniging, of null als hij geen lid is.
+     */
+    public function rolInVereniging(Vereniging $vereniging): ?VerenigingRol
+    {
+        $pivot = $this->verenigingen()->whereKey($vereniging->id)->first()?->pivot;
+
+        return $pivot !== null ? VerenigingRol::tryFrom($pivot->role) : null;
+    }
+
+    /**
+     * Of deze user (coach/beheerder) inzage heeft in de data van $lid:
+     * beiden in dezelfde actieve vereniging en deze user heeft een coachrol.
+     *
+     * Naast de actieve-vereniging-match eist deze check dat $lid werkelijk lid
+     * (pivot) van die vereniging is, zodat de policy identiek redeneert als de
+     * resource-query en een losgeraakte active_vereniging_id geen inzage opent.
+     */
+    public function isCoachVan(User $lid): bool
+    {
+        $vereniging = $this->activeVereniging;
+
+        if ($vereniging === null) {
+            return false;
+        }
+
+        if (! ($this->rolInVereniging($vereniging)?->canCoach() ?? false)) {
+            return false;
+        }
+
+        return ($lid->activeVereniging?->is($vereniging) ?? false)
+            && $lid->rolInVereniging($vereniging) !== null;
+    }
+
+    /**
+     * Zet de actieve vereniging van deze user. Schrijft active_vereniging_id
+     * bewust via directe assignment (niet mass-assignable) en valideert dat de
+     * user daadwerkelijk lid is van de doelvereniging. `null` maakt de keuze leeg.
+     */
+    public function switchVereniging(?Vereniging $vereniging): void
+    {
+        if ($vereniging !== null && $this->rolInVereniging($vereniging) === null) {
+            throw new \InvalidArgumentException(
+                'Kan de actieve vereniging niet zetten: gebruiker is geen lid van deze vereniging.'
+            );
+        }
+
+        $this->active_vereniging_id = $vereniging?->id;
+        $this->save();
     }
 }
