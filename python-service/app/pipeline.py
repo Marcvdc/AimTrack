@@ -66,15 +66,27 @@ def _build_review_reason_direct(
     detected: int,
     expected: int | None,
     overall_conf: float,
+    cal_rms: float | None,
+    cal_failed: bool,
 ) -> str:
     """Reason for the vision-direct path (calibration failed/weak, so positions are
-    approximate but the rings were read directly)."""
+    approximate but the rings were read directly). A high RMS with a converged
+    calibration is a strong signal the chosen discipline does not match the target
+    (e.g. a rifle target scored as pistol-25m), so we say so explicitly."""
     if not vision_ok:
         return _NO_KEY_REASON
-    reasons = [
-        "De roos kon niet nauwkeurig worden uitgelijnd; de schoten zijn via directe "
-        "ring-aflezing geplaatst — controleer de posities."
-    ]
+    if cal_failed:
+        lead = (
+            "De roos kon niet worden uitgelijnd — maak een rechtere, scherpere foto van de "
+            "hele roos. De schoten zijn via directe ring-aflezing geplaatst; controleer de posities."
+        )
+    else:
+        mm = f" ({round(cal_rms)} mm afwijking)" if cal_rms is not None else ""
+        lead = (
+            f"De roos past slecht bij de gekozen discipline{mm} — controleer of het roostype "
+            "(discipline) klopt. De schoten zijn via directe ring-aflezing geplaatst; controleer de posities."
+        )
+    reasons = [lead]
     if not count_ok and expected is not None:
         reasons.append(
             f"Aantal gedetecteerd ({detected}) wijkt af van het ingevulde aantal ({expected})."
@@ -231,6 +243,8 @@ def _analyze_vision_direct(
         detected=detected,
         expected=expected_shot_count,
         overall_conf=overall_conf,
+        cal_rms=(cal.rms_error_mm if cal is not None else None),
+        cal_failed=(cal is None),
     )
 
     if cal_error is not None:

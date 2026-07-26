@@ -130,3 +130,26 @@ class TestVisionDirectFallback:
         result = analyze_target_v2(np.zeros((10, 10, 3), np.uint8), KKP_25M, expected_shot_count=2)
         assert result.detected_count == 2                      # 0.2 dropped, 2 kept
         assert sorted(s["ring"] for s in result.shots) == [9, 10]
+
+    def test_high_rms_hints_at_wrong_discipline(self, monkeypatch):
+        # A converged-but-poor fit (RMS well above fallback) usually means the chosen
+        # discipline doesn't match the target -> the reason must say so, with the mm.
+        monkeypatch.setattr(pipeline, "calibrate", lambda img, spec: _fake_cal(rms=40.0))
+        monkeypatch.setattr(pipeline, "detect_holes_direct", _fake_direct([
+            {"x_norm": 0.0, "y_norm": 0.0, "ring": 10, "confidence": 0.7, "kind": "hole"},
+        ]))
+        result = analyze_target_v2(np.zeros((10, 10, 3), np.uint8), KKP_25M, expected_shot_count=1)
+        assert "discipline" in result.review_reason.lower()
+        assert "40 mm" in result.review_reason
+
+    def test_calibration_failure_reason_is_not_discipline(self, monkeypatch):
+        # A hard CalibrationError is a photo problem, not a discipline mismatch.
+        def boom(img, spec):
+            raise CalibrationError("te weinig ringen", rings_detected=1)
+        monkeypatch.setattr(pipeline, "calibrate", boom)
+        monkeypatch.setattr(pipeline, "detect_holes_direct", _fake_direct([
+            {"x_norm": 0.0, "y_norm": 0.0, "ring": 10, "confidence": 0.7, "kind": "hole"},
+        ]))
+        result = analyze_target_v2(np.zeros((10, 10, 3), np.uint8), KKP_25M, expected_shot_count=1)
+        assert "discipline" not in result.review_reason.lower()
+        assert "rechtere" in result.review_reason.lower()
