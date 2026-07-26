@@ -31,7 +31,7 @@ class VerenigingService
         ]);
 
         if ($user->active_vereniging_id === null) {
-            $user->update(['active_vereniging_id' => $vereniging->id]);
+            $user->switchVereniging($vereniging);
         }
 
         return $user;
@@ -75,7 +75,7 @@ class VerenigingService
         $vereniging->members()->detach($user->id);
 
         if ($user->active_vereniging_id === $vereniging->id) {
-            $user->update(['active_vereniging_id' => null]);
+            $user->switchVereniging(null);
         }
     }
 

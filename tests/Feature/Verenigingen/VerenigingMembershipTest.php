@@ -83,6 +83,48 @@ it('isCoachVan geldt niet over verenigingen heen', function (): void {
     expect($coach->isCoachVan($vreemde))->toBeFalse();
 });
 
+it('isCoachVan blokkeert een lid met losgeraakte active_vereniging_id zonder membership', function (): void {
+    $vereniging = Vereniging::factory()->create();
+    $coach = User::factory()->create(['active_vereniging_id' => $vereniging->id]);
+    $vereniging->members()->attach($coach, ['role' => VerenigingRol::Coach->value]);
+
+    // Het lid wijst wél naar de vereniging, maar is geen pivot-lid (losgeraakte staat).
+    $lid = User::factory()->create(['active_vereniging_id' => $vereniging->id]);
+
+    expect($coach->isCoachVan($lid))->toBeFalse();
+});
+
+it('staat active_vereniging_id niet toe via mass assignment', function (): void {
+    $vereniging = Vereniging::factory()->create();
+    $user = User::factory()->create();
+
+    $user->update(['active_vereniging_id' => $vereniging->id]);
+
+    expect($user->fresh()->active_vereniging_id)->toBeNull();
+});
+
+it('switchVereniging zet en wist de actieve vereniging voor een lid', function (): void {
+    $vereniging = Vereniging::factory()->create();
+    $user = User::factory()->create();
+    $vereniging->members()->attach($user, ['role' => VerenigingRol::Member->value]);
+
+    $user->switchVereniging($vereniging);
+    expect($user->fresh()->active_vereniging_id)->toBe($vereniging->id);
+
+    $user->switchVereniging(null);
+    expect($user->fresh()->active_vereniging_id)->toBeNull();
+});
+
+it('switchVereniging weigert een vereniging waar de user geen lid van is', function (): void {
+    $vereniging = Vereniging::factory()->create();
+    $user = User::factory()->create();
+
+    expect(fn () => $user->switchVereniging($vereniging))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect($user->fresh()->active_vereniging_id)->toBeNull();
+});
+
 it('slaat de verenigings-key encrypted op en verbergt deze', function (): void {
     $vereniging = Vereniging::factory()->withKey('sk-ant-geheim')->create();
 
