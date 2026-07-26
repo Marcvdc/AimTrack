@@ -6,9 +6,38 @@ use App\Enums\VerenigingRol;
 use App\Models\User;
 use App\Models\Vereniging;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class VerenigingService
 {
+    /**
+     * Maak een nieuwe vereniging aan met $beheerder als admin. De maker wordt
+     * meteen als actieve vereniging gekoppeld en de slug wordt uniek gemaakt.
+     */
+    public function maakVereniging(string $naam, User $beheerder): Vereniging
+    {
+        $naam = trim($naam);
+
+        if ($naam === '') {
+            throw VerenigingException::naamVerplicht();
+        }
+
+        $vereniging = Vereniging::query()->create([
+            'naam' => $naam,
+            'slug' => $this->uniekeSlug($naam),
+            'created_by' => $beheerder->id,
+        ]);
+
+        $vereniging->members()->attach($beheerder, [
+            'role' => VerenigingRol::Admin->value,
+            'joined_at' => now(),
+        ]);
+
+        $beheerder->switchVereniging($vereniging);
+
+        return $vereniging;
+    }
+
     /**
      * Koppel een bestaande gebruiker (op e-mailadres) als lid aan de vereniging.
      * v1: alleen bestaande accounts; onbekende e-mails geven een nette fout.
@@ -125,6 +154,20 @@ class VerenigingService
         }
 
         return false;
+    }
+
+    private function uniekeSlug(string $naam): string
+    {
+        $basis = Str::slug($naam) ?: 'vereniging';
+        $slug = $basis;
+        $volgnummer = 2;
+
+        while (Vereniging::query()->where('slug', $slug)->exists()) {
+            $slug = "{$basis}-{$volgnummer}";
+            $volgnummer++;
+        }
+
+        return $slug;
     }
 
     private function rolVan(Vereniging $vereniging, User $user): ?VerenigingRol
