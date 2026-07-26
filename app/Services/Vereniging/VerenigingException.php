@@ -25,4 +25,9 @@ class VerenigingException extends RuntimeException
     {
         return new self('De laatste beheerder kan niet verwijderd of gedegradeerd worden.');
     }
+
+    public static function naamVerplicht(): self
+    {
+        return new self('Vul een naam voor de vereniging in.');
+    }
 }

@@ -11,6 +11,31 @@ beforeEach(function (): void {
     $this->service = app(VerenigingService::class);
 });
 
+it('maakt een vereniging aan en zet de maker als actieve admin', function (): void {
+    $beheerder = User::factory()->create();
+
+    $vereniging = $this->service->maakVereniging('Test Club', $beheerder);
+
+    expect($vereniging->naam)->toBe('Test Club')
+        ->and($vereniging->slug)->toBe('test-club')
+        ->and($vereniging->created_by)->toBe($beheerder->id)
+        ->and($beheerder->fresh()->active_vereniging_id)->toBe($vereniging->id)
+        ->and($beheerder->fresh()->rolInVereniging($vereniging))->toBe(VerenigingRol::Admin);
+});
+
+it('genereert een unieke slug bij dezelfde verenigingsnaam', function (): void {
+    $a = $this->service->maakVereniging('Zelfde Naam', User::factory()->create());
+    $b = $this->service->maakVereniging('Zelfde Naam', User::factory()->create());
+
+    expect($a->slug)->toBe('zelfde-naam')
+        ->and($b->slug)->toBe('zelfde-naam-2');
+});
+
+it('weigert een lege verenigingsnaam', function (): void {
+    expect(fn () => $this->service->maakVereniging('   ', User::factory()->create()))
+        ->toThrow(VerenigingException::class);
+});
+
 it('voegt een bestaand lid toe op e-mailadres met een rol', function (): void {
     $vereniging = Vereniging::factory()->create();
     $user = User::factory()->create(['email' => 'lid@example.test']);
