@@ -30,7 +30,7 @@
         />
     @endif
 
-    <div style="position: relative; z-index: 1; display: flex; align-items: flex-start; gap: 16px;">
+    <div class="aimtrack-page-header-row" style="position: relative; z-index: 1; display: flex; align-items: flex-start; gap: 16px;">
         <div style="flex: 1; min-width: 0;">
             <h1 style="font-family: var(--at-font-display); font-size: var(--at-text-heading); font-weight: 600; letter-spacing: -0.01em; margin: 0; color: var(--at-text);">{{ $title }}</h1>
             @if ($subtitle)

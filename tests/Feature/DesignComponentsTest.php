@@ -137,8 +137,9 @@ test('ring-medaillon renders reticle, label, value and sub readout', function ()
         ->toContain('SCORE')
         ->toContain('>547<')
         ->toContain('>/600<')
-        ->toContain('width: 200px')
-        ->toContain('height: 200px')
+        ->toContain('width: 100%')
+        ->toContain('max-width: 200px')
+        ->toContain('aspect-ratio: 1')
         ->toContain('<svg');
 });
 
@@ -149,7 +150,7 @@ test('ring-medaillon honours custom size, label, value and sub', function (): vo
         ->toContain('GROEP')
         ->toContain('>22<')
         ->toContain('>mm<')
-        ->toContain('width: 130px');
+        ->toContain('max-width: 130px');
 });
 
 test('monogram-stamp renders solid stamp by default with at-mark and label', function (): void {

@@ -131,6 +131,7 @@
             font-weight: 600;
             font-size: 15px;
             padding: var(--at-space-3) var(--at-space-5);
+            min-height: 44px;
             cursor: pointer;
         }
 

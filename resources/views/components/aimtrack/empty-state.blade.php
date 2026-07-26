@@ -9,12 +9,16 @@
     $reticleOpacity = (float) $reticleOpacity;
     $reticleSize = (int) $reticleSize;
     $iconBorderColor = $iconAccent ? 'var(--at-accent-25, rgba(100, 244, 179, 0.25))' : 'var(--at-line)';
+
+    // Fluid max-width: krimp mee op smalle viewports, gecapt op de meegegeven
+    // breedte zodat desktop ongewijzigd blijft (#104).
+    $fluidMaxWidth = 'clamp(280px, 90vw, '.$maxWidth.')';
 @endphp
 
 <div
     {{ $attributes->merge([
         'class' => 'at-empty-state',
-        'style' => 'position: relative; display: flex; align-items: center; justify-content: center; padding: 32px 24px; min-height: 480px; width: 100%;',
+        'style' => 'position: relative; display: flex; align-items: center; justify-content: center; padding: 32px 24px; min-height: clamp(240px, 60vh, 480px); width: 100%;',
     ]) }}
 >
     {{-- T1 watermark — ambient reticle achter de content --}}
@@ -27,7 +31,7 @@
         color="var(--at-accent)"
     />
 
-    <div style="position: relative; z-index: 1; text-align: center; max-width: {{ $maxWidth }}; width: 100%;">
+    <div style="position: relative; z-index: 1; text-align: center; max-width: {{ $fluidMaxWidth }}; width: 100%;">
         @isset($icon)
             <div
                 style="display: inline-flex; width: 64px; height: 64px; border-radius: 18px; background: var(--at-panel); border: 1px solid {{ $iconBorderColor }}; align-items: center; justify-content: center; color: var(--at-accent);"
@@ -38,7 +42,7 @@
 
         @isset($title)
             <h2
-                style="font-family: var(--at-font-display); font-size: 22px; font-weight: 600; letter-spacing: -0.015em; color: var(--at-text); margin: 16px 0 0; line-height: 1.2;"
+                style="font-family: var(--at-font-display); font-size: clamp(18px, 5.5vw, 22px); font-weight: 600; letter-spacing: -0.015em; color: var(--at-text); margin: 16px 0 0; line-height: 1.2;"
             >
                 {{ $title }}
             </h2>
@@ -46,7 +50,7 @@
 
         @isset($description)
             <p
-                style="font-family: var(--at-font-body); font-size: 14px; line-height: 1.5; color: var(--at-muted); margin: 10px auto 0; max-width: 360px;"
+                style="font-family: var(--at-font-body); font-size: 14px; line-height: 1.5; color: var(--at-muted); margin: 10px auto 0; max-width: min(100%, 360px);"
             >
                 {{ $description }}
             </p>

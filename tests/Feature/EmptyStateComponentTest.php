@@ -29,7 +29,7 @@ test('empty-state honours custom reticle size, opacity and max width', function 
     expect($html)
         ->toContain('width="320"')
         ->toContain('opacity: 0.08')
-        ->toContain('max-width: 520px');
+        ->toContain('max-width: clamp(280px, 90vw, 520px)');
 });
 
 test('empty-state renders title slot inside h2 with display font', function (): void {

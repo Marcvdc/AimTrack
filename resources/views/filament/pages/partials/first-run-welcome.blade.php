@@ -60,19 +60,19 @@
         </div>
 
         <h1
-            style="font-family: var(--at-font-display); font-size: 44px; font-weight: 600; letter-spacing: -0.025em; margin: 12px 0 14px; color: var(--at-text); line-height: 1.1;"
+            style="font-family: var(--at-font-display); font-size: var(--at-display-lg-fluid); font-weight: 600; letter-spacing: -0.025em; margin: 12px 0 14px; color: var(--at-text); line-height: 1.1;"
         >
             Klaar voor je <span style="color: var(--at-accent);">eerste sessie?</span>
         </h1>
 
         <p
-            style="font-size: 15px; color: var(--at-muted); line-height: 1.6; max-width: 420px; margin: 0 auto;"
+            style="font-size: 15px; color: var(--at-muted); line-height: 1.6; max-width: min(100%, 420px); margin: 0 auto;"
         >
             Drie korte stappen — wapen toevoegen, profiel afmaken, je eerste sessie loggen. Daarna kijkt AimTrack mee.
         </p>
 
         {{-- Step checklist --}}
-        <div style="margin: 32px auto 0; display: flex; flex-direction: column; gap: 10px; max-width: 380px;">
+        <div style="margin: 32px auto 0; display: flex; flex-direction: column; gap: 10px; max-width: min(100%, 380px);">
             @foreach ($steps as $i => $step)
                 @php
                     $isCurrent = $i === $currentIndex;
