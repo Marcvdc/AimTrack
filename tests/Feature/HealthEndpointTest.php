@@ -57,6 +57,27 @@ test('health endpoint degrades to 503 when the database is unreachable', functio
         ->assertJsonPath('checks.database.error', 'database_unreachable');
 });
 
+test('api health route reports the real state instead of a fixed ok', function () {
+    Storage::shouldReceive('disk')
+        ->andThrow(new RuntimeException('Unable to create directory at storage/app/private'));
+
+    $this->getJson(route('api.health'))
+        ->assertServiceUnavailable()
+        ->assertJsonPath('status', 'degraded')
+        ->assertJsonPath('checks.storage.error', 'storage_unwritable');
+});
+
+test('api health route and web health route share one controller', function () {
+    Storage::fake(config('filesystems.default'));
+
+    $api = $this->getJson(route('api.health'));
+    $web = $this->getJson(route('health'));
+
+    $api->assertOk();
+    $web->assertOk();
+    expect($api->json('checks'))->toEqual($web->json('checks'));
+});
+
 test('health endpoint does not leak exception details', function () {
     Storage::shouldReceive('disk')
         ->andThrow(new RuntimeException('/var/www/html/storage/app/private is owned by root'));
