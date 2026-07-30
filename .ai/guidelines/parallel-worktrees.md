@@ -87,18 +87,22 @@ Vergeet de registry hieronder niet bij te werken.
 
 ## Registry van actieve worktrees
 
+Alleen worktrees die op dit moment daadwerkelijk bestaan (`git worktree list`). Afgeronde
+worktrees horen hier niet meer in — zie *Cleanup* hierboven.
+
 | Feature | Branch | Pad | Web | DB | Mailpit | Python | Status |
 |---|---|---|---|---|---|---|---|
-| _hoofd-dev_ | _huidige_ | `aimtrack/` | 8080 | 5432 | 8025 | 8000 | actief |
-| copilot | feature/copilot | `aimtrack-copilot/` | 19080 | 15433 | 19025 | 19000 | actief (Filament Copilot migratie) |
-| design-foundation | feature/design-foundation | `aimtrack-design-foundation/` | 19084 | 15436 | 19029 | 19004 | actief (issue #82 · Fase 0 foundation) |
-| prod-backups | feature/prod-backups | `aimtrack-prod-backups/` | 19085 | 15437 | 19030 | 19005 | actief (issue #83 — prod backup-strategie in repo) |
-| empty-states | feature/empty-states | `aimtrack-empty-states/` | 19086 | 15438 | 19031 | 19006 | actief (issue #82 · Fase 2 empty-states) |
-| range-console | feature/range-console | `aimtrack-range-console/` | 19087 | 15439 | 19032 | 19007 | actief (issue #82 · Fase 1 Range Console — 5 kernschermen) |
-| marketing | feature/marketing | `aimtrack-marketing/` | 19088 | 15440 | 19033 | 19008 | actief (issue #82 · Fase 3 marketing landing) |
-| ai-byo-key | feature/ai-byo-key | `aimtrack-ai-byo-key/` | 19089 | 15441 | 19034 | 19009 | actief (issue #95 · Fase 1 BYO Claude-key per user) |
+| _hoofd-dev_ | main | `AimTrack/` | 8080 | 5432 | 8025 | 8000 | actief (alleen main-sync) |
+| 106-visual | feature/ai-verenigingen | `aimtrack-106-visual/` | 19091 | 15441 | 19036 | — | actief (issue #95 fase 2 · visuele controle) |
+| 55-vision-direct | feature/55-vision-direct | `aimtrack-55-vision-direct/` | 19082 | 15434 | 19027 | 19002 | actief (issue #55 · PR #114) |
+| prod-storage | feature/prod-storage | `aimtrack-prod-storage/` | 19090 | 15442 | 19035 | 19010 | actief (productie-503 `storage_unwritable`) |
 
 Update deze tabel bij setup en cleanup — zo weet iedereen direct welke poort bij welke stack hoort.
+
+**Poort-hoogtewatermerk**: `worktree-setup.sh` leidt de default-offset af uit het *aantal*
+bestaande worktrees, dus na een cleanup worden poorten hergebruikt terwijl een oudere stack
+ze nog bezet houdt. Geef daarom een expliciete offset mee die hoger ligt dan alles in deze
+tabel, of gebruik de high-water-mark-variant uit PR #118.
 
 ## Cross-machine borging
 
