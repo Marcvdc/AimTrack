@@ -6,7 +6,9 @@ set -euo pipefail
 #
 # Gebruik: ./scripts/worktree-setup.sh <feature-naam> [offset] [base-branch]
 #   <feature-naam>: lowercase, bv. "copilot" of "auth-rewrite"
-#   [offset]      : optioneel, integer (default: aantal bestaande worktrees)
+#   [offset]      : optioneel, integer (default: high-water-mark — hoogste reeds
+#                   toegewezen WEB_PORT + 1, zodat verwijderde worktrees geen poort
+#                   van een nog-actieve stack teruggeven)
 #   [base-branch] : optioneel, basis-branch voor de worktree (default: main)
 #
 # Belangrijk:
@@ -31,6 +33,11 @@ if [[ ! "$NAME" =~ ^[a-z0-9][a-z0-9_-]*$ ]]; then
   exit 1
 fi
 
+if [[ -n "$EXPLICIT_OFFSET" && ! "$EXPLICIT_OFFSET" =~ ^[0-9]+$ ]]; then
+  echo "Offset (2e argument) moet een niet-negatief geheel getal zijn (of leeg voor automatisch)." >&2
+  exit 1
+fi
+
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
@@ -43,11 +50,25 @@ if [[ -e "$WORKTREE_PATH" ]]; then
   exit 1
 fi
 
+# OFFSET bepaalt alle poorten. Zonder expliciete offset: high-water-mark — de hoogste
+# WEB_PORT die al aan een zuster-worktree (../aimtrack-*/.env) is toegewezen bepaalt de
+# volgende offset. Zo krijgt een nieuwe worktree nooit de poort van een nog-actieve
+# stack terug, ook niet nadat een lager genummerde worktree is verwijderd (de oude
+# 'git worktree list | wc -l'-telling deed dat wél: verwijder een middelste worktree en
+# de volgende kreeg dezelfde poort als een nog-draaiende stack).
 if [[ -n "$EXPLICIT_OFFSET" ]]; then
-  OFFSET="$EXPLICIT_OFFSET"
+  # 10# forceert base-10, zodat "08"/"09" niet als (ongeldig) octaal worden gelezen.
+  OFFSET=$((10#$EXPLICIT_OFFSET))
 else
-  # Bestaande worktrees tellen (inclusief hoofd-dev). Eerste extra worktree → offset 1.
-  OFFSET="$(git worktree list | wc -l | tr -d ' ')"
+  MAX_WEB_PORT=19080
+  for envfile in "$REPO_ROOT"/../aimtrack-*/.env; do
+    [[ -f "$envfile" ]] || continue
+    existing="$(grep -E '^WEB_PORT=' "$envfile" 2>/dev/null | tail -1 | cut -d= -f2 | tr -d '[:space:]' || true)"
+    if [[ "$existing" =~ ^[0-9]+$ ]] && (( existing > MAX_WEB_PORT )); then
+      MAX_WEB_PORT="$existing"
+    fi
+  done
+  OFFSET=$((MAX_WEB_PORT - 19080 + 1))
 fi
 
 # Poort-range vanaf 19000 om conflicten met andere lokale stacks te vermijden.
