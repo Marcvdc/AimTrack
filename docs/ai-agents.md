@@ -16,35 +16,50 @@ The AimTrack project supports two types of AI agent operations:
 1. **Claude Code GitHub App** must be installed on the repository
 2. **Repository Secrets** configured:
    - `ANTHROPIC_API_KEY` - Your Anthropic API key
+   - `KJ_PLUGINS_TOKEN` - Fine-grained PAT met **Contents: read** op `kjsoftware/kj-claude-plugins` (de private plugin-marketplace met de KJ-ontwikkelroute). Zonder dit secret faalt de workflow bewust.
    - `GITHUB_TOKEN` - Automatically provided by GitHub Actions
+3. **Repository setting** *Allow GitHub Actions to create and approve pull requests* (Settings → Actions → General) aan, anders kan de agent geen PR openen.
+4. **Labels** `agent-ready`, `agent-question` en `agent-resume` moeten in de repo bestaan.
 
 ### How It Works
 
-1. Create a GitHub issue with `@claude` mention
-2. The GitHub Action triggers and analyzes the issue
-3. Agent creates a new branch and implements the requested changes
-4. Agent runs tests and opens a pull request
-5. PR can be refined with additional `@claude` comments
+De agent draait via `.github/workflows/agent.yml` en kent twee modi.
+
+**Fresh build** — zet het label `agent-ready` op een issue:
+
+1. De workflow triggert en behandelt uitsluitend dat ene issue.
+2. De agent bouwt op branch `claude/issue-<n>` (nooit op de default branch) via de KJ-ontwikkelroute (plannen → bouwen → controleren → review → committen → pr).
+3. De agent draait tests en opent een pull request. **De agent merget nooit** — de mens keurt.
+4. Statuslabels: `agent-working` tijdens de bouw, `agent-question` als de agent een vraag aan een mens heeft.
+
+**Resume** — beantwoord een `agent-question`-issue met een comment (of zet label `agent-resume`):
+
+1. Alleen comments van OWNER/MEMBER/COLLABORATOR triggeren (author-association-gate tegen prompt-injectie).
+2. De agent leest de volledige thread en hervat op de bestaande `claude/issue-<n>`-branch.
+3. Is het antwoord onvoldoende, dan stelt de agent een gerichte vervolgvraag en blijft op `agent-question`.
 
 ### Example Usage
+
+Maak een issue met een heldere omschrijving en acceptatiecriteria, bijvoorbeeld:
 
 ```markdown
 ## Add Session Export Feature
 
-@claude please add a CSV export feature for shooting sessions that includes:
-- Session date and location
-- Weapon type and caliber
-- Shot scores and grouping
-- Weather conditions if available
+Voeg een CSV-export voor schietsessies toe met:
+- Sessiedatum en locatie
+- Wapentype en kaliber
+- Schotscores en groepering
 
-The export should be accessible from the session details page.
+De export moet bereikbaar zijn vanaf de sessie-detailpagina.
 ```
+
+Zet vervolgens het label `agent-ready` op het issue. De agent pakt het op en opent een PR.
 
 ### Supported Triggers
 
-- **New Issues**: `@claude` in issue title or body
-- **Issue Comments**: `@claude` in comments
-- **PR Review Comments**: `@claude` in review comments
+- **Label `agent-ready`** op een issue → fresh build tot PR
+- **Comment op een `agent-question`-issue** (door OWNER/MEMBER/COLLABORATOR) → resume op de bestaande branch
+- **Label `agent-resume`** → resume handmatig forceren
 
 ### Agent Capabilities
 
@@ -97,11 +112,11 @@ aimtrack-agent-envs/
 
 ### For GitHub Issues
 
-1. **Create Issue**: Describe the feature/bug with `@claude` mention
-2. **Wait for Agent**: GitHub Action processes the request
-3. **Review PR**: Agent creates pull request with implementation
-4. **Iterate**: Use `@claude` comments for refinements
-5. **Merge**: Merge when satisfied with the changes
+1. **Create Issue**: Beschrijf de feature/bug met acceptatiecriteria
+2. **Label `agent-ready`**: zet het label zodat de GitHub Action het oppakt
+3. **Review PR**: de agent opent een pull request met de implementatie
+4. **Iterate**: beantwoord `agent-question`-comments; de agent hervat op de branch
+5. **Merge**: merge zelf wanneer je tevreden bent (de agent merget nooit)
 
 ### For Local Development
 
@@ -115,17 +130,15 @@ aimtrack-agent-envs/
 
 ### GitHub Agent Configuration
 
-The GitHub agent is configured via `.github/workflows/claude.yml`:
+The GitHub agent is configured via `.github/workflows/agent.yml`:
 
 ```yaml
 # Trigger conditions
 on:
   issues:
-    types: [opened, assigned]
+    types: [labeled]        # label agent-ready / agent-resume
   issue_comment:
-    types: [created]
-  pull_request_review_comment:
-    types: [created]
+    types: [created]        # antwoord op een agent-question-issue
 
 # Required permissions
 permissions:
@@ -133,7 +146,10 @@ permissions:
   pull-requests: write
   issues: write
   id-token: write
+  actions: read
 ```
+
+De private KJ-plugin-marketplace (`kjsoftware/kj-claude-plugins`) wordt op runtime geladen via secret `KJ_PLUGINS_TOKEN`; er wordt niets van die private repo in deze repo gecommit.
 
 ### Local Agent Configuration
 
@@ -167,7 +183,7 @@ AGENT_MODE=true
 
 ### Code Review
 
-- **Iterative Refinement**: Use `@claude` for incremental changes
+- **Iterative Refinement**: beantwoord `agent-question`-comments voor incrementele bijsturing
 - **Testing Requirements**: Always request tests for new features
 - **Documentation**: Ask for documentation updates
 - **Performance**: Consider performance implications
@@ -176,17 +192,18 @@ AGENT_MODE=true
 
 ### GitHub Agent Issues
 
-**Problem**: Agent doesn't respond to `@claude` mention
-**Solution**: 
-1. Check GitHub App installation
-2. Verify `ANTHROPIC_API_KEY` secret
-3. Check Action logs for errors
+**Problem**: De agent reageert niet op het label `agent-ready`
+**Solution**:
+1. Controleer of de Claude Code GitHub App geïnstalleerd is
+2. Verifieer de secrets `ANTHROPIC_API_KEY` en `KJ_PLUGINS_TOKEN`
+3. Controleer of de labels `agent-ready`/`agent-question`/`agent-resume` bestaan
+4. Bekijk de Action-logs voor fouten
 
 **Problem**: PR creation fails
 **Solution**:
-1. Check branch permissions
-2. Verify repository write access
-3. Review Action logs for specific errors
+1. Zet de repo-setting *Allow GitHub Actions to create and approve pull requests* aan
+2. Verifieer repository write-rechten
+3. Bekijk de Action-logs voor specifieke fouten
 
 ### Local Agent Issues
 
@@ -222,7 +239,7 @@ AGENT_MODE=true
 
 ### Custom Agent Prompts
 
-You can customize agent behavior by modifying the prompt in `.github/workflows/claude.yml`:
+You can customize agent behavior by modifying the prompts in `.github/workflows/agent.yml`:
 
 ```yaml
 prompt: |

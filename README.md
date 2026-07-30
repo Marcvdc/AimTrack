@@ -55,17 +55,14 @@ Gebruik de Filament **Export**-pagina om CSV of PDF te downloaden. Periode is ve
 ## AI Agents
 AimTrack supports automated development via AI agents:
 
-### GitHub Agent
-- Gebruik `@claude` in issues om automatisch pull requests te laten genereren
-- Agent analyseert de issue, implementeert de wijziging en creeërt een PR
+### GitHub Agent (cloud-pilot)
+- Zet het label `agent-ready` op een issue → de agent bouwt het issue via de KJ-ontwikkelroute uit tot een pull request (branch `claude/issue-<n>`, nooit op de default branch, en merget nooit)
+- Loopt de agent vast op een vraag, dan zet 'ie label `agent-question`; beantwoord je die in een comment (als OWNER/MEMBER/COLLABORATOR), dan hervat de agent op de bestaande branch. Label `agent-resume` forceert hetzelfde handmatig
 - Werkt volgens projectconventies en voegt automatisch tests toe
+- Vereist repo-secret `KJ_PLUGINS_TOKEN` en de repo-setting *Allow GitHub Actions to create and approve pull requests*
 - Zie `docs/ai-agents.md` voor gedetailleerde instructies
 
-Voorbeeld:
-```markdown
-## Add Session Export Feature
-@claude please add a CSV export feature for shooting sessions...
-```
+Voorbeeld: maak een issue met een heldere omschrijving + acceptatiecriteria en zet het label `agent-ready`.
 
 ### Local Agent Environments
 - Creëer geïsoleerde ontwikkel-omgevingen: `./scripts/clone-for-agent.sh agent-name`
