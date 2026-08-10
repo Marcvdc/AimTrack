@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources\WeaponResource\Pages;
 
+use App\Filament\Concerns\PreservesOwnerOnSave;
 use App\Filament\Resources\WeaponResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditWeapon extends EditRecord
 {
+    use PreservesOwnerOnSave;
+
     protected static string $resource = WeaponResource::class;
 
     protected function getHeaderActions(): array

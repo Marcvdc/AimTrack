@@ -69,7 +69,6 @@ class SessionResource extends Resource implements CopilotResourceContract
         return $schema
             ->columns(1)
             ->components([
-                static::userIdField(),
 
                 InfoSection::make('Sessie')
                     ->description('Basisgegevens van de sessie')
@@ -94,14 +93,6 @@ class SessionResource extends Resource implements CopilotResourceContract
             ]);
     }
 
-    public static function userIdField(): Hidden
-    {
-        return Hidden::make('user_id')
-            ->default(fn () => auth()->id())
-            ->required()
-            ->dehydrated(fn ($state) => filled($state));
-    }
-
     /**
      * Basisvelden van de sessie (zonder notities), herbruikt door de
      * Edit-form en de Range Console nieuwe-sessie wizard (stap Sessie).
@@ -114,6 +105,9 @@ class SessionResource extends Resource implements CopilotResourceContract
             DatePicker::make('date')
                 ->label('Datum')
                 ->native(false)
+                // Een sessie ligt per definitie in het verleden; zonder deze
+                // grens kon een willekeurige datum worden weggeschreven.
+                ->maxDate(fn () => now())
                 ->required(),
             Select::make('range_location_id')
                 ->label('Baan/vereniging')
