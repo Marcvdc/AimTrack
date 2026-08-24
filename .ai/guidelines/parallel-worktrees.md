@@ -99,10 +99,12 @@ worktrees horen hier niet meer in — zie *Cleanup* hierboven.
 
 Update deze tabel bij setup en cleanup — zo weet iedereen direct welke poort bij welke stack hoort.
 
-**Poort-hoogtewatermerk**: `worktree-setup.sh` leidt de default-offset af uit het *aantal*
-bestaande worktrees, dus na een cleanup worden poorten hergebruikt terwijl een oudere stack
-ze nog bezet houdt. Geef daarom een expliciete offset mee die hoger ligt dan alles in deze
-tabel, of gebruik de high-water-mark-variant uit PR #118.
+**Poorten**: `worktree-setup.sh` kiest de default-offset zelf, op basis van de hoogste
+`WEB_PORT` die al aan een zuster-worktree is toegewezen. Breek een stack daarom af
+(`docker compose ... down -v`) vóór `git worktree remove`: het script leest de nog
+aanwezige `.env`-bestanden, dus een verwijderde worktree geeft zijn poort weer vrij.
+De precieze grenzen van die logica staan in de comment bij `OFFSET` in het script zelf —
+bewust op één plek, zodat deze tabel niet uit de pas kan lopen.
 
 ## Cross-machine borging
 
