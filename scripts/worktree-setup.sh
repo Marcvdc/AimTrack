@@ -52,10 +52,19 @@ fi
 
 # OFFSET bepaalt alle poorten. Zonder expliciete offset: high-water-mark — de hoogste
 # WEB_PORT die al aan een zuster-worktree (../aimtrack-*/.env) is toegewezen bepaalt de
-# volgende offset. Zo krijgt een nieuwe worktree nooit de poort van een nog-actieve
-# stack terug, ook niet nadat een lager genummerde worktree is verwijderd (de oude
-# 'git worktree list | wc -l'-telling deed dat wél: verwijder een middelste worktree en
-# de volgende kreeg dezelfde poort als een nog-draaiende stack).
+# volgende offset.
+#
+# Dit lost het geval op dat de oude 'git worktree list | wc -l'-telling fout deed:
+# verwijder een MIDDELSTE worktree en de telling zakt, waarna de volgende worktree
+# dezelfde poort krijgt als een nog-draaiende stack. De high-water-mark kijkt naar de
+# hoogst toegewezen poort in plaats van naar het aantal, dus dat kan niet meer.
+#
+# Wat dit NIET oplost: de mark wordt afgeleid uit de .env-bestanden die er op dit
+# moment staan. Verwijder je de HOOGST genummerde worktree, dan verdwijnt zijn .env en
+# komt zijn poort weer vrij voor de volgende. Dat is prima zolang je de stack netjes
+# afbreekt ('docker compose ... down -v' vóór 'git worktree remove'); laat je de
+# containers draaien, dan botst het alsnog. Zie de cleanup-volgorde in
+# .ai/guidelines/parallel-worktrees.md.
 if [[ -n "$EXPLICIT_OFFSET" ]]; then
   # 10# forceert base-10, zodat "08"/"09" niet als (ongeldig) octaal worden gelezen.
   OFFSET=$((10#$EXPLICIT_OFFSET))
