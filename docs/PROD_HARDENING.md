@@ -16,7 +16,16 @@ Gebruik deze checklist voor productie-uitrol van AimTrack.
 ## Veiligheid & netwerk
 - [ ] TLS beëindigd op load balancer/reverse proxy; `X-Forwarded-*` headers doorgeven en proxies vertrouwd.
 - [ ] `AppServiceProvider` forceert HTTPS in productie; 4xx/5xx logging naar centraal logkanaal.
+- [ ] `SESSION_SECURE_COOKIE=true` in de productie-`.env`. Zonder deze vlag laat Laravel
+      `Secure` weg en gaat de sessiecookie ook over onversleuteld HTTP mee — relevant zodra de
+      origin naast de TLS-proxy óók direct bereikbaar is.
+- [ ] Geen enkele poort van de app-stack rechtstreeks bereikbaar naast de TLS-proxy. Controleer
+      met `docker ps` welke poorten op `0.0.0.0` publiceren en toets ze van buiten het netwerk;
+      alleen 80/443 (op de proxy) horen open te staan. Bind interne poorten aan de
+      docker-gateway of een LAN-adres, niet aan `0.0.0.0`.
 - [ ] Storage permissies gecontroleerd (`storage/`, `bootstrap/cache/` schrijfbaar door web user, geen world-writes).
+      Let op: een host-groep waar `www-data` op de host wel in zit, bestaat níet automatisch
+      binnen de container — groepslidmaatschap komt uit de `/etc/group` van de container.
 - [ ] Uploads op juiste disk (bij voorkeur S3/secure bucket) of lokale opslag afgeschermd via webserver.
 
 ## AI & externe diensten
