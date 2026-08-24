@@ -58,3 +58,60 @@ test('de dode Laravel 10-kernels bestaan niet meer', function () {
     expect(file_exists(base_path('app/Http/Kernel.php')))->toBeFalse()
         ->and(file_exists(base_path('app/Console/Kernel.php')))->toBeFalse();
 });
+
+/*
+ * De app-subklassen in app/Http/Middleware/ werden alleen door de dode
+ * app/Http/Kernel.php genoemd en zijn met die Kernel meeverwijderd. Ze mogen
+ * niet terugkeren: een bestand dat eruitziet als geregistreerde middleware maar
+ * het niet is, is precies de val die dit issue veroorzaakte.
+ */
+test('de nooit-geregistreerde Laravel 10-middleware bestaan niet meer', function (string $class) {
+    expect(file_exists(base_path("app/Http/Middleware/{$class}.php")))->toBeFalse();
+})->with([
+    'Authenticate',
+    'EncryptCookies',
+    'PreventRequestsDuringMaintenance',
+    'RedirectIfAuthenticated',
+    'TrimStrings',
+    'TrustHosts',
+    'TrustProxies',
+    'ValidateSignature',
+    'VerifyCsrfToken',
+]);
+
+test('InjectUserAnthropicKey blijft wel bestaan want die is echt geregistreerd', function () {
+    expect(file_exists(base_path('app/Http/Middleware/InjectUserAnthropicKey.php')))->toBeTrue();
+});
+
+/*
+ * Regressiegrens bij het verwijderen van App\Http\Middleware\Authenticate.
+ * Die klasse stuurde gasten naar route('login'), maar werd nooit geregistreerd;
+ * de 'auth'-alias wees al naar de framework-versie. Laravel 12's Authenticate
+ * geeft zelf null terug en laat de redirect aan de exception handler, die
+ * terugvalt op route('login'). Deze test legt vast dat dat pad blijft werken.
+ */
+test('een gast op een auth-route wordt naar login gestuurd', function () {
+    $this->get(route('exports.sessions.download'))
+        ->assertRedirect(route('login'));
+});
+
+test('een gast op een auth-route krijgt json-401 in plaats van een redirect', function () {
+    $this->getJson(route('exports.sessions.download'))
+        ->assertUnauthorized();
+});
+
+/*
+ * App\Http\Middleware\TrimStrings droeg als enige van de verwijderde klassen
+ * een echte aanpassing: een $except voor de wachtwoordvelden, zodat spaties in
+ * een wachtwoord niet worden weggeknipt. Die aanpassing is nooit toegepast (de
+ * Kernel werd niet geladen), maar Laravel 12 sluit dezelfde drie velden zelf al
+ * uit. Deze test legt vast dat we daarop mogen leunen.
+ */
+test('het framework knipt de wachtwoordvelden zelf al niet', function () {
+    $except = (new ReflectionClass(Illuminate\Foundation\Http\Middleware\TrimStrings::class))
+        ->getDefaultProperties()['except'];
+
+    expect($except)->toContain('current_password')
+        ->toContain('password')
+        ->toContain('password_confirmation');
+});
