@@ -6,7 +6,6 @@ use App\Filament\Resources\LocationResource\Pages\CreateLocation;
 use App\Filament\Resources\LocationResource\Pages\EditLocation;
 use App\Filament\Resources\LocationResource\Pages\ListLocations;
 use App\Models\Location;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -37,11 +36,6 @@ class LocationResource extends Resource
     {
         return $schema
             ->components([
-                Hidden::make('user_id')
-                    ->default(fn () => auth()->id())
-                    ->required()
-                    ->dehydrated(fn ($state) => filled($state)),
-
                 InfoSection::make('Locatie')
                     ->schema([
                         TextInput::make('name')

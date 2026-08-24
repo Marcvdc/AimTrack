@@ -22,7 +22,6 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -63,11 +62,6 @@ class WeaponResource extends Resource implements CopilotResourceContract
     {
         return $schema
             ->components([
-                Hidden::make('user_id')
-                    ->default(fn () => auth()->id())
-                    ->required()
-                    ->dehydrated(fn ($state) => filled($state)),
-
                 InfoSection::make('Basisgegevens')
                     ->columns(2)
                     ->schema([
