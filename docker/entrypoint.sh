@@ -24,7 +24,16 @@ if [ -d /opt/aimtrack ]; then
     } 9>/var/www/html/.app-sync.lock
 fi
 
-mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache
+# storage/app/private is de root van de default filesystem-disk (FILESYSTEM_DISK=local)
+# en storage/app/public die van de publieke disk. Beide staan niet in git — storage/
+# bevat alleen .gitignore-bestanden — dus ze ontbreken in het image en daarmee in een
+# vers app_storage-volume. Laravel maakt ze bij de eerste write zelf aan, maar alléén
+# als de parent voor www-data schrijfbaar is. Door ze hier expliciet aan te maken vallen
+# ze onder de chown/chmod hieronder en faalt een niet-schrijfbaar volume hard bij boot,
+# in plaats van stil bij de eerste upload (dat gaf prod een 503 met storage_unwritable).
+mkdir -p storage/app/private storage/app/public \
+    storage/framework/cache storage/framework/sessions storage/framework/views \
+    bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
