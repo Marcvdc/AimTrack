@@ -107,7 +107,11 @@ class SessionResource extends Resource implements CopilotResourceContract
                 ->native(false)
                 // Een sessie ligt per definitie in het verleden; zonder deze
                 // grens kon een willekeurige datum worden weggeschreven.
-                ->maxDate(fn () => now())
+                // De grens loopt tot het einde van vandaag in de weergave-
+                // tijdzone, niet in UTC: anders wordt een sessie die 's avonds
+                // Nederlandse tijd wordt gelogd geweigerd omdat het in UTC nog
+                // de vorige dag is.
+                ->maxDate(fn () => now(config('app.timezone_display'))->endOfDay())
                 ->required(),
             Select::make('range_location_id')
                 ->label('Baan/vereniging')

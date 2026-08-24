@@ -1,7 +1,9 @@
 <?php
 
 use App\Filament\Resources\AmmoTypeResource\Pages\CreateAmmoType;
+use App\Filament\Resources\AmmoTypeResource\Pages\EditAmmoType;
 use App\Filament\Resources\LocationResource\Pages\CreateLocation;
+use App\Filament\Resources\LocationResource\Pages\EditLocation;
 use App\Filament\Resources\SessionResource\Pages\CreateSession;
 use App\Filament\Resources\SessionResource\Pages\EditSession;
 use App\Filament\Resources\WeaponResource\Pages\CreateWeapon;
@@ -134,4 +136,55 @@ it('biedt user_id niet langer als formulierveld aan', function () {
         expect(file_get_contents((new ReflectionClass($resource))->getFileName()))
             ->not->toContain("Hidden::make('user_id')");
     }
+});
+
+it('schuift een locatie niet door naar een ander account bij het bewerken', function () {
+    $location = Location::create([
+        'user_id' => $this->ik->id,
+        'name' => 'Eigen baan',
+    ]);
+
+    Livewire::test(EditLocation::class, ['record' => $location->getKey()])
+        ->fillForm(['user_id' => $this->slachtoffer->id])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($location->refresh()->user_id)->toBe($this->ik->id);
+});
+
+it('schuift een munitietype niet door naar een ander account bij het bewerken', function () {
+    $ammoType = AmmoType::create([
+        'user_id' => $this->ik->id,
+        'name' => 'Eigen munitie',
+    ]);
+
+    Livewire::test(EditAmmoType::class, ['record' => $ammoType->getKey()])
+        ->fillForm(['user_id' => $this->slachtoffer->id])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($ammoType->refresh()->user_id)->toBe($this->ik->id);
+});
+
+/*
+ * De datumgrens rekent in de weergave-tijdzone, niet in UTC. Op dit moment is
+ * het 00:30 in Nederland en nog 22:30 van de vorige dag in UTC; een sessie van
+ * "vandaag" (NL) zou met een UTC-grens onterecht als toekomst gelden.
+ */
+it('accepteert een sessiedatum die in Nederland vandaag is maar in UTC morgen', function () {
+    Carbon\Carbon::setTestNow(Carbon\Carbon::parse('2026-06-15 22:30:00', 'UTC'));
+
+    expect(now()->toDateString())->toBe('2026-06-15')
+        ->and(now(config('app.timezone_display'))->toDateString())->toBe('2026-06-16');
+
+    Livewire::test(CreateSession::class)
+        ->fillForm([
+            'date' => '2026-06-16',
+            'sessionWeapons' => [],
+            'attachments' => [],
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors(['date']);
+
+    Carbon\Carbon::setTestNow();
 });

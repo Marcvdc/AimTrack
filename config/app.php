@@ -71,6 +71,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Weergave-tijdzone
+    |--------------------------------------------------------------------------
+    |
+    | De applicatie rekent en bewaart in UTC (hierboven). Voor grenzen die de
+    | schutter ervaart — "ligt deze datum in de toekomst?" — is UTC de verkeerde
+    | maatstaf: tussen 00:00 en 02:00 Nederlandse tijd is het in UTC nog de
+    | vorige dag, waardoor een sessie van vanavond als toekomst zou gelden.
+    | Gebruik deze waarde overal waar een datum tegen "vandaag" wordt gehouden.
+    |
+    */
+
+    'timezone_display' => env('APP_DISPLAY_TIMEZONE', 'Europe/Amsterdam'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |
