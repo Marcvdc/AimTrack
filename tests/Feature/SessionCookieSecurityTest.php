@@ -40,15 +40,11 @@ test('env-voorbeeld schrijft een secure sessiecookie voor', function () {
         ->toContain('SESSION_SECURE_COOKIE=true');
 });
 
-test('session-config leest de secure-vlag uit de omgeving', function () {
-    expect(file_get_contents(config_path('session.php')))
-        ->toContain("env('SESSION_SECURE_COOKIE')");
-});
-
-test('hardening-checklist eist de secure cookie en dichte poorten', function () {
-    $checklist = file_get_contents(base_path('docs/PROD_HARDENING.md'));
-
-    expect($checklist)
-        ->toContain('SESSION_SECURE_COOKIE=true')
-        ->toContain('rechtstreeks bereikbaar naast de TLS-proxy');
-});
+/*
+ * Er stonden hier nog twee tests die de brontekst van config/session.php en
+ * docs/PROD_HARDENING.md op losse strings toetsten. Die zijn geschrapt: ze
+ * toetsten geen gedrag, braken op elke herformulering, en wat ze moesten
+ * borgen — dat de config-waarde de cookie stuurt — leggen de twee tests
+ * hierboven al vast. De .env.example-test blijft, want die bewaakt een
+ * gedocumenteerde default die anders stil kan verdwijnen.
+ */
