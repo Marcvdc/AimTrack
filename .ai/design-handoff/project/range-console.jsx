@@ -96,7 +96,7 @@ function RangeConsole({ palette, fonts }) {
     { icon: ICONS.spark,   label: 'Trends' },
     { icon: ICONS.target,  label: 'Wapen-inzicht' },
     { group: 'beheer' },
-    { icon: ICONS.export,  label: 'Export · WM-4' },
+    { icon: ICONS.export,  label: 'Export' },
     { icon: ICONS.shield,  label: 'Privacy' },
   ];
 

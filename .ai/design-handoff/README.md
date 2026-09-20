@@ -23,3 +23,31 @@ The design medium is **HTML/CSS/JS** — these are prototypes, not production co
 - `aimtrack/README.md` — this file
 - `aimtrack/chats/` — conversation transcripts (read these!)
 - `aimtrack/project/` — the `Aimtrack` project files (HTML prototypes, assets, components)
+
+## Correctie op dit bundel (2026-09-20, issues #131, #132 en #162)
+
+Dit bundel is het bronmateriaal waar de marketing- en app-copy uit is overgenomen, dus
+onjuiste beweringen hierin komen via een volgende ronde zo weer terug. Twee daarvan zijn
+gecorrigeerd in `project/` en in de beide afgeleide kopieën:
+
+- **Geen WM-4-conformiteit.** WM-4 is het verlofdocument dat de korpschef afgeeft, geen
+  voorgeschreven exportformaat en geen standaard waaraan software kan voldoen. De export is
+  een gewoon CSV- of PDF-overzicht van je eigen sessies voor je verenigingsadministratie.
+  Het monogram-stempel (T4) is daarmee een statusmarkering (`REFLECTIE OK`, `EXPORT OK`) en
+  geen validatie- of vertrouwenssignaal. Zie ook de noot boven `chats/chat1.md`.
+- **De AI-coach stuurt wel data naar buiten.** De regel "alles draait lokaal, je data
+  verlaat de server niet" was onjuist. De app en de database draaien op de eigen server,
+  maar voor een AI-antwoord gaan de vraag, de sessiecontext en de wapengegevens (inclusief
+  serienummer en opslaglocatie) naar Anthropic (api.anthropic.com). Zonder API-key gebeurt
+  er niets en de hele functie is uit te zetten met `FEATURE_AIMTRACK_AI`.
+
+Ook weggehaald omdat de dienst niet bestaat: de "NL-cloud" op de privacy-kaart en de
+keuringsbrief op de wapenkaart.
+
+**Nog open, bewust niet door de agent beslist:** het bundel bestaat uit drie kopieën van
+hetzelfde materiaal (`project/`, `project/design_handoff_aimtrack/` en
+`project/uploads/AimTrack (Remix)/`). Alle drie zijn nu gecorrigeerd, maar ze blijven uit
+de pas lopen. Houd `project/` aan als bron en ruim de andere twee op; dat is een keuze voor
+de eigenaar van het ontwerp. Het prijsblok in `marketing.jsx` noemt daarnaast nog een
+gehoste dienst ("Hosted bij AimTrack NL") en betaalde abonnementen die niet bestaan; dat is
+een productbeslissing en valt buiten deze issues.

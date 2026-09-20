@@ -7,8 +7,8 @@ AimTrack is an AI-powered **digital shooting log for recreational sport shooters
 - Log training sessions (discipline, weapon, range, shots, scores)
 - Get **per-session AI reflection** highlighting strong points, concentration dips, and concrete training advice
 - Track progress per weapon (avg score, group, shot count, calibration)
-- Export **WM-4 compliant** records for their shooting association
-- Self-host or use the NL-hosted cloud — privacy-first, open-source under MIT
+- Export a CSV or PDF overview of their sessions for their own shooting-association records
+- Self-host the app, open-source under MIT
 
 The product is **Dutch (NL)** and the primary frame is a **Filament 3.x admin panel** (PHP/Laravel) — though these designs are framework-agnostic. The existing Filament default theme is the starting point; this handoff replaces the visual skin with a tactical, brand-driven dark-mode UI.
 
@@ -51,7 +51,7 @@ These three primitives recur across the product as **four distinct treatments** 
 | **T1** | **Reticle watermark** | Ambient atmosphere | Page-header backgrounds, KPI block backgrounds, hero sections, empty states | Small cards, table rows |
 | **T2** | **Ring-as-frame** | Showpiece (max 1× per screen) | Score medallion, profile avatar ring, marketing hero | Twice on same screen |
 | **T3** | **Crosshair brackets** | Emphasis on AI / live moments | AI-reflection cards, coach output, live-session indicators | Decoration on ordinary cards |
-| **T4** | **Monogram stamp** | Trust / verification | WM-4 export badges, "verified" session, journal section dividers | Stacked with T3 on the same card |
+| **T4** | **Monogram stamp** | Status marker (never validation) | "reflection ready" on a session, "export done", journal section dividers | Stacked with T3 on the same card; any wording that implies compliance, certification or verification |
 
 **Stacking rules:**
 - Max 1× T1 per screen + max 1× T2 per screen
@@ -198,7 +198,7 @@ Shared component file: `range-console.jsx` defines styles; `a-styles.jsx` export
 - **Right column** (320px): Last session card (target rings + KPIs) + AI-reflection BracketFrame (T3) + 30-day trend.
 
 #### 2.2 · Sessie-detail — `SessionDetail`
-- **Header card**: T1 watermark + T4 "WM-4 OK" stamp at top-right + session metadata + big eindscore (44px mono accent).
+- **Header card**: T1 watermark + T4 "REFLECTIE OK" stamp at top-right (only when the session actually has an AI reflection) + session metadata + big eindscore (44px mono accent).
 - **Stats row** (5 KPIs): Beste schot · Tienen · Negens · Groep · Cadans.
 - **Series card**: 6× 10-shot series with progress bars (each ≥95 colored accent, else muted).
 - **Shot strip**: 60 bars (each 4–8px wide), green for 10+, warn-colored for the dip region (33–42), muted otherwise. Bottom legend.
@@ -234,7 +234,7 @@ One long-scroll page. Sections in order:
 1. **Sticky nav** (18×64 padding, blur backdrop, `var(--bg)cc`) — Wordmark + nav items + "Inloggen" + "Probeer gratis" CTA
 2. **Hero** (88/64 padding): Two-col grid. Left: kicker pill + h1 64px "Je schietsessies, scherp in beeld." with accent 2nd line + sub-text + two CTAs + feature pills. Right: 420×420 hero visual = T2 ring (reticle 420) wrapping TargetRings, with 3 floating callouts (SCORE / GROEP / AI). Top-right corner has subtle large reticle watermark at opacity 0.07.
 3. **Trust strip**: 24×64 padding, top+bottom 1px border, "Gebruikt door…" + 5 club names
-4. **Features grid** (88/64): h2 44px + 3×2 cards. Each card: kicker (mono 10px 0.18em) + h3 (display 22px) + body + a demo widget. Cards have small corner accent (15×15 borderTop+borderRight on top-right — note: this is the original decorative element, NOT a full T3 BracketFrame). The WM-4 feature demo has a T4 "WM-4 OK" stamp.
+4. **Features grid** (88/64): h2 44px + 3×2 cards. Each card: kicker (mono 10px 0.18em) + h3 (display 22px) + body + a demo widget. Cards have small corner accent (15×15 borderTop+borderRight on top-right — note: this is the original decorative element, NOT a full T3 BracketFrame). The export feature demo has a T4 "EXPORT OK" stamp.
 5. **AI-coach deep dive** (96/64, top border): 2-col grid. Left: kicker + h2 + body + 4 check-marked features. Right: T3 BracketFrame around mock chat (header strip + alternating user/AI bubbles + sparkline attachment).
 6. **Self-hosted CTA** (64/64, top+bottom border): 2-col. Left: kicker + h2 "Eén command, eigen instance." + body. Right: terminal mock (panel bg, mono 13px, traffic-light dots, 3 lines).
 7. **Pricing** (88/64): centered intro + 3-card row. Middle card "Schutter" is primary (accent gradient bg, accent border, "POPULAIR" tag). Each card: kicker + price (44px display + sub) + divider + 4 check features + CTA button.
@@ -417,7 +417,7 @@ Open `AimTrack Designs.html` in a browser to see the full design canvas. The sup
 
 - **Filament version**: 3.x is assumed. If you upgrade to 4.x, verify the panel theming API hasn't changed.
 - **AI backend**: the prototype assumes a streaming chat endpoint that returns conversational text + structured "attachments" (chart data, CTA buttons). The exact API contract is not in scope of this design — coordinate with backend engineering.
-- **WM-4 export**: the format is prescribed by Dutch shooting-sport regulations — implement the PDF / CSV layout per spec, the UI just kicks off the job.
+- **Export**: there is no prescribed format. WM-4 is the permit document the chief of police issues, not a reporting standard, so AimTrack must not claim to comply with it. The export is a plain CSV or PDF overview of the user's own sessions for their association records; the UI just kicks off the job.
 - **Mobile**: not implemented in Filament. Recommend a PWA (Capacitor + Vue or Inertia) if a native app is out of scope.
 
 Good luck. 🎯 — Marc & the AimTrack design pass, mei 2026.

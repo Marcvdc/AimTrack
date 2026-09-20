@@ -128,7 +128,7 @@ function LogoT4_Stamp({ palette: c, fonts }) {
         </div>
         <div style={{ fontFamily: fonts.mono, fontSize: 10, letterSpacing: '0.18em', color: c.muted }}>SESSIE S-0247</div>
         <div style={{ fontSize: 16, fontWeight: 600, color: c.text, marginTop: 6 }}>Luchtpistool · 547 / 600</div>
-        <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>WM-4 conform · klaar voor export</div>
+        <div style={{ fontSize: 12, color: c.muted, marginTop: 4 }}>Sessielogboek · klaar voor export</div>
       </div>
       <div style={{ display: 'flex', gap: 12, marginTop: 18, alignItems: 'center' }}>
         <ATMark size={22} color={c.accent} />
