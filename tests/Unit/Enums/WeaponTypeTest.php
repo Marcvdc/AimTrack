@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\WeaponType;
+use Filament\Support\Contracts\HasLabel;
 
 it('kent luchtpistool en luchtgeweer als eigen type', function (): void {
     expect(WeaponType::AIR_PISTOL->value)->toBe('luchtpistool')
@@ -30,5 +31,13 @@ it('laat de bestaande waarden ongemoeid zodat opgeslagen rijen blijven casten', 
 it('geeft geen lege label terug voor welk type dan ook', function (): void {
     foreach (WeaponType::cases() as $type) {
         expect($type->label())->not->toBe('');
+    }
+});
+
+it('geeft filament hetzelfde label via de haslabel-interface', function (): void {
+    expect(WeaponType::AIR_PISTOL)->toBeInstanceOf(HasLabel::class);
+
+    foreach (WeaponType::cases() as $type) {
+        expect($type->getLabel())->toBe($type->label());
     }
 });

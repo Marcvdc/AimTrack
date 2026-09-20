@@ -4,6 +4,7 @@ use App\Enums\WeaponType;
 use App\Models\Weapon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Luchtpistool en luchtgeweer bestonden niet als WeaponType, dus zijn ze tot nu
@@ -14,6 +15,10 @@ use Illuminate\Database\Migrations\Migration;
  * of een kaliber dat uitsluitend bij luchtdruk voorkomt. Een vrij pistool in
  * .22 LR blijft dus een pistool, en een geweer in 5.56 mm blijft een geweer:
  * de kalibercheck eist een cijfergrens, zodat 5.5 niet op 5.56 aanslaat.
+ *
+ * Beide richtingen loggen hoeveel rijen ze hebben geraakt. Dit draait over
+ * bestaande gebruikersdata op een heuristiek, dus achteraf moet vast te stellen
+ * zijn wat er is omgezet zonder de database ernaast te leggen.
  */
 return new class extends Migration
 {
@@ -21,8 +26,15 @@ return new class extends Migration
 
     public function up(): void
     {
-        $this->reclassify(WeaponType::PISTOL, WeaponType::AIR_PISTOL, 'luchtpistool');
-        $this->reclassify(WeaponType::RIFLE, WeaponType::AIR_RIFLE, 'luchtgeweer');
+        $airPistols = $this->reclassify(WeaponType::PISTOL, WeaponType::AIR_PISTOL, 'luchtpistool');
+        $airRifles = $this->reclassify(WeaponType::RIFLE, WeaponType::AIR_RIFLE, 'luchtgeweer');
+
+        Log::info('Wapens geherclassificeerd naar een luchtdruktype', [
+            'migration' => 'reclassify_airgun_weapon_types',
+            'direction' => 'up',
+            WeaponType::AIR_PISTOL->value => $airPistols,
+            WeaponType::AIR_RIFLE->value => $airRifles,
+        ]);
     }
 
     /**
@@ -32,21 +44,33 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Weapon::query()
+        $pistols = Weapon::query()
             ->where('weapon_type', WeaponType::AIR_PISTOL->value)
             ->update(['weapon_type' => WeaponType::PISTOL->value]);
 
-        Weapon::query()
+        $rifles = Weapon::query()
             ->where('weapon_type', WeaponType::AIR_RIFLE->value)
             ->update(['weapon_type' => WeaponType::RIFLE->value]);
+
+        Log::info('Luchtdruktypes teruggezet op pistool en geweer', [
+            'migration' => 'reclassify_airgun_weapon_types',
+            'direction' => 'down',
+            WeaponType::PISTOL->value => $pistols,
+            WeaponType::RIFLE->value => $rifles,
+        ]);
     }
 
-    private function reclassify(WeaponType $from, WeaponType $to, string $nameNeedle): void
+    /**
+     * @return int het aantal omgezette rijen
+     */
+    private function reclassify(WeaponType $from, WeaponType $to, string $nameNeedle): int
     {
+        $converted = 0;
+
         Weapon::query()
             ->where('weapon_type', $from->value)
             ->select(['id', 'name', 'caliber'])
-            ->chunkById(200, function (Collection $weapons) use ($to, $nameNeedle): void {
+            ->chunkById(200, function (Collection $weapons) use ($to, $nameNeedle, &$converted): void {
                 $ids = $weapons
                     ->filter(fn (Weapon $weapon): bool => $this->isAirgun($weapon, $nameNeedle))
                     ->pluck('id')
@@ -56,10 +80,12 @@ return new class extends Migration
                     return;
                 }
 
-                Weapon::query()
+                $converted += Weapon::query()
                     ->whereIn('id', $ids)
                     ->update(['weapon_type' => $to->value]);
             });
+
+        return $converted;
     }
 
     private function isAirgun(Weapon $weapon, string $nameNeedle): bool

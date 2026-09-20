@@ -2,7 +2,9 @@
 
 namespace App\Enums;
 
-enum WeaponType: string
+use Filament\Support\Contracts\HasLabel;
+
+enum WeaponType: string implements HasLabel
 {
     case AIR_PISTOL = 'luchtpistool';
     case AIR_RIFLE = 'luchtgeweer';
@@ -25,5 +27,15 @@ enum WeaponType: string
             self::SHOTGUN => 'Hagelgeweer',
             self::OTHER => 'Overig',
         };
+    }
+
+    /**
+     * Filament leest het label alleen via deze interface. Zonder deze methode
+     * valt een badge of tekstkolom terug op de rauwe waarde, en dan staat er
+     * "luchtpistool" in de wapenlijst naast een filter dat "Luchtpistool" toont.
+     */
+    public function getLabel(): string
+    {
+        return $this->label();
     }
 }
