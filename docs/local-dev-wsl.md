@@ -21,6 +21,9 @@ Deze gids beschrijft de aanbevolen manier om AimTrack lokaal te draaien binnen W
    - `COMPOSE_PROJECT_NAME`: standaard `aimtrack_dev`, kies iets unieks als je meerdere stacks draait.  
    - `WEB_PORT`, `DB_FORWARD_PORT`, `MAILPIT_HTTP_PORT`, `MAILPIT_SMTP_PORT`: wijzig bij poortconflicten op de host.  
    - `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`: lokale DB-credentials (default `aimtrack`).  
+   - `APP_LOCALE=nl` en `APP_FALLBACK_LOCALE=en`: de app is Nederlandstalig. Staan deze op `en`, dan verschijnen Filament-chrome en validatiefouten in het Engels tussen de Nederlandse labels.  
+   - `APP_TIMEZONE=UTC`: de opslag-tijdzone. Laat deze op UTC staan, ook lokaal. Zet je hem op `Europe/Amsterdam`, dan worden bestaande timestamp-rijen een of twee uur verkeerd teruggelezen.  
+   - `APP_DISPLAY_TIMEZONE=Europe/Amsterdam`: de weergave-tijdzone, dit is wat de gebruiker op het scherm ziet.  
 3. Bewaar `.env.local` buiten versiebeheer (staat al in `.gitignore`).
 
 > Tip: gebruik `printf "UID=%s\nGID=%s\n" "$(id -u)" "$(id -g)"` om waardes direct te kopiëren.

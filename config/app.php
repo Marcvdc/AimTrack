@@ -61,30 +61,50 @@ return [
     | Application Timezone
     |--------------------------------------------------------------------------
     |
-    | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | De OPSLAG-tijdzone. Alles in de database staat in UTC en Laravel
+    | schrijft en leest datetime-kolommen in deze tijdzone. Zet dit dus
+    | niet zomaar op Europe/Amsterdam: de timestamp-kolommen dragen geen
+    | zone mee, dus bestaande rijen zouden stil een of twee uur opschuiven
+    | zonder dat er een byte in de database verandert. Voor wat de
+    | gebruiker ziet is 'display_timezone' hieronder de knop.
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'UTC'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Display Timezone
+    |--------------------------------------------------------------------------
+    |
+    | De WEERGAVE-tijdzone. Hierin toont de app tijden aan de gebruiker,
+    | terwijl de opslag in UTC blijft. Gebruik App\Support\DateFormat of
+    | de Filament-datetime-helpers om te converteren; die volgen deze
+    | instelling via FilamentTimezone.
+    |
+    */
+
+    'display_timezone' => env('APP_DISPLAY_TIMEZONE', 'Europe/Amsterdam'),
 
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |
-    | The application locale determines the default locale that will be used
-    | by Laravel's translation / localization methods. This option can be
-    | set to any locale for which you plan to have translation strings.
+    | AimTrack is een Nederlandstalige applicatie, dus 'nl' is de
+    | code-default en niet iets dat per omgeving gezet moet worden. De
+    | Nederlandse vertalingen staan in lang/nl (Laravel zelf levert alleen
+    | 'en' mee); Filament brengt zijn eigen nl-bestanden mee in vendor.
+    | De fallback blijft 'en' zodat een ontbrekende sleutel een leesbare
+    | Engelse zin geeft in plaats van de kale sleutelnaam.
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    'locale' => env('APP_LOCALE', 'nl'),
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 
-    'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
+    'faker_locale' => env('APP_FAKER_LOCALE', 'nl_NL'),
 
     /*
     |--------------------------------------------------------------------------

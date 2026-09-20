@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Filament\Resources\SessionResource;
 use App\Filament\Resources\SessionResource\Pages\ListSessions;
 use App\Models\Session;
+use App\Models\SessionShot;
 use App\Models\User;
+use App\Services\DemoDataSeeder;
 use Livewire\Livewire;
 
 test('sessions list renders empty state when user has no sessions', function (): void {
@@ -77,4 +79,23 @@ test('seedDemoDataAction on ListSessions seeds 5 sessions for the current user',
 
     expect($user->sessions()->count())->toBe(5)
         ->and($user->fresh()->demo_data_seeded_at)->not->toBeNull();
+});
+
+test('the demo button promises the shots it actually delivers', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $description = Livewire::test(ListSessions::class)
+        ->instance()
+        ->seedDemoDataAction()
+        ->getModalDescription();
+
+    expect((string) $description)
+        ->toContain((string) DemoDataSeeder::SHOT_COUNT)
+        ->toContain('schoten');
+
+    Livewire::test(ListSessions::class)->callAction('seedDemoData');
+
+    expect(SessionShot::query()->whereIn('session_id', $user->sessions()->pluck('id'))->count())
+        ->toBe(DemoDataSeeder::SHOT_COUNT);
 });

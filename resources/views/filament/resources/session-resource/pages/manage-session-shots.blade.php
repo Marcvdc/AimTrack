@@ -11,7 +11,7 @@
         $fmt = fn ($value): string => number_format((float) $value, $decimal ? 1 : 0, '.', '');
 
         $turnOptions = range(0, max(0, (int) ($record->shots()->max('turn_index') ?? 0)));
-        $sessionLabel = $record->date ? 'Sessie · ' . $record->date->format('d-m-Y') : 'Sessie #' . $record->getKey();
+        $sessionLabel = $record->date ? 'Sessie · ' . \App\Support\DateFormat::date($record->date) : 'Sessie #' . $record->getKey();
     @endphp
 
     

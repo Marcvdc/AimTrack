@@ -140,8 +140,8 @@
                     <x-aimtrack.sparkline :data="array_values($trend)" :width="280" :height="70" :fill="true" fluid />
                     @if (count($trend) >= 2)
                         <div style="display: flex; justify-content: space-between; margin-top: 8px; font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.08em;">
-                            <span>{{ \Illuminate\Support\Carbon::parse(array_key_first($trend))->format('d M') }}</span>
-                            <span>{{ \Illuminate\Support\Carbon::parse(array_key_last($trend))->format('d M') }}</span>
+                            <span>{{ \App\Support\DateFormat::date(\Illuminate\Support\Carbon::parse(array_key_first($trend))) }}</span>
+                            <span>{{ \App\Support\DateFormat::date(\Illuminate\Support\Carbon::parse(array_key_last($trend))) }}</span>
                         </div>
                     @endif
                 </div>

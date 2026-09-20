@@ -39,6 +39,43 @@ Deze sectie beschrijft hoe AimTrack is opgebouwd (Laravel 12, PHP 8.4/8.5, Filam
 - AI-service gebruikt env-gestuurde provider/model; geen secrets in code. AI-calls verlopen via queue (async) behalve optionele coachvragen.
 - Downloads en uploads gebruiken Laravel storage; file ACL’s via storage driver. Disclaimers in exports en AI-uitvoer vermelden dat gebruiker zelf verantwoordelijk blijft.
 
+## Taal, tijdzone en datumnotatie
+
+AimTrack is een Nederlandstalige applicatie. `config/app.php` zet `locale` daarom op `nl` als
+code-default, niet als iets dat per omgeving gezet moet worden, met `en` als fallback zodat een
+ontbrekende vertaalsleutel een leesbare Engelse zin oplevert in plaats van de kale sleutelnaam. De
+Nederlandse vertalingen van Laravel zelf staan in `lang/nl/` (validation, auth, passwords,
+pagination); Laravel levert alleen een Engelse set mee. Filament brengt zijn eigen `nl`-bestanden mee
+in vendor en gebruikt die zodra de locale goed staat.
+
+Er zijn twee tijdzones en dat onderscheid is bewust:
+
+| Instelling | Waarde | Waarvoor |
+|---|---|---|
+| `app.timezone` | `UTC` | Opslag. Laravel schrijft en leest datetime-kolommen hierin. |
+| `app.display_timezone` | `Europe/Amsterdam` | Weergave. Wat de gebruiker op het scherm ziet. |
+
+De timestamp-kolommen in Postgres dragen geen zone mee, dus `app.timezone` omzetten naar
+Europe/Amsterdam zou elke bestaande rij stil een of twee uur laten opschuiven zonder dat er een byte
+in de database verandert. Laat die vlag daarom op UTC staan. De weergave gaat via
+`FilamentTimezone::set()` in `AppServiceProvider` en via `App\Support\DateFormat`.
+
+De datumnotatie ligt vast in `App\Support\DateFormat`:
+
+| Constante | Notatie | Gebruik |
+|---|---|---|
+| `DATE` | `d-m-Y` | Alle datums op het scherm. |
+| `DATE_TIME` | `d-m-Y H:i` | Datum plus tijd op het scherm, in de weergave-tijdzone. |
+| `TIME` | `H:i` | Alleen een tijdstip, in de weergave-tijdzone. |
+| `MONTH` | `M Y` | Uitzondering: trendassen die op maandbuckets draaien. |
+| `MACHINE_DATE` | `Y-m-d` | Uitzondering: CSV-export en AI-tool-payloads. |
+
+`AppServiceProvider` zet deze notaties ook als Filament-default via `Table::configureUsing()` en
+`Schema::configureUsing()`. Kale `->date()`- en `->dateTime()`-aanroepen in resources volgen daardoor
+vanzelf; zonder die configuratie vallen ze terug op Filaments eigen `M j, Y`, de Amerikaanse notatie.
+Zet in nieuwe code dus geen los formaat in de aanroep, maar gebruik de kale helper of een constante
+uit `DateFormat`.
+
 ## Uitbreidingshaken
 - Extra exportprofielen kunnen via nieuwe services/views worden toegevoegd.
 - Multi-turn coachgesprekken kunnen de `coach_threads/messages` structuur benutten.
