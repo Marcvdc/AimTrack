@@ -98,17 +98,18 @@ Voorbeeld:
 - Branch: `staging` → workflow `.github/workflows/deploy-staging.yml`.
 - GitHub Environment: **staging** met secrets:
   - `SSH_HOST` (WireGuard IP), `SSH_USER`, `SSH_PORT` (optioneel), `SSH_KEY` (PEM), `DEPLOY_PATH`
-  - `APP_URL`, `ENV_FILE_B64` (base64 van `.env`), `GHCR_USERNAME`, `GHCR_TOKEN`, `WG_CONFIG`
+  - `APP_URL`, `ENV_FILE_B64` (base64 van `.env`), `WG_CONFIG`
+  - Voor GHCR zijn geen losse secrets nodig: de workflow logt in met `github.actor` en de ingebouwde `GITHUB_TOKEN`, en geeft diezelfde token door aan de host.
 - Flow: build & push image naar `ghcr.io/<owner>/aimtrack` met tags `<short_sha>` + `staging-latest`, installeer/start WireGuard in de workflow (config via `WG_CONFIG`), rsync `docker/` + `scripts/` naar de Pi, `remote_deploy.sh` draait `docker compose -f docker/compose.staging.yml pull/up`, optioneel migrations en healthcheck (`/health`). Tunnel wordt in een cleanup-stap weer afgesloten.
 - Networking: `staging.aimtrack.nl` verwijst naar het publieke IP van de Pi; forward extern poort 8080 (of gewenste poort) naar de host `WEB_PORT` (default 8080). TLS is optioneel voor staging; verkeer loopt via VPN/forwarding.
-- Concurrency: één staging deploy tegelijk; tag van de laatste succesvolle deploy wordt lokaal opgeslagen voor rollback.
+- Concurrency: één staging deploy tegelijk. De tag van de laatste geslaagde deploy staat in `${DEPLOY_PATH}/.deploy/last_successful_tag`; faalt de migratie of de healthcheck, dan zet `remote_deploy.sh` die tag automatisch terug. Handmatig terugzetten gaat met `bash scripts/rollback.sh [tag]`. Zie [docs/operations.md](docs/operations.md#rollback-van-een-deploy) voor de volledige procedure en voor wat een rollback níet terugzet.
 
 ## Production Deployment
-- Branch: `main` → workflow `.github/workflows/deploy-production.yml` (vereist succesvolle CI-run).
+- Branch: `main` → job `deploy-production` in `.github/workflows/ci.yml`, die pas draait na de jobs `lint`, `test` en `build`.
 - GitHub Environment: **production** met dezelfde secret-namen als staging (andere waarden, inclusief `WG_CONFIG`).
 - Tags: `<short_sha>` + `prod-latest`.
 - Compose file: `docker/compose.prod.yml` (image uit GHCR, volumes voor code/storage/bootstrap cache).
-- Deploy stap gebruikt dezelfde scripts als staging; healthcheck via `APP_URL/health`. Publiek verkeer komt binnen op extern poort 18080 → forwarded naar webcontainer (inclusief HTTPS offload volgens hostconfig).
+- Deploy stap gebruikt dezelfde scripts als staging, inclusief het rollbackpad; healthcheck via `APP_URL/health`. Publiek verkeer komt binnen op extern poort 18080 → forwarded naar webcontainer (inclusief HTTPS offload volgens hostconfig).
 
 ## Raspberry Pi / SSH & Runner Setup
 - Maak user `deploy` (of vergelijkbaar), voeg toe aan `docker`-group en zet `PermitRootLogin no`, key-only auth in `~deploy/.ssh/authorized_keys`.
@@ -118,7 +119,7 @@ Voorbeeld:
 - SSH firewall open voor GitHub runner of LAN-runner; `ssh-keyscan` wordt in workflows gebruikt voor known_hosts.
 
 ## Checklist (in te vullen)
-- [ ] Secrets per Environment in GitHub: `SSH_HOST`, `SSH_USER`, `SSH_KEY`, `DEPLOY_PATH`, `APP_URL`, `GHCR_USERNAME`, `GHCR_TOKEN`, `WG_CONFIG`, optioneel `SSH_PORT`, `ENV_FILE_B64`.
+- [ ] Secrets per Environment in GitHub: `SSH_HOST`, `SSH_USER`, `SSH_KEY`, `DEPLOY_PATH`, `APP_URL`, `WG_CONFIG`, optioneel `SSH_PORT`, `ENV_FILE_B64`.
 - [ ] Raspberry Pi: deploy user + docker group, Docker/Compose geïnstalleerd, `DEPLOY_PATH` aangemaakt.
 - [ ] Runner-keuze: GitHub-hosted (als host publiek bereikbaar) of self-hosted op het LAN/VPN.
 - [ ] `.env.staging` en `.env.production` klaar op de server (of base64 in secrets).
