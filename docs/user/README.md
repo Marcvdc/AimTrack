@@ -9,7 +9,7 @@ om snel op weg te zijn met je schietsessies, wapens, trends en de AI-coach.
 - [Sessies](sessions.md) — sessies aanmaken, schoten loggen en statistieken bekijken.
 - [Wapens](weapons.md) — wapens beheren en koppelen aan sessies.
 - [AI-coach](ai-coach.md) — hoe de AI-reflectie je groepering en patronen duidt.
-- [Exporteren](export.md) — je sessies exporteren (o.a. WM-4).
+- [Exporteren](export.md) — je sessies exporteren naar CSV of PDF.
 
 ## Contact & support
 

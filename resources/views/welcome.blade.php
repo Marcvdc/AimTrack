@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>AimTrack — Je schietsessies, scherp in beeld.</title>
-    <meta name="description" content="AimTrack logt je schietsessies, herkent patronen in je groepering en geeft per sessie een AI-reflectie. Self-hosted, WM-4 conform, open-source.">
+    <meta name="description" content="AimTrack logt je schietsessies, herkent patronen in je groepering en geeft per sessie een AI-reflectie. Self-hosted, open-source, met CSV- en PDF-export.">
 
     {{-- Webfonts (Inter + JetBrains Mono) + Signal Mint design tokens — één bron
          van waarheid, gedeeld met het Filament-panel via AdminPanelProvider. --}}
@@ -329,11 +329,11 @@
         .mk-demo-trend { padding: 10px; background: var(--at-bg); border: 1px solid var(--at-line); border-radius: 8px; }
         .mk-demo-trend-label { font-family: var(--at-font-mono); font-size: 9px; color: var(--at-muted); letter-spacing: 0.14em; margin-bottom: 4px; }
 
-        /* Demo · WM-4 (illustratief, met T4 monogram-stempel) */
-        .mk-demo-wm4 { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--at-bg); border: 1px solid var(--at-line); border-radius: 8px; }
-        .mk-demo-wm4-body { flex: 1; }
-        .mk-demo-wm4-title { font-size: 12px; font-weight: 600; color: var(--at-text); }
-        .mk-demo-wm4-sub { font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.08em; }
+        /* Demo · Export (illustratief, met T4 monogram-stempel) */
+        .mk-demo-export { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--at-bg); border: 1px solid var(--at-line); border-radius: 8px; }
+        .mk-demo-export-body { flex: 1; }
+        .mk-demo-export-title { font-size: 12px; font-weight: 600; color: var(--at-text); }
+        .mk-demo-export-sub { font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.08em; }
 
         /* Demo · privacy (illustratief) */
         .mk-demo-privacy { display: flex; gap: 8px; }
@@ -497,7 +497,7 @@
             <h1 class="mk-h1">Je schietsessies,<br><span class="mk-accent">scherp in beeld.</span></h1>
             <p class="mk-lead">
                 AimTrack logt je trainingen, herkent patronen in je groepering en
-                geeft per sessie een AI-reflectie. Self-hosted, WM-4 conform,
+                geeft per sessie een AI-reflectie. Self-hosted, open-source,
                 zonder gedoe.
             </p>
             <div class="mk-cta-row">
@@ -512,7 +512,7 @@
             </div>
             <div class="mk-pills">
                 <span class="mk-pill">● Self-hosted</span>
-                <span class="mk-pill">● WM-4 export</span>
+                <span class="mk-pill">● CSV- en PDF-export</span>
                 <span class="mk-pill">● AI-reflectie</span>
                 <span class="mk-pill">● Open-source</span>
             </div>
@@ -644,22 +644,22 @@
                 </div>
             </article>
 
-            {{-- 04 · WM-4 (illustratief, T4 monogram-stempel) --}}
+            {{-- 04 · Export (illustratief, T4 monogram-stempel) --}}
             <article class="mk-feature-card">
                 <span class="mk-feature-corner" aria-hidden="true"></span>
                 <div class="mk-feature-head">
                     <x-aimtrack.icon name="export" :size="18" color="var(--at-accent)" />
-                    <div class="mk-kicker">04 · WM-4</div>
+                    <div class="mk-kicker">04 · EXPORT</div>
                 </div>
-                <h3 class="mk-feature-title">Wet-conforme administratie</h3>
-                <p class="mk-feature-body">Genereer een WM-4 register-export voor je vereniging. Compleet, gefilterd, en klaar voor inlevering.</p>
+                <h3 class="mk-feature-title">Export voor je verenigingsadministratie</h3>
+                <p class="mk-feature-body">Genereer een CSV- of PDF-export van je sessies voor je eigen verenigingsadministratie. Compleet en gefilterd; je blijft zelf verantwoordelijk voor de actuele eisen.</p>
                 <div class="mk-feature-demo">
-                    <div class="mk-demo-wm4">
-                        <x-aimtrack.monogram-stamp label="WM-4 OK" corner="top-right" />
+                    <div class="mk-demo-export">
+                        <x-aimtrack.monogram-stamp label="EXPORT OK" corner="top-right" />
                         <x-aimtrack.at-mark :size="20" color="var(--at-accent)" />
-                        <div class="mk-demo-wm4-body">
-                            <div class="mk-demo-wm4-title">WM-4 · register</div>
-                            <div class="mk-demo-wm4-sub">EXPORT · GEREED</div>
+                        <div class="mk-demo-export-body">
+                            <div class="mk-demo-export-title">Sessieregister</div>
+                            <div class="mk-demo-export-sub">EXPORT · GEREED</div>
                         </div>
                         <x-aimtrack.icon name="export" :size="16" color="var(--at-accent)" />
                     </div>

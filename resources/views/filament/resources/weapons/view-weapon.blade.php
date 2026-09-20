@@ -20,7 +20,7 @@
     $weaponInsight = $weapon->aiWeaponInsight;
 
     $statusRows = [
-        ['Status', $weapon->is_active ? 'Actief · WM-4' : 'Uit gebruik', $weapon->is_active ? 'ok' : null],
+        ['Status', $weapon->is_active ? 'Actief' : 'Uit gebruik', $weapon->is_active ? 'ok' : null],
         ['Aangeschaft', $weapon->owned_since?->translatedFormat('M Y') ?? '—', null],
         ['Kaliber', $caliberLabel, null],
         ['Type', ucfirst($typeLabel), null],

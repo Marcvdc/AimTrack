@@ -83,7 +83,7 @@ it('falls back to a friendly empty message when the session has no shots', funct
         ->assertSee('Nog geen schoten gelogd');
 });
 
-it('renders the WM-4 OK stamp only when the session has an AI reflection', function (): void {
+it('renders the reflectie-stamp only when the session has an AI reflection', function (): void {
     $user = User::factory()->create();
 
     $sessionWithoutRefl = Session::factory()->for($user)->create();
@@ -91,7 +91,7 @@ it('renders the WM-4 OK stamp only when the session has an AI reflection', funct
 
     Livewire::actingAs($user)
         ->test(ViewSession::class, ['record' => $sessionWithoutRefl->id])
-        ->assertDontSee('WM-4 OK');
+        ->assertDontSee('REFLECTIE OK');
 
     $sessionWithRefl = Session::factory()->for($user)->create();
     seedShots($sessionWithRefl, 10);
@@ -101,7 +101,7 @@ it('renders the WM-4 OK stamp only when the session has an AI reflection', funct
 
     Livewire::actingAs($user)
         ->test(ViewSession::class, ['record' => $sessionWithRefl->id])
-        ->assertSee('WM-4 OK')
+        ->assertSee('REFLECTIE OK')
         ->assertSee('Sterke openingsserie');
 });
 

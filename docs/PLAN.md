@@ -1,14 +1,14 @@
 # AimTrack Plan (PLAN-FIRST)
 
 ## 1) Korte beschrijving
-AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 5) waarmee een sportschutter sessies kan registreren, reflecteren en AI-ondersteuning krijgt op basis van eigen data. De app is self-hosted, privacy-first en biedt exports (CSV/PDF) voor WM-4-achtige rapportages.
+AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 5) waarmee een sportschutter sessies kan registreren, reflecteren en AI-ondersteuning krijgt op basis van eigen data. De app is self-hosted, privacy-first en biedt exports (CSV/PDF) voor de eigen verenigingsadministratie.
 
 ## 2) Belangrijkste use-cases
 - **Schietlog sessie registreren:** datum, baan/vereniging, locatie, munitie, meerdere (wapen × afstand) entries, ruwe notities, bijlagen (foto/kaart/PDF).
 - **Reflectie + AI-reflectie bekijken:** korte handmatige reflectie, AI-samenvatting met leerpunten, focus voor volgende keer.
 - **Wapenbeheer:** wapens (type/kaliber/serienummer/opslag/notities) koppelen aan sessies; AI-trends per wapen.
 - **AI-coach:** vrije vragen stellen over eigen logs; AI genereert context uit sessies en wapens via ShooterCoach-service en queue jobs.
-- **Export WM-4-achtig:** selecteer periode + wapens; genereer CSV/PDF met sessies, aantallen, munitie, locaties + disclaimer.
+- **Export:** selecteer periode + wapens; genereer CSV/PDF met sessies, aantallen, munitie, locaties + disclaimer.
 
 ## 3) Domeinmodel
 **Tabellen + velden (globaal):**
@@ -86,7 +86,7 @@ AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 5) waarmee een
 - **AttachmentResource (optioneel):** read-only listing van uploads indien nodig; primair integreren via SessionResource file upload component.
 - **Jobs/hooks:** actions dispatchen queue jobs `GenerateSessionReflectionJob` en `GenerateWeaponInsightJob`; jobs stubs voorzien totdat AI-service is ingevuld.
 
-## 11) Export-scope voor WM-4 (huidige iteratie)
+## 11) Export-scope (huidige iteratie)
 - **Service:** `App\Services\Export\SessionExportService` met methode `exportSessions(User $user, Carbon $from, Carbon $to, ?array $weaponIds, string $format)` die sessies binnen periode ophaalt (optionele wapenfilter) en een downloadresponse teruggeeft.
 - **CSV-output:** kolommen `datum, baan, locatie, wapen, kaliber, afstand (m), rondes, munitietype, groepering, afwijking, flyers, notities`; per sessiewapen een regel.
 - **PDF-output:** eenvoudige Blade-view (`resources/views/exports/sessions.blade.php`) met periode-overzicht, totalen per wapen/kaliber, lijst van sessies en NL-disclaimer: "Let op: dit document is een hulpmiddel; controleer altijd zelf of dit voldoet aan de actuele eisen van de politie / korpschef voor een WM-4 aanvraag." PDF-rendering via een lichte lib (bijv. Dompdf) zonder zware styling.

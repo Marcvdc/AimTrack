@@ -1,6 +1,6 @@
 # Export
 
-AimTrack kan sessies exporteren naar CSV of PDF voor o.a. WM-4-achtige rapportage.
+AimTrack kan sessies exporteren naar CSV of PDF voor de eigen verenigingsadministratie. De export is een hulpmiddel; de gebruiker blijft zelf verantwoordelijk voor de actuele eisen.
 
 ## Flow
 1. Gebruiker opent Filament **Export**-pagina.

@@ -41,7 +41,7 @@ test('contact form sends a mail to the configured address on success', function 
     Livewire::test(ContactForm::class)
         ->set('name', 'Jan Schutter')
         ->set('email', 'jan@example.com')
-        ->set('message', 'Ik heb een vraag over de WM-4 export.')
+        ->set('message', 'Ik heb een vraag over de export.')
         ->call('submit')
         ->assertHasNoErrors()
         ->assertSet('sent', true);

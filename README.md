@@ -1,6 +1,6 @@
 # AimTrack
 
-AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer sessies (met wapens/afstanden), voeg bijlagen toe, krijg AI-reflecties en wapen-trends, stel vragen aan een AI-coach en genereer CSV/PDF-exports voor o.a. WM-4-achtige aanvragen. Gebouwd met Laravel 12, Filament 5 en Livewire 4.
+AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer sessies (met wapens/afstanden), voeg bijlagen toe, krijg AI-reflecties en wapen-trends, stel vragen aan een AI-coach en genereer CSV- en PDF-exports voor je eigen verenigingsadministratie. Gebouwd met Laravel 12, Filament 5 en Livewire 4.
 
 ## Kernfeatures
 - **Sessies**: datum, baan/vereniging, locatie, tijden, notities, attachments en meerdere wapen × afstand entries.
@@ -33,7 +33,7 @@ AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer s
 - Prompts bevatten NL-disclaimers; AI-output is adviserend en vervangt geen veiligheidsregels of instructeurs.
 
 ## Export
-Gebruik de Filament **Export**-pagina om CSV of PDF te downloaden. Periode is verplicht; wapenselectie optioneel. Download bevat een disclaimer dat de gebruiker zelf verantwoordelijk blijft voor actuele WM-4-eisen.
+Gebruik de Filament **Export**-pagina om CSV of PDF te downloaden. Periode is verplicht; wapenselectie optioneel. Download bevat een disclaimer dat de gebruiker zelf verantwoordelijk blijft voor de actuele eisen.
 
 ## Documentatie
 - Techniek: `docs/architecture.md`, `docs/ai.md`, `docs/export.md`, `docs/infra.md`, `docs/operations.md`, `docs/security.md`

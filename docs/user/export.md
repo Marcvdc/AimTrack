@@ -13,7 +13,7 @@ Handleiding voor CSV/PDF-export.
 
 ## PDF
 - Printvriendelijke versie met overzicht per periode, totalen per wapen/kaliber en een tabel met sessies.
-- Ondersteunde disclaimer wordt automatisch toegevoegd: je moet altijd zelf controleren of de export voldoet aan actuele WM-4-eisen.
+- Ondersteunde disclaimer wordt automatisch toegevoegd: je moet altijd zelf controleren of de export voldoet aan de actuele eisen.
 
 ## Validatie en veiligheid
 - Alleen data van de ingelogde gebruiker wordt geëxporteerd.
