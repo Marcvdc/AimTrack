@@ -143,8 +143,9 @@ function RingMedaillon({
 }
 
 // ── T4 · MonogramStamp ──────────────────────────────────────────
-// Tiny "stamp" with AT monogram + label. Use for WM-4 verified, signed
-// export, audit-OK moments. Default: solid accent fill on top edge of a
+// Tiny "stamp" with AT monogram + label. Use to mark that something in the
+// app is done: a reflection is ready, an export has run. It is a status
+// marker, not a validation or compliance claim. Default: solid accent fill on top edge of a
 // card (place inside a `position: relative` parent and pass `corner`).
 function MonogramStamp({
   palette: c,
@@ -343,9 +344,9 @@ function LogoSystemReference({ palette, fonts }) {
         <div style={cell}>
           <div style={role}>T4 · TRUST</div>
           <h3 style={tName}>Monogram stamp</h3>
-          <p style={body}>Het AT-monogram als kleine stempel. Bevestigt: deze data klopt — WM-4 export, geverifieerd, ondertekend.</p>
+          <p style={body}>Het AT-monogram als kleine stempel. Markeert dat iets in de app klaar is: een reflectie staat er, een export is gedraaid. Geen validatie- of conformiteitsclaim.</p>
           <div style={{ marginTop: 8, padding: 16, background: c.bg, border: `1px solid ${c.line}`, borderRadius: 6, display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
-            <MonogramStamp palette={c} fonts={f} label="WM-4 OK" />
+            <MonogramStamp palette={c} fonts={f} label="EXPORT OK" />
             <MonogramStamp palette={c} fonts={f} label="VERIFIED" variant="outline" />
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', width: '100%' }}>
               <ATMark size={18} color={c.accent} />
@@ -356,7 +357,7 @@ function LogoSystemReference({ palette, fonts }) {
             </div>
           </div>
           <div style={{ ...usage, gap: 5 }}>
-            {yes('WM-4 export · audit badges')}
+            {yes('Export- en reflectie-badges')}
             {yes('Section dividers in journal')}
             {no('Naast T3 brackets op zelfde card')}
           </div>
@@ -387,7 +388,7 @@ function LogoSystemReference({ palette, fonts }) {
           <div style={role}>REGELS · KLEUR</div>
           <h3 style={{ fontFamily: f.display, fontSize: 18, fontWeight: 600, color: c.text, margin: '6px 0 12px' }}>Mint = nu. Wit = neutraal.</h3>
           <div style={{ fontSize: 13, lineHeight: 1.6, color: c.muted }}>
-            <p style={{ margin: '0 0 10px' }}>Alle vier renderen standaard in <span style={{ color: c.accent }}>{c.accent === '#64f4b3' ? 'mint' : 'accent'}</span> op donker. Voor neutrale momenten (footer-dividers, geprinte WM-4-pagina's) wisselt het naar <span style={{ color: c.text }}>tekst-kleur</span>.</p>
+            <p style={{ margin: '0 0 10px' }}>Alle vier renderen standaard in <span style={{ color: c.accent }}>{c.accent === '#64f4b3' ? 'mint' : 'accent'}</span> op donker. Voor neutrale momenten (footer-dividers, geprinte pagina's) wisselt het naar <span style={{ color: c.text }}>tekst-kleur</span>.</p>
             <p style={{ margin: '0 0 10px' }}>Op <span style={{ color: c.text }}>licht thema</span> blijft het systeem hetzelfde — alleen de accent-tint past zich aan. Tweaks kun je nu rechtsonder wisselen om te checken.</p>
             <p style={{ margin: 0 }}>De warn-kleur is voor het systeem <em>niet</em> toegestaan; T3-brackets in rood zou misleiding zijn.</p>
           </div>

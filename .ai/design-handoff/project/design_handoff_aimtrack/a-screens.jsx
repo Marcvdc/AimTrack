@@ -48,8 +48,8 @@ function SessionDetail({ palette, fonts }) {
             <div style={{ ...a.panel, padding: 20, display: 'flex', alignItems: 'flex-start', gap: 24, position: 'relative', overflow: 'hidden' }}>
               {/* T1 · reticle watermark */}
               <window.WatermarkBg palette={c} size={220} top={-60} right={-40} opacity={0.07} />
-              {/* T4 · trust stamp — sessie is geverifieerd & klaar voor WM-4 */}
-              <window.MonogramStamp palette={c} fonts={fonts} label="WM-4 OK" corner="top-right" />
+              {/* T4 · stempel: deze sessie heeft een AI-reflectie. Geen validatie, geen conformiteitsclaim. */}
+              <window.MonogramStamp palette={c} fonts={fonts} label="REFLECTIE OK" corner="top-right" />
               <div style={{ flex: 1, position: 'relative' }}>
                 <div style={a.label}>SESSIE · S-0247 · woensdag 08 mei 2026</div>
                 <h1 style={{ ...a.h1, fontSize: 26, marginTop: 6 }}>Luchtpistool 10m · 60 schoten</h1>
@@ -255,7 +255,7 @@ function WeaponDetail({ palette, fonts }) {
               <div style={{ height: 1, background: c.line, margin: '14px 0' }} />
 
               {[
-                ['Status', 'Actief · WM-4', 'ok'],
+                ['Status', 'Actief', 'ok'],
                 ['Aangeschaft', 'Feb 2024'],
                 ['Laatste onderhoud', '12 apr 2026 · veerwissel'],
                 ['Kaliber', '4.5 mm diabolo'],
@@ -388,7 +388,7 @@ function AICoachView({ palette, fonts }) {
             {[
               { title: 'Concentratiedip schot 35', ts: '14:42', active: true, badge: 'live' },
               { title: 'Vergelijk LP500 vs CZ', ts: '4 mei' },
-              { title: 'WM-4 export uitleg', ts: '2 mei' },
+              { title: 'Export uitleg', ts: '2 mei' },
               { title: 'Trekker afstellen', ts: '28 apr' },
               { title: 'Adem-protocol opbouwen', ts: '22 apr' },
               { title: 'Match-routine plannen', ts: '19 apr' },
@@ -498,7 +498,7 @@ function AICoachView({ palette, fonts }) {
                 </button>
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                {['Vergelijk met vorige maand', 'Wat trainen deze week?', 'Trekkerafstelling LP500', 'WM-4 status'].map(s => (
+                {['Vergelijk met vorige maand', 'Wat trainen deze week?', 'Trekkerafstelling LP500', 'Mijn export van vorige maand'].map(s => (
                   <button key={s} style={{ padding: '5px 10px', borderRadius: 999, border: `1px solid ${c.line}`, background: 'transparent', color: c.muted, fontSize: 11, fontFamily: fonts.mono, letterSpacing: '0.04em', cursor: 'pointer' }}>{s}</button>
                 ))}
               </div>
@@ -547,7 +547,7 @@ function AICoachView({ palette, fonts }) {
 
             <div style={{ ...a.label, marginTop: 8 }}>PRIVACY</div>
             <div style={{ fontSize: 11, color: c.muted, lineHeight: 1.6 }}>
-              Antwoorden gegenereerd op je <span style={{ color: c.accent }}>eigen instance</span>. Geen data verlaat de server.
+              De app en de database draaien op je <span style={{ color: c.accent }}>eigen server</span>. Voor elk AI-antwoord gaat je vraag met de sessie- en wapengegevens naar Anthropic (api.anthropic.com). Zonder API-key doet AimTrack geen enkele call.
             </div>
           </div>
         </div>
