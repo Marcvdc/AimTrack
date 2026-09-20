@@ -1,6 +1,6 @@
 # AimTrack
 
-AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer sessies (met wapens/afstanden), voeg bijlagen toe, krijg AI-reflecties en wapen-trends, stel vragen aan een AI-coach en genereer CSV/PDF-exports voor o.a. WM-4-achtige aanvragen. Gebouwd met Laravel 12, Filament 4 en Livewire 3.
+AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer sessies (met wapens/afstanden), voeg bijlagen toe, krijg AI-reflecties en wapen-trends, stel vragen aan een AI-coach en genereer CSV/PDF-exports voor o.a. WM-4-achtige aanvragen. Gebouwd met Laravel 12, Filament 5 en Livewire 4.
 
 ## Kernfeatures
 - **Sessies**: datum, baan/vereniging, locatie, tijden, notities, attachments en meerdere wapen × afstand entries.
@@ -12,7 +12,7 @@ AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer s
 
 ## Stack
 - PHP 8.4/8.5, Laravel 12
-- Filament 4 + Livewire 3
+- Filament 5 + Livewire 4
 - Database: PostgreSQL (default) of MySQL
 - Queue: database driver (queue-worker container)
 
@@ -42,7 +42,7 @@ Gebruik de Filament **Export**-pagina om CSV of PDF te downloaden. Periode is ve
 - Overige plannen: `docs/PLAN.md`, `docs/BACKUPS.md`, `docs/PROD_HARDENING.md`
 
 ## Security & Responsible Disclosure
-- Meld kwetsbaarheden via **security@aimrack.nl** met impact, reproduceerbare stappen en relevante logs.
+- Meld kwetsbaarheden via **security@aimtrack.nl** met impact, reproduceerbare stappen en relevante logs.
 - We bevestigen ontvangst binnen 2 werkdagen vanaf hetzelfde adres.
 - Versleutel gevoelige details (PGP op aanvraag) en dien geen publiek issue in tot het probleem is opgelost.
 - Zie `SECURITY.md` voor het volledige disclosure-proces en richtlijnen voor onderzoekers.

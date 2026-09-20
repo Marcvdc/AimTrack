@@ -20,7 +20,7 @@ Belangrijkste variabelen:
 - AI: `AI_DRIVER`, `AI_MODEL`, `OPENAI_API_KEY`, `OPENAI_BASE_URL`.
 - Logging/monitoring: Sentry DSN indien gebruikt.
 - Lokale Docker (WSL): `UID`, `GID` (meestal 1000) om permissies gelijk te trekken met de gebruiker in WSL; `COMPOSE_PROJECT_NAME` om containernaam-conflicten te vermijden; `WEB_PORT` voor hostpoort.
-- Mail: standaard `MAIL_FROM_ADDRESS=support@aimrack.nl` en `MAIL_FROM_NAME="AimTrack Support"` (of `support+local@aimrack.nl` voor lokale Mailpit). Pas SMTP host/poort aan per omgeving.
+- Mail: standaard `MAIL_FROM_ADDRESS=support@aimtrack.nl` en `MAIL_FROM_NAME="AimTrack Support"` (of `support+local@aimtrack.nl` voor lokale Mailpit). Pas SMTP host/poort aan per omgeving.
 
 ## Lifecycle
 1. `docker compose -f docker/compose.dev.yml --env-file .env.local up -d` start de lokale stack (WSL).
