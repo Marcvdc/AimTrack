@@ -111,15 +111,15 @@ test('landing page renders the six feature cards', function (): void {
         ->assertSee('01 · SESSIES', escape: false)
         ->assertSee('02 · AI-COACH', escape: false)
         ->assertSee('03 · TRENDS', escape: false)
-        ->assertSee('04 · WM-4', escape: false)
+        ->assertSee('04 · EXPORT', escape: false)
         ->assertSee('05 · PRIVACY', escape: false)
         ->assertSee('06 · WAPENS', escape: false);
 });
 
-test('landing page WM-4 card carries the T4 monogram stamp', function (): void {
+test('landing page export card carries the T4 monogram stamp', function (): void {
     $this->get('/')
         ->assertOk()
-        ->assertSee('WM-4 OK', escape: false)
+        ->assertSee('EXPORT OK', escape: false)
         ->assertSee('aimtrack-monogram-stamp', escape: false);
 });
 

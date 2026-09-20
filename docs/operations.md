@@ -36,4 +36,4 @@ Runbook voor dagelijks beheer, incidentrespons en onderhoud van AimTrack.
 - Schakel HTTPS/secure cookies in productie; configureer trusted proxies.
 
 ## Rapportage
-- Exporteer CSV/PDF bij verzoeken (bijv. WM-4). Voeg handmatig auditnotities toe indien juridisch vereist.
+- Exporteer CSV/PDF bij verzoeken. Voeg handmatig auditnotities toe indien juridisch vereist.

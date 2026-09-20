@@ -1,0 +1,14 @@
+# Taalstatistieken van GitHub (Linguist).
+#
+# De repo werd als JavaScript gelabeld omdat `.ai/design-handoff/` de complete
+# export van de design-tool bevat: 47 `.jsx`-bestanden (~914 kB) plus de
+# bijbehorende HTML, in drie kopieën naast elkaar. Dat is aangeleverd
+# handoff-materiaal en geen applicatiecode, dus het telt niet mee.
+.ai/design-handoff/** linguist-vendored=true
+
+# Gebouwde front-end assets. Deze staan in .gitignore en horen niet in git,
+# maar mocht dat ooit veranderen, dan tellen ze niet mee als broncode.
+public/build/** linguist-generated=true
+public/vendor/** linguist-vendored=true
+public/js/** linguist-generated=true
+public/css/** linguist-generated=true

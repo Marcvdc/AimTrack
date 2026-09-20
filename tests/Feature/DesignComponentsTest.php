@@ -154,10 +154,10 @@ test('ring-medaillon honours custom size, label, value and sub', function (): vo
 });
 
 test('monogram-stamp renders solid stamp by default with at-mark and label', function (): void {
-    $html = Blade::render('<x-aimtrack.monogram-stamp label="WM-4 OK" />');
+    $html = Blade::render('<x-aimtrack.monogram-stamp label="EXPORT OK" />');
 
     expect($html)
-        ->toContain('WM-4 OK')
+        ->toContain('EXPORT OK')
         ->toContain('var(--at-accent)')
         ->toContain('var(--at-cta-text)')
         ->toContain('<svg')

@@ -59,7 +59,7 @@
             <div style="position: relative; padding: 20px; background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-lg); overflow: hidden;">
                 <x-aimtrack.watermark-bg :size="220" :opacity="0.07" :top="-60" :right="-40" />
                 @if ($reflectionRecord)
-                    <x-aimtrack.monogram-stamp label="WM-4 OK" corner="top-right" />
+                    <x-aimtrack.monogram-stamp label="REFLECTIE OK" corner="top-right" />
                 @endif
                 <div style="position: relative; z-index: 1; display: flex; align-items: flex-start; gap: 24px;">
                     <div style="flex: 1; min-width: 0;">

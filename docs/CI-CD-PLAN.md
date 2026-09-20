@@ -1,7 +1,7 @@
 # CI/CD Plan voor AimTrack
 
 ## Doel en uitgangspunten
-- Laravel 12 + Filament 4 app met Docker-first deploystrategie.
+- Laravel 12 + Filament 5 app met Docker-first deploystrategie.
 - Branches: `staging` → staging deploy, `main` → productie deploy.
 - Build een Docker image per commit, push naar GHCR, en deploy via remote Docker Compose op een Raspberry Pi.
 - Gebruik GitHub Environments voor gescheiden secrets en gelijke strengheid tussen staging en productie.

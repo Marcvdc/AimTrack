@@ -1,7 +1,7 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
     "name": "aimtrack/aimtrack",
-    "description": "AimTrack shooting log with AI coach built on Laravel 12 and Filament 4.",
+    "description": "AimTrack shooting log with AI coach built on Laravel 12 and Filament 5.",
     "type": "project",
     "license": "MIT",
     "require": {

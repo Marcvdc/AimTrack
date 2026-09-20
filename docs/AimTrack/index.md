@@ -4,6 +4,7 @@
 Deze map bevat alle documentatie voor het AimTrack-project volgens het PLAN-FIRST proces. Zie `docs/plans/` voor lopende plannen en `docs/AimTrack/tech/` voor technische referenties.
 
 ## Recent
+- 2026-09-20: contactadres gecorrigeerd naar `@aimtrack.nl` (domein `aimrack.nl` resolvet niet), versienummers in README en docs gelijkgetrokken met composer.json (Filament 5, Livewire 4), en `.gitattributes` toegevoegd zodat de design-handoff niet als broncode meetelt
 - 2026-01-26 — GH-51 CI storage directories en view cache pad gefixt (StoragePathInitializer, CI mkdir stap, doc update)
 - 2026-01-26 — GH-37 Sessies-export herbouwd (shared dataset, shots samenvatting, PDF lay-out fixes + tests)
 - 2026-01-26 — GH-49 Export downloads forceren HTTPS via configuratie + tests
