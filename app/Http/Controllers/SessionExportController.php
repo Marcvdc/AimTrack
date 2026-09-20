@@ -20,7 +20,7 @@ class SessionExportController extends Controller
             $request->periodFrom(),
             $request->periodTo(),
             $request->weaponIds(),
-            $request->format(),
+            $request->exportFormat(),
         );
     }
 }

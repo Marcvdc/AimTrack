@@ -92,7 +92,10 @@ class ExportSessionsRequest extends FormRequest
             : null;
     }
 
-    public function format(): string
+    /**
+     * Niet `format()`: die naam is al bezet door `Illuminate\Http\Request::format()`.
+     */
+    public function exportFormat(): string
     {
         return $this->validated('format') ?? 'csv';
     }
