@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\WeaponType;
 use App\Models\AiReflection;
 use App\Models\Session;
 use App\Models\SessionShot;
@@ -172,7 +173,7 @@ it('excludes unused weapons and scopes weapon usage to the user', function (): v
 
 it('aggregates progress per discipline (wapentype + afstand)', function (): void {
     $user = User::factory()->create();
-    $weapon = Weapon::factory()->create(['user_id' => $user->id, 'weapon_type' => \App\Enums\WeaponType::PISTOL]);
+    $weapon = Weapon::factory()->create(['user_id' => $user->id, 'weapon_type' => WeaponType::PISTOL]);
 
     $s1 = Session::factory()->for($user)->create(['date' => now()->subDays(5)]);
     SessionWeapon::factory()->create(['session_id' => $s1->id, 'weapon_id' => $weapon->id, 'distance_m' => 25]);
@@ -197,4 +198,42 @@ it('aggregates progress per discipline (wapentype + afstand)', function (): void
         ->and($p25['avg'])->toBe(90.0)
         ->and($p25['series'])->toBe([100, 80]) // oudste → nieuwste
         ->and($p25['trend'])->toBe(-20);
+});
+
+it('toont luchtdrukwapens met hun eigen nederlandse type in de wapengroepering', function (): void {
+    $user = User::factory()->create();
+    $weapon = Weapon::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Steyr LP50',
+        'weapon_type' => WeaponType::AIR_PISTOL,
+    ]);
+
+    $session = Session::factory()->for($user)->create(['date' => now()->subDay()]);
+    SessionWeapon::factory()->create(['session_id' => $session->id, 'weapon_id' => $weapon->id]);
+    summaryShotsFor($session, 10, ['ring' => 9, 'score' => 9]);
+
+    $row = (new RangeConsoleSummaryService($user))->weaponUsage()->first();
+
+    expect($row['type'])->toBe('Luchtpistool');
+});
+
+it('labelt de disciplinevoortgang van een luchtgeweer in het nederlands', function (): void {
+    $user = User::factory()->create();
+    $weapon = Weapon::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Walther LG400',
+        'weapon_type' => WeaponType::AIR_RIFLE,
+    ]);
+
+    $session = Session::factory()->for($user)->create(['date' => now()->subDay()]);
+    SessionWeapon::factory()->create([
+        'session_id' => $session->id,
+        'weapon_id' => $weapon->id,
+        'distance_m' => 10,
+    ]);
+    summaryShotsFor($session, 10, ['ring' => 9, 'score' => 9]);
+
+    $progress = (new RangeConsoleSummaryService($user))->disciplineProgress();
+
+    expect($progress->firstWhere('label', 'Luchtgeweer 10m'))->not->toBeNull();
 });

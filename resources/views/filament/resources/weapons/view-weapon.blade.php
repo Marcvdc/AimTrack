@@ -7,7 +7,7 @@
     $insights = new WeaponInsightsService($weapon);
 
     $idCode = 'W-'.str_pad((string) $weapon->id, 3, '0', STR_PAD_LEFT);
-    $typeLabel = $weapon->weapon_type?->value ?? '—';
+    $typeLabel = $weapon->weapon_type?->label() ?? '—';
     $caliberLabel = $weapon->caliber ?? '—';
 
     $sessionCount = $insights->sessionCount();
@@ -23,7 +23,7 @@
         ['Status', $weapon->is_active ? 'Actief' : 'Uit gebruik', $weapon->is_active ? 'ok' : null],
         ['Aangeschaft', $weapon->owned_since?->translatedFormat('M Y') ?? '—', null],
         ['Kaliber', $caliberLabel, null],
-        ['Type', ucfirst($typeLabel), null],
+        ['Type', $typeLabel, null],
         ['Opslag', $weapon->storageLocation?->name ?? ($weapon->storage_location ?? '—'), null],
     ];
 

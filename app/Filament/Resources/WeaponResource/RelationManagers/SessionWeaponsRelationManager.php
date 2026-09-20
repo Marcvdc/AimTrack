@@ -84,7 +84,7 @@ class SessionWeaponsRelationManager extends RelationManager
                     ->label('Afwijking')
                     ->options(
                         collect(Deviation::cases())
-                            ->mapWithKeys(fn (Deviation $deviation) => [$deviation->value => ucfirst($deviation->value)])
+                            ->mapWithKeys(fn (Deviation $deviation) => [$deviation->value => $deviation->label()])
                             ->all(),
                     )
                     ->native(false),
@@ -104,7 +104,9 @@ class SessionWeaponsRelationManager extends RelationManager
                 TextColumn::make('distance_m')->label('Afstand (m)'),
                 TextColumn::make('rounds_fired')->label('Patronen'),
                 TextColumn::make('ammo_type')->label('Munitie'),
-                TextColumn::make('deviation')->label('Afwijking'),
+                TextColumn::make('deviation')
+                    ->label('Afwijking')
+                    ->formatStateUsing(fn (?Deviation $state): ?string => $state?->label()),
             ])
             ->filters([
                 Filter::make('periode')

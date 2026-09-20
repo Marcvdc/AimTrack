@@ -178,7 +178,7 @@ class SessionExportService
                     'rounds_fired' => $entry->rounds_fired,
                     'ammo_label' => $entry->ammoType?->name ?? $entry->ammo_type,
                     'grouping' => $entry->group_quality_text,
-                    'deviation' => $entry->deviation?->value ?? $entry->deviation,
+                    'deviation' => $entry->deviation?->label() ?? $entry->deviation,
                     'flyers_count' => $entry->flyers_count,
                 ])->values(),
                 'shots_summary' => $shotsSummary,

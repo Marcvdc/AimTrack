@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Enums\Deviation;
+use App\Enums\WeaponType;
 use App\Filament\Resources\WeaponResource\Pages\ViewWeapon;
+use App\Filament\Resources\WeaponResource\RelationManagers\SessionWeaponsRelationManager;
 use App\Models\AiReflection;
 use App\Models\Session;
 use App\Models\SessionShot;
@@ -122,4 +125,37 @@ it('renders the AI-wapeninzicht card when an insight exists', function (): void 
         ->assertSee('Consistente groepering')
         ->assertSee('PATRONEN')
         ->assertSee('Korrel 1 klik links');
+});
+
+it('toont het wapentype van een luchtpistool in het nederlands op de detailkaart', function (): void {
+    $user = User::factory()->create();
+    $weapon = Weapon::factory()->for($user)->create([
+        'name' => 'Steyr LP50',
+        'weapon_type' => WeaponType::AIR_PISTOL,
+        'caliber' => '4.5 mm',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(ViewWeapon::class, ['record' => $weapon->id])
+        ->assertOk()
+        ->assertSee('Luchtpistool');
+});
+
+it('toont de afwijking van een sessie in het nederlands in plaats van de engelse enum-waarde', function (): void {
+    $user = User::factory()->create();
+    $weapon = Weapon::factory()->for($user)->create();
+    $session = Session::factory()->for($user)->create(['date' => '2026-05-08']);
+    SessionWeapon::factory()->create([
+        'session_id' => $session->id,
+        'weapon_id' => $weapon->id,
+        'deviation' => Deviation::LEFT->value,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(SessionWeaponsRelationManager::class, [
+            'ownerRecord' => $weapon,
+            'pageClass' => ViewWeapon::class,
+        ])
+        ->assertOk()
+        ->assertSee('Links');
 });

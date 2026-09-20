@@ -26,7 +26,7 @@
     $weapon = $firstSessionWeapon?->weapon;
     $distance = $firstSessionWeapon?->distance_m;
     $disciplineLabel = $weapon
-        ? trim(($weapon->weapon_type?->value ?? '').' '.($distance ? $distance.'m' : ''))
+        ? trim(($weapon->weapon_type?->label() ?? '').' '.($distance ? $distance.'m' : ''))
         : '—';
     if ($disciplineLabel === '') {
         $disciplineLabel = '—';
@@ -65,7 +65,7 @@
                     <div style="flex: 1; min-width: 0;">
                         <div class="at-label">SESSIE · {{ $sessionLabel }} · {{ $dateLabel }}</div>
                         <h1 style="font-family: var(--at-font-display); font-size: 26px; font-weight: 600; letter-spacing: -0.01em; margin: 6px 0 0; color: var(--at-text);">
-                            {{ ucfirst($disciplineLabel) }} · {{ $totalShots }} schoten
+                            {{ $disciplineLabel }} · {{ $totalShots }} schoten
                         </h1>
                         <div style="display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--at-muted); flex-wrap: wrap;">
                             <span>{{ $session->range_name ?? '—' }}</span>

@@ -21,7 +21,7 @@
         <x-slot:extra>
             <div
                 data-testid="weapons-empty-templates"
-                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;"
             >
                 @foreach ($templates as $template)
                     @php
