@@ -49,6 +49,43 @@ jobs:
       - name: Run Pint
         run: vendor/bin/pint --test
 
+  audit:
+    name: Dependency audit (Composer)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, mbstring, bcmath, zip
+          coverage: none
+
+      # Rapporteert de advisories op composer.lock zonder de run rood te maken: de
+      # openstaande set wordt gedicht via de Dependabot-PR's, niet via deze job.
+      # Zie issue #136.
+      - name: Run composer audit
+        id: composer-audit
+        continue-on-error: true
+        run: |
+          set +e
+          composer audit --locked --no-interaction --format=plain | tee composer-audit.txt
+          status=${PIPESTATUS[0]}
+          {
+            echo "### composer audit"
+            echo ""
+            echo '```'
+            cat composer-audit.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "${status}"
+
+      - name: Report audit outcome
+        if: ${{ steps.composer-audit.outcome == 'failure' }}
+        run: echo "::warning title=composer audit::Er staan advisories open op composer.lock, zie de job summary."
+
   test:
     name: Tests (Pest)
     runs-on: ubuntu-latest
@@ -229,8 +266,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ secrets.GHCR_USERNAME }}
-          password: ${{ secrets.GHCR_TOKEN }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push image
         uses: docker/build-push-action@v6
@@ -309,8 +346,8 @@ jobs:
           REGISTRY_IMAGE: ${{ steps.vars.outputs.registry_image }}
           IMAGE_TAG: ${{ steps.vars.outputs.short_sha }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_PORT: ${{ secrets.SSH_PORT }}
