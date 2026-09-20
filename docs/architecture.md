@@ -1,6 +1,6 @@
 # Architectuur
 
-Deze sectie beschrijft hoe AimTrack is opgebouwd (Laravel 12, PHP 8.4/8.5, Filament 4, Livewire 3) en hoe de belangrijkste componenten samenwerken. De app is single-tenant (standaard Laravel-auth) en is gecontaineriseerd.
+Deze sectie beschrijft hoe AimTrack is opgebouwd (Laravel 12, PHP 8.4/8.5, Filament 5, Livewire 4) en hoe de belangrijkste componenten samenwerken. De app is single-tenant (standaard Laravel-auth) en is gecontaineriseerd.
 
 ## Domeinmodel
 - **User** – eigenaar van alle data.

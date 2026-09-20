@@ -1,7 +1,7 @@
 # AimTrack Plan (PLAN-FIRST)
 
 ## 1) Korte beschrijving
-AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 4) waarmee een sportschutter sessies kan registreren, reflecteren en AI-ondersteuning krijgt op basis van eigen data. De app is self-hosted, privacy-first en biedt exports (CSV/PDF) voor WM-4-achtige rapportages.
+AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 5) waarmee een sportschutter sessies kan registreren, reflecteren en AI-ondersteuning krijgt op basis van eigen data. De app is self-hosted, privacy-first en biedt exports (CSV/PDF) voor WM-4-achtige rapportages.
 
 ## 2) Belangrijkste use-cases
 - **Schietlog sessie registreren:** datum, baan/vereniging, locatie, munitie, meerdere (wapen × afstand) entries, ruwe notities, bijlagen (foto/kaart/PDF).
