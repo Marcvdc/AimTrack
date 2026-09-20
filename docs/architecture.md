@@ -24,7 +24,7 @@ Deze sectie beschrijft hoe AimTrack is opgebouwd (Laravel 12, PHP 8.4/8.5, Filam
 - **AI-reflectie per sessie**: Filament-actie of event dispatcht `GenerateSessionReflectionJob` → job laadt sessiecontext → roept `ShooterCoach::generateSessionReflection` → bewaart `ai_reflections` met status.
 - **AI-trends per wapen**: Filament-actie dispatcht `GenerateWeaponInsightJob` → job haalt gebruiksdata voor wapen op → roept `ShooterCoach::generateWeaponInsight` → bewaart `ai_weapon_insights`.
 - **AI-coach Q&A**: Filament page roept `ShooterCoach::answerCoachQuestion` aan (direct of via queue indien zwaarder) → slaat vraag/antwoord op in `coach_questions` (optioneel) en toont antwoord.
-- **Export**: Filament Export-page valideert filters → roept `SessionExportService` → bouwt dataset → streamt CSV of rendert PDF view met disclaimer.
+- **Export**: Filament Export-page stelt de filters samen → redirect naar `exports.sessions.download` → `ExportSessionsRequest` valideert periode, formaat en wapenfilter (NL-meldingen, terug naar de exportpagina bij een fout) → `SessionExportController` roept `SessionExportService` → bouwt dataset → streamt CSV of rendert PDF view met disclaimer. De route draait achter `auth` en `throttle:10,1`, want de PDF-render is de zwaarste aanroep van de app.
 
 ## Filament resources en pages
 - **SessionResource**: create/edit forms met sessiedata + repeatable session weapon entries + upload voor bijlagen; tabel met datum/baan/locatie/wapens/AI-status; detail toont AI-reflectie + bijlagen; actie voor AI-generatie.
@@ -36,6 +36,7 @@ Deze sectie beschrijft hoe AimTrack is opgebouwd (Laravel 12, PHP 8.4/8.5, Filam
 
 ## Veiligheid en multi-tenancy
 - Elke query filtert op `user_id` van de ingelogde gebruiker; Filament resources gebruiken scopes/policies om data te isoleren.
+- Filters die uit een querystring komen worden door een FormRequest gevalideerd voordat ze de database raken; `ExportSessionsRequest` controleert bovendien dat elk opgegeven wapen van de ingelogde gebruiker is.
 - AI-service gebruikt env-gestuurde provider/model; geen secrets in code. AI-calls verlopen via queue (async) behalve optionele coachvragen.
 - Downloads en uploads gebruiken Laravel storage; file ACL’s via storage driver. Disclaimers in exports en AI-uitvoer vermelden dat gebruiker zelf verantwoordelijk blijft.
 
