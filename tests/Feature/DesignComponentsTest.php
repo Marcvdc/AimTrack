@@ -165,12 +165,22 @@ test('monogram-stamp renders solid stamp by default with at-mark and label', fun
 });
 
 test('monogram-stamp outline variant uses transparent background and bordered ring', function (): void {
-    $html = Blade::render('<x-aimtrack.monogram-stamp label="VERIFIED" variant="outline" />');
+    $html = Blade::render('<x-aimtrack.monogram-stamp label="REFLECTIE OK" variant="outline" />');
 
     expect($html)
         ->toContain('background: transparent')
         ->toContain('color-mix')
-        ->toContain('VERIFIED');
+        ->toContain('REFLECTIE OK');
+});
+
+test('monogram-stamp default label makes no validation claim', function (): void {
+    // T4 markeert een status, geen keuring of verificatie (#131, #162).
+    $html = Blade::render('<x-aimtrack.monogram-stamp />');
+
+    expect($html)
+        ->not->toContain('VERIFIED')
+        ->not->toContain('WM-4')
+        ->toContain('OK');
 });
 
 test('monogram-stamp absolute positions itself when corner is top-right', function (): void {
