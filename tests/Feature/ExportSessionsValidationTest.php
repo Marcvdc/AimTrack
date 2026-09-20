@@ -5,7 +5,9 @@ use App\Models\Session;
 use App\Models\SessionWeapon;
 use App\Models\User;
 use App\Models\Weapon;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function (): void {
     Carbon::setTestNow('2026-01-21');
@@ -61,6 +63,8 @@ it('weigert een export zonder periode in plaats van een leeg bestand', function 
         'from' => 'Kies een startdatum voor de export.',
         'to' => 'Kies een einddatum voor de export.',
     ]);
+
+    Notification::assertNotified('Export niet gestart');
 });
 
 it('weigert een einddatum die voor de startdatum ligt', function (): void {
@@ -84,10 +88,24 @@ it('weigert een onbekend formaat', function (): void {
 it('houdt een niet-numeriek wapenfilter buiten de query', function (): void {
     $this->actingAs(User::factory()->create());
 
+    DB::enableQueryLog();
+
     $response = $this->get(sessionExportUrl(['weapon_ids' => 'abc']));
 
+    $weaponQueries = collect(DB::getQueryLog())
+        ->filter(fn (array $query): bool => str_contains($query['query'], 'weapons'));
+
+    DB::disableQueryLog();
+
     $response->assertRedirect(ExportSessionsPage::getUrl());
-    $response->assertSessionHasErrors(['weapon_ids.0' => 'Het wapenfilter mag alleen wapennummers bevatten.']);
+
+    // De `bail`-regel moet de keten stoppen voordat `exists` draait. Gebeurt dat niet, dan legt de
+    // bestaanscontrole `abc` op de bigint-kolom, en dat is de HTTP 500 uit issue #139 op PostgreSQL.
+    // SQLite slikt die query wel, dus de uitgebleven query is hier het bewijs, niet de melding.
+    expect($weaponQueries)->toBeEmpty();
+
+    expect(session('errors')->getBag('default')->get('weapon_ids.0'))
+        ->toBe(['Het wapenfilter mag alleen wapennummers bevatten.']);
 });
 
 it('weigert een wapen van een andere gebruiker', function (): void {
@@ -122,4 +140,10 @@ it('beperkt het aantal exports tot tien per minuut', function (): void {
     }
 
     $this->get(sessionExportUrl())->assertTooManyRequests();
+
+    // De teller hangt aan de gebruiker, niet aan het adres: achter een gedeeld NAT-adres mag de
+    // ene schutter de andere niet blokkeren.
+    $this->actingAs(User::factory()->create());
+
+    $this->get(sessionExportUrl())->assertOk();
 });

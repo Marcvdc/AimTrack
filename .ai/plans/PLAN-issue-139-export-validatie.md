@@ -47,7 +47,7 @@ zelfde CSV- en PDF-inhoud, zelfde filters.
   `weapon_ids.*` `integer` + `Rule::exists('weapons', 'id')->where('user_id', <ingelogde gebruiker>)`.
   `prepareForValidation()` splitst de komma-string. `failedValidation()` stuurt een Nederlandse
   Filament-notificatie en redirect naar `ExportSessionsPage::getUrl()`. Helpers `periodFrom()`,
-  `periodTo()`, `weaponIds()` en `format()` leveren getypeerde waarden voor de controller.
+  `periodTo()`, `weaponIds()` en `exportFormat()` leveren getypeerde waarden voor de controller.
 - Docs: `docs/architecture.md`: de regel over de exportflow noemt nu de FormRequest, de controller
   en de throttle.
 - Test: `tests/Feature/ExportSessionsValidationTest.php` (nieuw): zie hieronder.
