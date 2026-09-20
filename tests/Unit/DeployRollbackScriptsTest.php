@@ -134,6 +134,8 @@ test('een geslaagde deploy schuift de vorige tag door naar previous_successful_t
         ->and(stateValue($root, 'last_successful_tag'))->toBe('nieuw22')
         ->and(stateValue($root, 'previous_successful_tag'))->toBe('oud111')
         ->and(runningTag($root))->toBe('nieuw22')
+        ->and(stateValue($root, 'registry_image'))->toBe('ghcr.io/marcvdc/aimtrack')
+        ->and(stateValue($root, 'compose_file'))->toBe('docker/compose.prod.yml')
         ->and(stateValue($root, 'deploy_history'))->toContain("deploy\tnieuw22\tok");
 
     removeSandbox($root);
@@ -225,6 +227,66 @@ test('AUTO_ROLLBACK=false laat de nieuwe tag staan', function () {
     expect($result->exitCode())->toBe(21, $result->errorOutput())
         ->and(runningTag($root))->toBe('kapot99')
         ->and($result->errorOutput())->toContain('AUTO_ROLLBACK is disabled');
+
+    removeSandbox($root);
+});
+
+test('remote_deploy.sh weigert te deployen zonder COMPOSE_FILE', function () {
+    ['root' => $root, 'env' => $env] = deploySandbox(['last_successful_tag' => 'oud111']);
+    unset($env['COMPOSE_FILE']);
+
+    $result = Process::path($root)
+        ->env($env + ['IMAGE_TAG' => 'nieuw22'])
+        ->run('bash scripts/remote_deploy.sh');
+
+    expect($result->exitCode())->toBe(1)
+        ->and($result->errorOutput())->toContain('COMPOSE_FILE is required')
+        ->and(runningTag($root))->toBeNull()
+        ->and(stateValue($root, 'last_successful_tag'))->toBe('oud111');
+
+    removeSandbox($root);
+});
+
+test('remote_deploy.sh weigert een handmatige rollback zonder COMPOSE_FILE', function () {
+    ['root' => $root, 'env' => $env] = deploySandbox(['last_successful_tag' => 'kapot99']);
+    unset($env['COMPOSE_FILE']);
+
+    $result = Process::path($root)
+        ->env($env + ['ROLLBACK_TO' => 'oud111'])
+        ->run('bash scripts/remote_deploy.sh');
+
+    expect($result->exitCode())->toBe(1)
+        ->and($result->errorOutput())->toContain('COMPOSE_FILE is required')
+        ->and(runningTag($root))->toBeNull();
+
+    removeSandbox($root);
+});
+
+test('een mislukte deploy vervuilt de state van rollback.sh niet', function () {
+    ['root' => $root, 'env' => $env] = deploySandbox(['last_successful_tag' => 'oud111']);
+
+    $result = Process::path($root)
+        ->env($env + ['IMAGE_TAG' => 'kapot99', 'CURL_FAIL_TAG' => 'kapot99'])
+        ->run('bash scripts/remote_deploy.sh');
+
+    expect($result->exitCode())->toBe(20, $result->errorOutput())
+        ->and(stateValue($root, 'registry_image'))->toBeNull()
+        ->and(stateValue($root, 'compose_file'))->toBeNull();
+
+    removeSandbox($root);
+});
+
+test('een deploy die de stack niet eens kan starten laat de state ongemoeid', function () {
+    ['root' => $root, 'env' => $env] = deploySandbox();
+
+    $result = Process::path($root)
+        ->env($env + ['IMAGE_TAG' => 'kapot99', 'DOCKER_FAIL_ON' => 'pull'])
+        ->run('bash scripts/remote_deploy.sh');
+
+    expect($result->exitCode())->toBe(21, $result->errorOutput())
+        ->and(stateValue($root, 'last_successful_tag'))->toBeNull()
+        ->and(stateValue($root, 'registry_image'))->toBeNull()
+        ->and(stateValue($root, 'compose_file'))->toBeNull();
 
     removeSandbox($root);
 });

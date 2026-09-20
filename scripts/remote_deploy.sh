@@ -31,7 +31,7 @@ fi
 REGISTRY_IMAGE="${REGISTRY_IMAGE:-}"
 IMAGE_TAG="${IMAGE_TAG:-}"
 ROLLBACK_TO="${ROLLBACK_TO:-}"
-COMPOSE_FILE="${COMPOSE_FILE:-docker/compose.staging.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-}"
 ENV_FILE="${ENV_FILE:-.env}"
 APP_URL="${APP_URL:-}"
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-}"
@@ -48,6 +48,16 @@ fi
 
 if [ -z "${REGISTRY_IMAGE}" ] || [ -z "${TARGET_TAG}" ]; then
   fail "REGISTRY_IMAGE and IMAGE_TAG are required"
+  exit 1
+fi
+
+# Geen default: op de productiehost staat docker/compose.staging.yml er ook, en
+# geen van beide bestanden heeft een name-sleutel. Een stille terugval zou de
+# productiecontainers vervangen door de stagingdefinitie, inclusief het volume
+# db_data_staging, dus een lege database naast de intacte productiedatabase.
+if [ -z "${COMPOSE_FILE}" ]; then
+  fail "COMPOSE_FILE is required, there is no default"
+  fail "Pick the file for this host, for example: COMPOSE_FILE=docker/compose.prod.yml"
   exit 1
 fi
 
@@ -75,10 +85,6 @@ record_history() {
 }
 
 LAST_SUCCESSFUL_TAG="$(read_state "${CURRENT_TAG_FILE}")"
-
-# Zodat scripts/rollback.sh op de host genoeg heeft aan een kaal commando.
-printf '%s\n' "${REGISTRY_IMAGE}" > "${REGISTRY_IMAGE_FILE}"
-printf '%s\n' "${COMPOSE_FILE}" > "${COMPOSE_FILE_STATE}"
 
 if [ -n "${ENV_FILE_B64:-}" ]; then
   log "Writing ${ENV_FILE} from ENV_FILE_B64"
@@ -230,6 +236,14 @@ if [ -n "${LAST_SUCCESSFUL_TAG}" ] && [ "${LAST_SUCCESSFUL_TAG}" != "${IMAGE_TAG
   printf '%s\n' "${LAST_SUCCESSFUL_TAG}" > "${PREVIOUS_TAG_FILE}"
 fi
 printf '%s\n' "${IMAGE_TAG}" > "${CURRENT_TAG_FILE}"
+
+# Pas hier, zodat scripts/rollback.sh op de host genoeg heeft aan een kaal
+# commando zonder dat een mislukte deploy die state kan vervuilen. De guard in
+# rollback.sh kijkt alleen of de waarde leeg is, niet of hij klopt, dus mag
+# alleen een geslaagde deploy 'm zetten.
+printf '%s\n' "${REGISTRY_IMAGE}" > "${REGISTRY_IMAGE_FILE}"
+printf '%s\n' "${COMPOSE_FILE}" > "${COMPOSE_FILE_STATE}"
+
 record_history deploy "${IMAGE_TAG}" ok
 
 if [ -n "${LAST_SUCCESSFUL_TAG}" ]; then
