@@ -8,6 +8,30 @@ Gebruik deze checklist voor productie-uitrol van AimTrack.
 - [ ] `TRUSTED_PROXIES` afgestemd op load balancer/VPN ranges; `APP_FORCE_HTTPS=true` indien TLS via proxy.
 - [ ] Databasegebruiker met minimale rechten (alleen SELECT/INSERT/UPDATE/DELETE op AimTrack-schema).
 
+## Proxy- en hostvertrouwen (vereist sinds de middleware-registratie hersteld is)
+
+Tot PR #157 werd `app/Http/Kernel.php` niet geladen, waardoor `TrustHosts` niet in de stack zat en
+`TrustProxies` niets vertrouwde. Beide doen nu wel hun werk, en dat maakt twee tot dan toe inerte
+instellingen levend. Controleer ze bij het opzetten van de (nieuwe) productiehost:
+
+- [ ] Controleer de **effectieve** `TRUSTED_PROXIES` in de draaiende container, niet alleen de waarde
+      in `.env`. De root `docker-compose.yml` zet `TRUSTED_PROXIES` als container-environment en die
+      overschrijft het `.env`-bestand: `docker compose exec app printenv TRUSTED_PROXIES`, en ter
+      controle van wat de applicatie zelf ziet
+      `docker compose exec app php artisan tinker --execute="print_r(config('trustedproxy.proxies'));"`.
+- [ ] Die effectieve waarde mag **geen `*`** zijn. Met `*` vertrouwt de applicatie de
+      `X-Forwarded-For` van elke aanroeper, dus wie de origin buiten de proxy om bereikt (#123) kan
+      zijn client-IP vervalsen. Zet een concreet bereik dat past bij de netwerkopzet van de host;
+      `.env.example` bevat het RFC1918-voorbeeld.
+- [ ] `APP_URL` staat op de hostnaam waarop de applicatie **daadwerkelijk** benaderd wordt.
+      `TrustHosts` vertrouwt zonder argumenten alleen `APP_URL` en subdomeinen daarvan, en
+      beantwoordt een afwijkende `Host`-header met 400. Staat `APP_URL` verkeerd, dan is de
+      applicatie onbereikbaar.
+
+De productiehost wordt opnieuw opgezet (paragraaf 11, fase E van het plan
+`aimtrack-minimale-gebruiksset`). Deze drie punten horen bij de acceptatiecriteria van die nieuwe
+opzet; ze blokkeren de merge van PR #157 niet, maar wel de eerste deploy erna.
+
 ## Cache & performance
 - [ ] `php artisan optimize` (config/route/view/event cache) uitgevoerd in de container.
 - [ ] Opcache actief (controleer `opcache.enable=1`, validate timestamps uit in productie).

@@ -32,7 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Illuminate\Foundation\Configuration\Middleware::getGlobalMiddleware);
         // hij wordt pas toegevoegd door deze aanroep. Zonder deze regel wordt de
         // Host-header nergens gevalideerd en neemt route() de door de client
-        // opgegeven host over — inclusief de wachtwoord-herstellink.
+        // opgegeven host over, inclusief de wachtwoord-herstellink.
         // Zonder argumenten vertrouwt hij APP_URL en subdomeinen daarvan, lazy
         // uitgelezen op requestmoment.
         $middleware->trustHosts();
@@ -40,7 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // De framework-TrustProxies staat wél altijd in de stack, maar vertrouwt
         // zonder configuratie niets. Het adressenbereik komt uit
         // config/trustedproxy.php, dat Illuminate\Http\Middleware\TrustProxies
-        // zelf uitleest — configuratie is hier nog niet geladen, dus die omweg
+        // zelf uitleest; configuratie is hier nog niet geladen, dus die omweg
         // is bewust.
 
         // Injecteert de persoonlijke Claude-sleutel op het copilot/stream-pad.
