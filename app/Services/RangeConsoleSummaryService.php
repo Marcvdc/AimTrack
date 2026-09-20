@@ -229,7 +229,7 @@ final class RangeConsoleSummaryService
 
             return [
                 'name' => $weapon->name,
-                'type' => $weapon->weapon_type?->value ? ucfirst($weapon->weapon_type->value) : '—',
+                'type' => $weapon->weapon_type?->label() ?? '—',
                 'caliber' => (string) ($weapon->caliber ?? ''),
                 'avg' => $avg,
                 'sessions' => $orderedSessionIds->count(),
@@ -270,14 +270,14 @@ final class RangeConsoleSummaryService
 
         foreach ($sessions as $session) {
             $entry = $session->sessionWeapons->first();
-            $type = $entry?->weapon?->weapon_type?->value;
+            $type = $entry?->weapon?->weapon_type;
 
             if ($type === null) {
                 continue;
             }
 
             $distance = $entry->distance_m;
-            $label = ucfirst($type).($distance ? " {$distance}m" : '');
+            $label = $type->label().($distance ? " {$distance}m" : '');
             $stat = $stats->get($session->id);
 
             $grouped[$label] ??= ['sessions' => 0, 'shots' => 0, 'series' => []];

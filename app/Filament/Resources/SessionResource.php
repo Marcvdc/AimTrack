@@ -237,7 +237,7 @@ class SessionResource extends Resource implements CopilotResourceContract
                     ->label('Afwijking')
                     ->options(
                         collect(Deviation::cases())
-                            ->mapWithKeys(fn (Deviation $case) => [$case->value => ucfirst($case->value)])
+                            ->mapWithKeys(fn (Deviation $case) => [$case->value => $case->label()])
                             ->all(),
                     )
                     ->native(false),
@@ -436,7 +436,9 @@ class SessionResource extends Resource implements CopilotResourceContract
                                                 TextEntry::make('rounds_fired')->label('Patronen'),
                                                 TextEntry::make('ammo_type')->label('Munitie'),
                                                 TextEntry::make('group_quality_text')->label('Groepering'),
-                                                TextEntry::make('deviation')->label('Afwijking'),
+                                                TextEntry::make('deviation')
+                                                    ->label('Afwijking')
+                                                    ->formatStateUsing(fn (?Deviation $state): ?string => $state?->label()),
                                                 TextEntry::make('flyers_count')->label('Flyers'),
                                             ])
                                             ->columns(3),

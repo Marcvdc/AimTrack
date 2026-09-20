@@ -63,6 +63,11 @@ final class SessionStatsService
      * Geschatte groep-diameter in mm. Gebaseerd op 2 × σ van de
      * normalised hit-coords, geschaald naar een ISSF 10m luchtpistool
      * target diameter (155.5mm). Returnt null bij <2 shots.
+     *
+     * Die 155.5mm is een vaste referentiemaat, geen afgeleide van
+     * WeaponType::AIR_PISTOL: de hit-coords zijn genormaliseerd, dus elke
+     * sessie wordt op dezelfde schijf geschaald, ongeacht wapentype. Een
+     * schijfmaat per wapentype valt buiten issue #145.
      */
     public function groupMm(): ?float
     {

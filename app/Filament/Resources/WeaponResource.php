@@ -79,7 +79,7 @@ class WeaponResource extends Resource implements CopilotResourceContract
                             ->label('Type wapen')
                             ->options(
                                 collect(WeaponType::cases())
-                                    ->mapWithKeys(fn (WeaponType $type) => [$type->value => ucfirst($type->value)])
+                                    ->mapWithKeys(fn (WeaponType $type) => [$type->value => $type->label()])
                                     ->all(),
                             )
                             ->required()
@@ -204,7 +204,7 @@ class WeaponResource extends Resource implements CopilotResourceContract
                     ->label('Type')
                     ->options(
                         collect(WeaponType::cases())
-                            ->mapWithKeys(fn (WeaponType $type) => [$type->value => ucfirst($type->value)])
+                            ->mapWithKeys(fn (WeaponType $type) => [$type->value => $type->label()])
                             ->all(),
                     ),
                 SelectFilter::make('is_active')

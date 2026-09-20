@@ -94,7 +94,7 @@
                 <span style="color: var(--at-accent); font-size: 16px; line-height: 1;" role="presentation">⦿</span>
                 <div style="flex: 1; min-width: 0;">
                     <div style="font-size: 13px; font-weight: 600; color: var(--at-text);">{{ $chosenWeapon?->name ?? 'Kies in stap Wapen' }}</div>
-                    <div style="font-family: var(--at-font-mono); font-size: 11px; color: var(--at-muted);">{{ $chosenWeapon ? trim(($chosenWeapon->weapon_type?->value ? ucfirst($chosenWeapon->weapon_type->value) : '').($chosenWeapon->caliber ? ' · '.$chosenWeapon->caliber : '').($chosenDistance ? ' · '.$chosenDistance.'m' : '')) : 'wapen · kaliber · afstand' }}</div>
+                    <div style="font-family: var(--at-font-mono); font-size: 11px; color: var(--at-muted);">{{ $chosenWeapon ? trim(($chosenWeapon->weapon_type?->label() ?? '').($chosenWeapon->caliber ? ' · '.$chosenWeapon->caliber : '').($chosenDistance ? ' · '.$chosenDistance.'m' : '')) : 'wapen · kaliber · afstand' }}</div>
                 </div>
             </div>
         </div>
