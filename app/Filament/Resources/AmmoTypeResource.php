@@ -6,7 +6,6 @@ use App\Filament\Resources\AmmoTypeResource\Pages\CreateAmmoType;
 use App\Filament\Resources\AmmoTypeResource\Pages\EditAmmoType;
 use App\Filament\Resources\AmmoTypeResource\Pages\ListAmmoTypes;
 use App\Models\AmmoType;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -34,11 +33,6 @@ class AmmoTypeResource extends Resource
     {
         return $schema
             ->components([
-                Hidden::make('user_id')
-                    ->default(fn () => auth()->id())
-                    ->required()
-                    ->dehydrated(fn ($state) => filled($state)),
-
                 InfoSection::make('Munitietype')
                     ->schema([
                         TextInput::make('name')
