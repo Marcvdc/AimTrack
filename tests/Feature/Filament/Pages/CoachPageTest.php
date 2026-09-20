@@ -1,5 +1,6 @@
 <?php
 
+use App\Filament\Copilot\Tools\ShooterContextTool;
 use App\Filament\Pages\CoachPage;
 use App\Models\Session;
 use App\Models\User;
@@ -37,5 +38,5 @@ it('shows coach page in navigation when AI feature is enabled', function () {
 it('exposes copilot tools and description', function () {
     expect(CoachPage::copilotPageDescription())->toContain('AI-coach');
     expect(CoachPage::copilotTools())->toHaveCount(1);
-    expect(CoachPage::copilotTools()[0])->toBeInstanceOf(\App\Filament\Copilot\Tools\ShooterContextTool::class);
+    expect(CoachPage::copilotTools()[0])->toBeInstanceOf(ShooterContextTool::class);
 });

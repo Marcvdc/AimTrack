@@ -1,5 +1,9 @@
 <?php
 
+use App\Filament\Copilot\Tools\AddTrainingGoalTool;
+use App\Filament\Copilot\Tools\ScoreDriftTool;
+use App\Filament\Copilot\Tools\ShooterContextTool;
+
 return [
 
     /*
@@ -134,9 +138,9 @@ return [
     */
 
     'global_tools' => [
-        \App\Filament\Copilot\Tools\ShooterContextTool::class,
-        \App\Filament\Copilot\Tools\AddTrainingGoalTool::class,
-        \App\Filament\Copilot\Tools\ScoreDriftTool::class,
+        ShooterContextTool::class,
+        AddTrainingGoalTool::class,
+        ScoreDriftTool::class,
     ],
 
 ];
