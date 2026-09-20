@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Filament\Resources\UserResource\Pages\ListUsers;
 use App\Models\Session;
 use App\Models\SessionShot;
 use App\Models\User;
@@ -9,6 +10,7 @@ use App\Support\DateFormat;
 use Filament\Support\Facades\FilamentTimezone;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 
 test('de opslag-tijdzone blijft UTC', function (): void {
     expect(config('app.timezone'))->toBe('UTC')
@@ -18,6 +20,23 @@ test('de opslag-tijdzone blijft UTC', function (): void {
 test('de weergave-tijdzone staat op Europe/Amsterdam', function (): void {
     expect(config('app.display_timezone'))->toBe('Europe/Amsterdam')
         ->and(FilamentTimezone::get())->toBe('Europe/Amsterdam');
+});
+
+test('een datetime-kolom rendert de Amsterdamse tijd en niet de UTC-waarde', function (): void {
+    // De regel hierboven leest alleen de instelling uit, en dat bewijst niet
+    // dat de gebruiker het ziet. Deze test rendert de gebruikerslijst en kijkt
+    // naar wat er daadwerkelijk in de kolom "Geregistreerd" staat: 09:30 UTC
+    // hoort er in augustus als 11:30 te staan.
+    $beheerder = User::factory()->create([
+        'is_admin' => true,
+        'created_at' => Carbon::parse('2026-08-09 09:30:00', 'UTC'),
+    ]);
+
+    Livewire::actingAs($beheerder)
+        ->test(ListUsers::class)
+        ->assertOk()
+        ->assertSee('09-08-2026 11:30')
+        ->assertDontSee('09-08-2026 09:30');
 });
 
 test('een bestaande UTC-rij verschuift niet bij het teruglezen', function (): void {

@@ -18,11 +18,17 @@ test('seedFor creates three weapons, five sessions and three AI reflections for 
 
     $result = app(DemoDataSeeder::class)->seedFor($user);
 
+    // Bewust de getallen uit de naam van deze test en niet de constanten:
+    // de knoptekst wordt uit diezelfde constanten opgebouwd, dus een assert
+    // die de constante met zichzelf vergelijkt bewaakt de belofte niet.
     expect($result)->toBe(SeedResult::Seeded)
-        ->and($user->weapons()->count())->toBe(DemoDataSeeder::WEAPON_COUNT)
-        ->and($user->sessions()->count())->toBe(DemoDataSeeder::SESSION_COUNT)
+        ->and($user->weapons()->count())->toBe(3)
+        ->and($user->sessions()->count())->toBe(5)
         ->and(AiReflection::query()->whereIn('session_id', $user->sessions()->pluck('id'))->count())
-        ->toBe(DemoDataSeeder::REFLECTION_COUNT);
+        ->toBe(3)
+        ->and(DemoDataSeeder::WEAPON_COUNT)->toBe(3)
+        ->and(DemoDataSeeder::SESSION_COUNT)->toBe(5)
+        ->and(DemoDataSeeder::REFLECTION_COUNT)->toBe(3);
 });
 
 test('seedFor sets the demo_data_seeded_at marker on the user', function (): void {

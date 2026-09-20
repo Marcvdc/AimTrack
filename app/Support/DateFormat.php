@@ -36,6 +36,15 @@ final class DateFormat
 
     public const TIME = 'H:i';
 
+    /**
+     * Secondevarianten, uitsluitend voor de Filament-datumkiezers met
+     * ->seconds(). Filament kent daar aparte defaults voor; zonder deze
+     * twee zou zo'n veld alsnog op de Amerikaanse notatie terugvallen.
+     */
+    public const DATE_TIME_SECONDS = 'd-m-Y H:i:s';
+
+    public const TIME_SECONDS = 'H:i:s';
+
     /** Maand-granulariteit, uitsluitend voor trendassen op maandbuckets. */
     public const MONTH = 'M Y';
 

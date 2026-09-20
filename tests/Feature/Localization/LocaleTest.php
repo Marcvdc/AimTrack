@@ -2,8 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Filament\Resources\SessionResource\Pages\ListSessions;
+use App\Models\Session;
+use App\Models\User;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Validator;
+use Livewire\Livewire;
 
 test('de applicatie draait op de Nederlandse locale', function (): void {
     expect(app()->getLocale())->toBe('nl')
@@ -53,6 +57,22 @@ test('de Filament-vertalingen staan op Nederlands', function (): void {
 
     expect($label)->toBe('Bevestigen')
         ->and($label)->not->toBe('Confirm');
+});
+
+test('de Filament-chrome rendert ook echt in het Nederlands', function (): void {
+    // Lang::get() hierboven bewijst dat de vertaling bestaat, niet dat de
+    // gebruiker hem ziet. Dit is de chrome van een echte pagina.
+    $user = User::factory()->create();
+    Session::factory()->for($user)->create();
+
+    $html = Livewire::actingAs($user)
+        ->test(ListSessions::class)
+        ->assertOk()
+        ->html();
+
+    expect($html)->toContain('Zoeken')
+        ->and($html)->not->toContain('>Search<')
+        ->and($html)->not->toContain('Pagination Navigation');
 });
 
 test('een ontbrekende sleutel valt terug op Engels in plaats van op de kale sleutelnaam', function (): void {

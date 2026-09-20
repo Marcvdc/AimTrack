@@ -55,10 +55,30 @@ Er zijn twee tijdzones en dat onderscheid is bewust:
 | `app.timezone` | `UTC` | Opslag. Laravel schrijft en leest datetime-kolommen hierin. |
 | `app.display_timezone` | `Europe/Amsterdam` | Weergave. Wat de gebruiker op het scherm ziet. |
 
-De timestamp-kolommen in Postgres dragen geen zone mee, dus `app.timezone` omzetten naar
-Europe/Amsterdam zou elke bestaande rij stil een of twee uur laten opschuiven zonder dat er een byte
-in de database verandert. Laat die vlag daarom op UTC staan. De weergave gaat via
-`FilamentTimezone::set()` in `AppServiceProvider` en via `App\Support\DateFormat`.
+De timestamp-kolommen in Postgres dragen geen zone mee. Er staat een kale `2026-08-09 09:30:00` in
+en welk moment dat voorstelt bepaalt `app.timezone` bij het teruglezen. Die vlag omzetten naar
+Europe/Amsterdam verandert daarom niet het getal op het scherm, maar wel wat dat getal betekent.
+Nagemeten op een rij die fysiek als `2026-08-09 09:30:00` is weggeschreven:
+
+| Gelezen met | Wat je terugkrijgt | Welk moment is dat |
+|---|---|---|
+| `app.timezone = UTC` | `2026-08-09 09:30` | 09:30 UTC |
+| `app.timezone = Europe/Amsterdam` | `2026-08-09 09:30` | 07:30 UTC, twee uur eerder |
+
+Het probleem uit issue #143 wordt daar dus niet mee opgelost. Een sessie die om 10:00 Nederlandse
+tijd liep staat als 08:00 in de database en zou ook na het omzetten als 08:00 op het scherm komen,
+nog steeds twee uur te vroeg. Alleen rijen die na het omzetten worden geschreven zouden kloppen, en
+daarmee zouden oude en nieuwe rijen in een verschillend referentiekader naast elkaar staan.
+
+Laat die vlag daarom op UTC staan. De opslag blijft dan eenduidig en de weergave gaat via
+`FilamentTimezone::set()` in `AppServiceProvider` en via `App\Support\DateFormat`, die de
+opgeslagen UTC-waarde naar Europe/Amsterdam schuift. Dat is de enige variant die ook de bestaande
+rijen goed toont: 08:00 UTC wordt 10:00 op het scherm.
+
+Let op bij het kiezen van een andere `APP_DISPLAY_TIMEZONE`: Filament past de weergave-tijdzone ook
+op kale datumkolommen toe (`TextColumn::date()` doet `setTimezone()`). Met Europe/Amsterdam valt dat
+niet op omdat die oostelijk van UTC ligt, maar met een westelijke zone rendert elke datumkolom een
+dag te vroeg.
 
 De datumnotatie ligt vast in `App\Support\DateFormat`:
 
@@ -67,14 +87,28 @@ De datumnotatie ligt vast in `App\Support\DateFormat`:
 | `DATE` | `d-m-Y` | Alle datums op het scherm. |
 | `DATE_TIME` | `d-m-Y H:i` | Datum plus tijd op het scherm, in de weergave-tijdzone. |
 | `TIME` | `H:i` | Alleen een tijdstip, in de weergave-tijdzone. |
+| `DATE_TIME_SECONDS` | `d-m-Y H:i:s` | Alleen voor Filament-datumkiezers met seconden. |
+| `TIME_SECONDS` | `H:i:s` | Alleen voor Filament-tijdkiezers met seconden. |
 | `MONTH` | `M Y` | Uitzondering: trendassen die op maandbuckets draaien. |
 | `MACHINE_DATE` | `Y-m-d` | Uitzondering: CSV-export en AI-tool-payloads. |
 
-`AppServiceProvider` zet deze notaties ook als Filament-default via `Table::configureUsing()` en
-`Schema::configureUsing()`. Kale `->date()`- en `->dateTime()`-aanroepen in resources volgen daardoor
-vanzelf; zonder die configuratie vallen ze terug op Filaments eigen `M j, Y`, de Amerikaanse notatie.
-Zet in nieuwe code dus geen los formaat in de aanroep, maar gebruik de kale helper of een constante
-uit `DateFormat`.
+`AppServiceProvider` zet deze notaties ook als Filament-default, en daar zijn drie aanroepen voor
+nodig, geen twee. `Table::configureUsing()` dekt de tabelkolommen en `Schema::configureUsing()` de
+infolist-entries, want die halen hun format bij de container op. De formulierlaag doet dat niet:
+`Filament\Forms\Components\DateTimePicker` draagt zijn eigen `defaultDateDisplayFormat` op de klasse
+en raadpleegt de container nooit, dus een `DatePicker` binnen een schema dat op `d-m-Y` staat rendert
+alsnog `MMM D, YYYY`. Daarom staat er ook een `DateTimePicker::configureUsing()`. `DatePicker` en
+`TimePicker` erven van `DateTimePicker` en `ComponentManager::configure()` loopt de ouderklassen af,
+dus die ene aanroep dekt alle drie de kiezers.
+
+Kale `->date()`- en `->dateTime()`-aanroepen in resources volgen daardoor vanzelf; zonder die
+configuratie vallen ze terug op Filaments eigen `M j, Y`, de Amerikaanse notatie. Zet in nieuwe code
+dus geen los formaat in de aanroep, maar gebruik de kale helper of een constante uit `DateFormat`.
+
+Toets zo'n instelling altijd aan de gerenderde pagina en niet aan de getter op `Table` of `Schema`.
+Die getters stonden goed terwijl de formulierlaag er niet op aangesloten was, dus de suite was groen
+terwijl de gebruiker de Amerikaanse notatie zag. `tests/Feature/Localization/DateFormatRenderingTest.php`
+assert daarom op de HTML van de echte pagina.
 
 ## Uitbreidingshaken
 - Extra exportprofielen kunnen via nieuwe services/views worden toegevoegd.

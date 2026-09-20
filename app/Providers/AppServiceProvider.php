@@ -8,6 +8,7 @@ use App\Support\DateFormat;
 use App\Support\Features\AimtrackFeatureToggle;
 use App\Support\StoragePathInitializer;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse as LogoutResponseContract;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Schemas\Schema;
 use Filament\Support\Facades\FilamentTimezone;
 use Filament\Tables\Table;
@@ -63,10 +64,22 @@ class AppServiceProvider extends ServiceProvider
      * Filaments eigen default "M j, Y": de Amerikaanse notatie, pal naast
      * handmatig gezette d-m-Y-kolommen elders in dezelfde app.
      *
+     * Er zijn drie plekken nodig, geen twee. Tabelkolommen en infolist-entries
+     * halen hun format bij de container op (Table respectievelijk Schema),
+     * maar Filament\Forms\Components\DateTimePicker draagt zijn eigen
+     * defaultDateDisplayFormat op de klasse en raadpleegt de container niet.
+     * Een DatePicker binnen een schema dat op d-m-Y staat rendert daardoor
+     * alsnog "MMM D, YYYY". DatePicker en TimePicker erven van DateTimePicker
+     * en ComponentManager::configure() loopt de ouderklassen af, dus die ene
+     * configureUsing dekt alle drie de kiezers.
+     *
      * De tijdzone wordt alleen voor de weergave gezet. config('app.timezone')
-     * blijft UTC, zodat bestaande rijen niet stilletjes verschuiven; Filament
-     * gebruikt FilamentTimezone uitsluitend voor datetime-weergave en laat
-     * kale datumkolommen met rust.
+     * blijft UTC, zodat bestaande rijen niet stilletjes verschuiven. Let op:
+     * FilamentTimezone raakt ook kale datumkolommen, want TextColumn::date()
+     * doet setTimezone() op de kolomtijdzone. Dat gaat hier goed omdat
+     * Europe/Amsterdam oostelijk van UTC ligt (00:00 schuift vooruit binnen
+     * dezelfde dag); met een westelijke APP_DISPLAY_TIMEZONE zou elke
+     * datumkolom een dag te vroeg renderen.
      */
     private function configureDateDisplay(): void
     {
@@ -81,5 +94,12 @@ class AppServiceProvider extends ServiceProvider
             ->defaultDateDisplayFormat(DateFormat::DATE)
             ->defaultDateTimeDisplayFormat(DateFormat::DATE_TIME)
             ->defaultTimeDisplayFormat(DateFormat::TIME));
+
+        DateTimePicker::configureUsing(fn (DateTimePicker $picker): DateTimePicker => $picker
+            ->defaultDateDisplayFormat(DateFormat::DATE)
+            ->defaultDateTimeDisplayFormat(DateFormat::DATE_TIME)
+            ->defaultDateTimeWithSecondsDisplayFormat(DateFormat::DATE_TIME_SECONDS)
+            ->defaultTimeDisplayFormat(DateFormat::TIME)
+            ->defaultTimeWithSecondsDisplayFormat(DateFormat::TIME_SECONDS));
     }
 }
