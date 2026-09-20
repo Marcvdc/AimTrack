@@ -24,9 +24,9 @@ class ExportSessionsPage extends Page implements HasForms
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-arrow-down-tray';
 
-    protected static ?string $navigationLabel = 'Export sessies';
+    protected static ?string $navigationLabel = 'Eigen trainingsoverzicht';
 
-    protected static ?string $title = 'Export sessies';
+    protected static ?string $title = 'Eigen trainingsoverzicht';
 
     protected static string|\UnitEnum|null $navigationGroup = 'BEHEER';
 
