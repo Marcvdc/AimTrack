@@ -157,3 +157,24 @@ it('renders the score-drift card when the shooter has shot data', function (): v
         ->test(CoachPage::class)
         ->assertSee('SCORE-DRIFT · GEM. PER SCHOT · LAATSTE SESSIES');
 });
+
+/**
+ * #132: de coachpagina beloofde precies daar waar de data wegging dat er geen
+ * data de server verlaat. Die belofte blijft weg en wordt vervangen door wat er
+ * werkelijk gebeurt.
+ */
+it('tells the truth about where the AI data goes, on both spots', function (): void {
+    $user = User::factory()->create();
+    unlockCoach($user);
+
+    Livewire::actingAs($user)
+        ->test(CoachPage::class)
+        ->assertOk()
+        ->assertDontSee('geen data verlaat de server')
+        ->assertDontSee('Geen data verlaat de server')
+        ->assertDontSee('eigen instance')
+        ->assertSee('api.anthropic.com')
+        ->assertSee('FEATURE_AIMTRACK_AI')
+        ->assertSee('serienummer')
+        ->assertSee('Zonder API-key doet AimTrack geen enkele call');
+});
