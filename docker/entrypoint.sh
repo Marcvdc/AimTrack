@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd /var/www/html
+# In het image is de applicatieroot altijd /var/www/html. De override bestaat
+# zodat tests/Unit/EntrypointScriptTest.php dit script in een sandbox kan draaien,
+# net zoals de deploy-scripts DEPLOY_PATH gebruiken.
+APP_ROOT="${APP_ROOT:-/var/www/html}"
+
+cd "${APP_ROOT}"
 
 # De applicatiecode wordt gedeeld met de nginx-container via het named volume
 # app_code. Docker vult een named volume alleen bij de éérste keer aanmaken uit
@@ -20,11 +25,21 @@ if [ -d /opt/aimtrack ]; then
             --exclude '/.app-sync.lock' \
             --exclude '/storage/' \
             --exclude '/bootstrap/cache/' \
-            /opt/aimtrack/ /var/www/html/
-    } 9>/var/www/html/.app-sync.lock
+            /opt/aimtrack/ "${APP_ROOT}/"
+    } 9>"${APP_ROOT}/.app-sync.lock"
 fi
 
-mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache
+# storage/app/private is de root van de default filesystem-disk (FILESYSTEM_DISK=local)
+# en storage/app/public die van de publieke disk. Beide staan niet in git (storage/
+# bevat alleen .gitignore-bestanden), dus ze ontbreken in het image en daarmee in een
+# vers app_storage-volume. Laravel maakt ze bij de eerste write zelf aan, maar alleen
+# als de parent voor www-data schrijfbaar is. Door ze hier expliciet aan te maken vallen
+# ze onder de chown/chmod hieronder, zodat www-data er altijd in kan schrijven. Lukt zelfs
+# het aanmaken niet (bijvoorbeeld een read-only volume), dan stopt de container bij boot
+# in plaats van stil te falen bij de eerste upload.
+mkdir -p storage/app/private storage/app/public \
+    storage/framework/cache storage/framework/sessions storage/framework/views \
+    bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
