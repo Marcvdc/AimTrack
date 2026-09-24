@@ -6,6 +6,11 @@ services:
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
+      # Staat hier en niet alleen in .env.example, omdat productie zijn .env uit
+      # het secret ENV_FILE_B64 krijgt en dat voorbeeldbestand dus nooit ziet.
+      # Een environment-waarde wint van env_file, dus de vlag staat per
+      # constructie aan in plaats van per leesbeurt van de checklist.
+      SESSION_SECURE_COOKIE: "true"
     restart: unless-stopped
     depends_on:
       db:

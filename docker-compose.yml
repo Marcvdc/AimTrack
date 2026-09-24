@@ -13,6 +13,9 @@ services:
     environment:
       APP_FORCE_HTTPS: "true"
       TRUSTED_PROXIES: 172.16.0.0/12,127.0.0.1/32
+      # Productie draait op dit moment deze stack vanaf een git-checkout (#120), en
+      # die leest geen .env.example. Zie docker/compose.prod.yml voor de uitleg.
+      SESSION_SECURE_COOKIE: "true"
       MAIL_MAILER: smtp
       MAIL_HOST: mailpit
       MAIL_PORT: 1025
