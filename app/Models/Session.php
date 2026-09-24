@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\TargetType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Session extends Model
 {
@@ -13,6 +15,7 @@ class Session extends Model
         'user_id',
         'date',
         'range_name',
+        'target_type',
         'location',
         'location_id',
         'range_location_id',
@@ -22,6 +25,7 @@ class Session extends Model
 
     protected $casts = [
         'date' => 'date',
+        'target_type' => TargetType::class,
     ];
 
     public function user()
@@ -37,6 +41,11 @@ class Session extends Model
     public function shots()
     {
         return $this->hasMany(SessionShot::class);
+    }
+
+    public function turnAnalyses(): HasMany
+    {
+        return $this->hasMany(SessionTurnAnalysis::class);
     }
 
     public function attachments()

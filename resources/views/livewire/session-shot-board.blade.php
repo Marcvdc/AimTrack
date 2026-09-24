@@ -3,6 +3,7 @@
         pendingDeleteShotId: null,
         ...targetBoard({
             recordShot: (x, y) => $wire.recordShot(x, y),
+                moveShot: (id, x, y) => $wire.moveShot(id, x, y),
             canEdit: @js($canEdit),
             rawMarkers: @entangle('markers').live,
             turns: @entangle('turnOptions').live,
@@ -70,6 +71,10 @@
             </button>
         @endif
 
+        @if ($canEdit)
+            {{ $this->uploadTurnPhotoAction }}
+        @endif
+
         <button type="button" wire:click="toggleRings" role="switch" aria-checked="{{ $showRings ? 'true' : 'false' }}" aria-label="Toon ringnummers op de roos"
             style="display: inline-flex; align-items: center; gap: 10px; margin-left: auto; min-height: 44px; padding: 8px 12px; border-radius: var(--at-r-lg); background: var(--at-panel-2); border: 1px solid var(--at-line); color: var(--at-text); font-size: 13px; cursor: pointer;">
             <span style="width: 30px; height: 18px; border-radius: 999px; background: {{ $showRings ? 'var(--at-accent)' : 'var(--at-line)' }}; position: relative; flex-shrink: 0; transition: background .15s ease;">
@@ -79,10 +84,37 @@
         </button>
     </div>
 
+    @php($turnAnalysis = $this->currentTurnAnalysis())
+    @if ($turnAnalysis && ($turnAnalysis['needs_review'] ?? false))
+        <div role="status"
+            style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; border-radius: var(--at-r-lg); border: 1px solid var(--at-line); background: var(--at-panel-2); color: var(--at-text); font-size: 13px;">
+            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: var(--at-accent); color: var(--at-cta-text); font-weight: 600; font-size: 12px;">
+                @if (($turnAnalysis['status'] ?? '') === 'pending')
+                    Bezig
+                @elseif (($turnAnalysis['status'] ?? '') === 'failed')
+                    Mislukt
+                @else
+                    Controleren
+                @endif
+            </span>
+
+            <span style="flex: 1 1 260px;">{{ $turnAnalysis['reason'] }}</span>
+
+            @if ($canEdit && ($turnAnalysis['status'] ?? '') === 'done')
+                <button type="button" wire:click="confirmTurnReview"
+                    style="display: inline-flex; align-items: center; min-height: 44px; padding: 8px 14px; border-radius: var(--at-r-lg); background: var(--at-panel); border: 1px solid var(--at-line); color: var(--at-text); font-size: 13px; font-weight: 600; cursor: pointer;">
+                    Beurt bevestigen
+                </button>
+            @endif
+        </div>
+    @endif
+
+
     <div style="display: flex; flex-direction: column; gap: 20px; padding: 20px; background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-2xl);">
         <div
             x-data="targetBoard({
                 recordShot: (x, y) => $wire.recordShot(x, y),
+                moveShot: (id, x, y) => $wire.moveShot(id, x, y),
                 canEdit: @js($canEdit),
                 rawMarkers: @entangle('markers').live,
                 turns: @entangle('turnOptions').live,
@@ -105,11 +137,15 @@
                     <canvas x-ref="canvas" class="absolute inset-0 w-full h-full" style="cursor: crosshair;"
                     @click="handleCanvasClick($event)"
                     @contextmenu.prevent="handleCanvasRightClick($event)"
+                    @pointerdown="handlePointerDown($event)"
+                    @pointermove.window="handlePointerMove($event)"
+                    @pointerup.window="handlePointerUp($event)"
+                    @pointercancel.window="cancelDrag()"
                 ></canvas>
                 </div>
                 <p style="font-size: 11px; color: var(--at-muted); font-family: var(--at-font-mono); letter-spacing: 0.04em;">
                     @if ($canEdit)
-                        KLIK = SCHOT · LANG INDRUKKEN OF RECHTSKLIK OP EEN MARKER = VERWIJDEREN
+                        KLIK = SCHOT · SLEEP EEN MARKER = VERPLAATSEN · LANG INDRUKKEN OF RECHTSKLIK = VERWIJDEREN
                     @else
                         ALLEEN-LEZEN WEERGAVE
                     @endif
@@ -157,13 +193,24 @@
         });
 
         const TARGET_RADIUS_RATIO = 0.46;
+        // Onder deze afstand in pixels blijft een aanraking een klik. Daarboven wordt
+        // het slepen. Zonder marge zou elke trilling van een vinger op een telefoon
+        // een schot verplaatsen.
+        const DRAG_THRESHOLD = 6;
 
         const registerTargetBoard = () => {
             console.log('[SessionShotBoard] registerTargetBoard executed');
 
-            window.targetBoard = ({ recordShot, canEdit, rawMarkers, turns, currentTurn, turnLegend, showRings, allTurnsValue }) => ({
+            window.targetBoard = ({ recordShot, moveShot, canEdit, rawMarkers, turns, currentTurn, turnLegend, showRings, allTurnsValue }) => ({
                 rawMarkers,
                 renderMarkers: [],
+                // Sleepstatus. dragCandidate is de marker waarop is gedrukt; pas als
+                // de vinger of muis verder komt dan DRAG_THRESHOLD wordt het een
+                // sleep. Daaronder blijft het een klik, zodat lang indrukken om te
+                // verwijderen blijft werken zoals het deed.
+                dragCandidate: null,
+                dragging: null,
+                dragStart: null,
                 currentMarkers: [],
                 turns: Array.isArray(turns) ? [...turns] : [],
                 currentTurn: Number(currentTurn ?? 0),
@@ -399,6 +446,80 @@
                     });
 
                     this.currentMarkers = markersForTurn;
+                },
+                pointerPosition(event) {
+                    const rect = this.$refs.board.getBoundingClientRect();
+
+                    return {
+                        x: Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1),
+                        y: Math.min(Math.max((event.clientY - rect.top) / rect.height, 0), 1),
+                        clientX: event.clientX,
+                        clientY: event.clientY,
+                    };
+                },
+                handlePointerDown(event) {
+                    if (! this.canEdit || event.button === 2) {
+                        return;
+                    }
+
+                    const marker = this.getMarkerAtPosition(event);
+
+                    if (! marker) {
+                        return;
+                    }
+
+                    this.dragCandidate = marker;
+                    this.dragStart = this.pointerPosition(event);
+                },
+                handlePointerMove(event) {
+                    if (! this.dragCandidate || ! this.dragStart) {
+                        return;
+                    }
+
+                    const position = this.pointerPosition(event);
+                    const verplaatsing = Math.hypot(
+                        position.clientX - this.dragStart.clientX,
+                        position.clientY - this.dragStart.clientY,
+                    );
+
+                    if (! this.dragging && verplaatsing < DRAG_THRESHOLD) {
+                        return;
+                    }
+
+                    if (! this.dragging) {
+                        // Het is echt een sleep: het lang-indrukken afbreken, anders
+                        // opent de verwijdermodal terwijl de gebruiker aan het slepen is.
+                        this.cancelLongPress();
+                        this.dragging = this.dragCandidate;
+                    }
+
+                    event.preventDefault();
+                    this.dragging.x = position.x;
+                    this.dragging.y = position.y;
+                    this.scheduleDraw();
+                },
+                handlePointerUp(event) {
+                    if (! this.dragging) {
+                        this.dragCandidate = null;
+                        this.dragStart = null;
+
+                        return;
+                    }
+
+                    const marker = this.dragging;
+                    const position = this.pointerPosition(event);
+
+                    this.dragging = null;
+                    this.dragCandidate = null;
+                    this.dragStart = null;
+
+                    moveShot(marker.id, position.x, position.y);
+                },
+                cancelDrag() {
+                    this.dragging = null;
+                    this.dragCandidate = null;
+                    this.dragStart = null;
+                    this.scheduleDraw();
                 },
                 handleCanvasRightClick(event) {
                     // Check if right-click is on a marker
