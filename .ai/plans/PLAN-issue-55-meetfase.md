@@ -12,8 +12,10 @@ basis: e995af5 (main)
 
 ## Status: IN_PROGRESS
 
-Harness gebouwd en geverifieerd op 2026-09-20. Wacht nog op de foto's (B1) en de
-grondwaarheid (B2) voor de meting zelf. Vervolgfase toegevoegd op verzoek.
+Bouwfase 1 tot en met 3 staan op de branch en zijn op 2026-09-24 geverifieerd met
+een testsuite die voor het eerst daadwerkelijk in de testomgeving draaide. De
+grondwaarheid (B2) komt niet meer uit een handmatige labelronde maar uit de
+correctie-UI, zodra er genoeg bevestigde beurten zijn.
 
 ### Verificatie (gedraaid in de aimtrack-dev container)
 
@@ -231,11 +233,15 @@ een apart proces te brengen verdwijnt het probleem, en HEIC komt er gratis bij.
 - GD faalt op dezelfde HEIC met een melding die naar ImageMagick wijst.
 - 563 tests groen, Pint schoon.
 
-### Nog te doen
+### Afgerond op 2026-09-24
 
-De image moet herbouwd worden voordat dit in dev, staging of productie werkt
-(`docker compose -f docker/compose.dev.yml build`). Zonder herbouw valt alles terug
-op GD en blijft HEIC stuk.
+De dev-image is herbouwd en draait. ImageMagick 6.9.11 zit erin met HEIC in de
+formatlijst, en vijf echte HEIC-bestanden uit de meetset zijn rechtstreeks door
+`TargetPhotoPreparer` gehaald: 1125x1500, piekgeheugen 50 MB tegen de
+standaardlimiet van 128 MB. De ImageMagick-cases in `PhotoDecoderTest` werden
+daarvoor overgeslagen bij gebrek aan de binary en draaien nu mee.
+
+Staging en productie hebben dezelfde herbouw nog nodig.
 
 ## Bouwfase stap 2: foto per beurt naar schoten (2026-09-21)
 
@@ -316,3 +322,64 @@ het oorspronkelijke modelantwoord als ijkpunt blijft staan.
 Ronde 2 van de meting, zodra er genoeg bevestigde beurten zijn. Dan draait de
 harness op menselijke grondwaarheid in plaats van op een gok, en kunnen de
 zekerheidsdrempel en de prompt geijkt worden op cijfers.
+
+## Afronding bouwfase (2026-09-24)
+
+### De testsuite bewees minder dan hij leek te bewijzen
+
+Bij het afronden faalde één test: de assertie dat het opgegeven aantal schoten in
+`AnalyzeTurnPhotoJob` terechtkomt. De job werd wel gepusht, maar
+`expectedShotCount` was null in plaats van 5.
+
+De oorzaak lag niet in deze feature. Laravel leest omgevingswaarden uit
+`$_SERVER`, terwijl de `<env>`-regels in `phpunit.xml` alleen `$_ENV` en
+`putenv` raken. De dev-container zet die variabelen zelf via `env_file`, dus de
+containerwaarde won. Voor `DB_CONNECTION` was dat ooit al ontdekt en opgelost met
+een `<server force>`-regel; de overige instellingen hadden die behandeling nooit
+gekregen.
+
+Daardoor draaide de suite met `APP_ENV=local`. Dat is stiller dan het klinkt:
+Filament's `fillFormDataForTesting()` begint met een controle op
+`app()->runningUnitTests()` en keert zonder melding terug als die false is. Elke
+waarde die een test via `callAction()` of `fillForm()` aan een formulier meegaf,
+werd dus genegeerd. Tests die `null` verwachtten stonden groen om precies de
+verkeerde reden, en alleen de test die een echte waarde controleerde viel om.
+
+Vier van de zeven instellingen kwamen niet aan. Naast `APP_ENV` liepen cache en
+sessie over schijf, waardoor state tussen testruns bleef staan en een
+rate-limittest afhing van de vorige run, gingen jobs naar de database-queue in
+plaats van sync, en stond mail op echte SMTP.
+
+Dit is vastgelegd in `phpunit.xml` met een toelichting, zodat de volgende keer
+niet opnieuw uitgezocht hoeft te worden waarom een `<env>`-regel geen effect
+heeft. Losse commit, want het raakt het hele project en niet dit issue.
+
+### Geheugen van de suite
+
+De volledige run viel halverwege om op een Livewire-render met een uitgeputte
+`memory_limit`. Dat is geen lek: de suite heeft rond de 192 MB nodig en de
+container staat op 128 MB. Er staat nu een `<ini name="memory_limit">` in
+`phpunit.xml`, zodat de grens ook geldt bij `php artisan test` (die geeft een
+`-d` op de commandoregel niet door aan het subproces).
+
+### Stand
+
+603 tests groen, 1603 assertions. Pint schoon.
+
+Twee commits op `Marcvdc/Shot-bord-markers`:
+
+- `fix(tests)`: de phpunit-instellingen over de containeromgeving.
+- `feat(vision)`: bouwfase 1 tot en met 3, 56 bestanden.
+
+### Wat nog niet is aangetoond
+
+De vision-call is nooit end-to-end met een echte sleutel gedraaid in deze ronde;
+alle tests gebruiken `Http::fake()`. De correctie-UI is alleen via
+Livewire-tests geverifieerd en niet met een echte muis of vinger in een browser,
+terwijl juist de sleepdrempel van 6 pixels om handmatige bediening vraagt.
+
+### Bijvangst
+
+De `.gitignore` in `.ai/meetset/` sloot `uit/` uit terwijl de uitvoermap
+`uit-ronde1/` heet. Daardoor stonden 66 overlay-foto's (23 MB) op het punt de
+historie in te gaan. De regel staat nu op `uit*/`.
