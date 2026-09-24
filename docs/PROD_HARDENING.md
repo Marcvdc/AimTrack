@@ -21,10 +21,11 @@ Gebruik deze checklist voor productie-uitrol van AimTrack.
       vlag laat Laravel `Secure` weg en gaat de sessiecookie ook over onversleuteld HTTP mee;
       dat speelt zodra de origin naast de TLS-proxy óók direct bereikbaar is. Toets met een
       plain-HTTP request dat de `Set-Cookie` van de sessie `secure` bevat.
-- [ ] Geen enkele poort van de app-stack rechtstreeks bereikbaar naast de TLS-proxy. Controleer
-      met `docker ps` welke poorten op `0.0.0.0` publiceren en toets ze van buiten het netwerk;
-      alleen 80/443 (op de proxy) horen open te staan. Bind interne poorten aan de
-      docker-gateway of een LAN-adres, niet aan `0.0.0.0`.
+- [ ] Geen enkele poort van de app-stack rechtstreeks bereikbaar naast de TLS-proxy. Welke
+      poorten publiek mogen zijn en welke niet staat per compose-bestand in
+      [`docs/infra.md`, Netwerk & poorten](infra.md#netwerk--poorten). Controleer met
+      `docker ps` welke poorten op `0.0.0.0` publiceren en toets ze van buiten het netwerk;
+      alleen 80/443 (op de proxy) horen open te staan.
 - [ ] Storage permissies gecontroleerd (`storage/`, `bootstrap/cache/` schrijfbaar door web user, geen world-writes).
       Let op: een host-groep waar `www-data` op de host wel in zit, bestaat níet automatisch
       binnen de container: groepslidmaatschap komt uit de `/etc/group` van de container.
