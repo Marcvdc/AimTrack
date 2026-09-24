@@ -89,3 +89,40 @@ test('health endpoint does not leak exception details', function () {
         ->not->toContain('owned by root')
         ->not->toContain('/var/www/html');
 });
+
+test('health endpoint goes from 503 to 200 once the disk root exists on a read-only parent', function () {
+    if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+        test()->markTestSkipped('Als root negeert het bestandssysteem de schrijfrechten.');
+    }
+
+    $disk = config('filesystems.default');
+    $parent = sys_get_temp_dir().'/aimtrack-health-'.bin2hex(random_bytes(6));
+    mkdir($parent, 0755);
+    chmod($parent, 0555);
+
+    config(["filesystems.disks.{$disk}.root" => $parent.'/private']);
+    Storage::forgetDisk($disk);
+
+    try {
+        $this->getJson(route('health'))
+            ->assertServiceUnavailable()
+            ->assertJsonPath('checks.storage.error', 'storage_unwritable');
+
+        expect(is_dir($parent.'/private'))->toBeFalse();
+
+        chmod($parent, 0755);
+        mkdir($parent.'/private', 0775);
+        chmod($parent, 0555);
+        Storage::forgetDisk($disk);
+
+        $this->getJson(route('health'))
+            ->assertOk()
+            ->assertJsonPath('checks.storage.status', 'ok');
+
+        expect(glob($parent.'/private/healthchecks/*'))->toBe([]);
+    } finally {
+        chmod($parent, 0755);
+        exec('rm -rf '.escapeshellarg($parent));
+        Storage::forgetDisk($disk);
+    }
+});
