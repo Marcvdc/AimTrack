@@ -15,12 +15,17 @@ test('health endpoint reports ok when database, queue and storage all work', fun
         ->assertJsonPath('checks.storage.status', 'ok');
 });
 
-test('health endpoint reports the default disk it probed', function () {
+test('health endpoint only reports a status per check, no infrastructure details', function (string $route) {
     Storage::fake(config('filesystems.default'));
 
-    $this->getJson(route('health'))
-        ->assertJsonPath('checks.storage.disk', config('filesystems.default'));
-});
+    $response = $this->getJson(route($route))->assertOk();
+
+    expect($response->json('checks'))->toBe([
+        'database' => ['status' => 'ok'],
+        'queue' => ['status' => 'ok'],
+        'storage' => ['status' => 'ok'],
+    ]);
+})->with(['health', 'api.health']);
 
 test('health endpoint leaves no probe file behind', function () {
     $disk = config('filesystems.default');
