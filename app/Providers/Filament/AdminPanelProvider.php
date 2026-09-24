@@ -113,6 +113,10 @@ class AdminPanelProvider extends PanelProvider
                 FilamentCopilotPlugin::make()
                     ->provider('anthropic')
                     ->model('claude-haiku-4-5-20251001')
+                    // De system prompt staat in config/filament-copilot.php. Met een lege
+                    // "extra" prompt voorkomen we dat het package diezelfde config-prompt
+                    // nog een tweede keer als "## Additional Instructions" toevoegt.
+                    ->systemPrompt('')
                     ->rateLimitEnabled()
                     ->memoryEnabled()
                     ->authorizeUsing(fn (): bool => app(AimtrackFeatureToggle::class)->aiEnabled()),
