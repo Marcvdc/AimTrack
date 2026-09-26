@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\Ai\AiKeyResolver;
 use Closure;
 use Illuminate\Http\Request;
+use Laravel\Ai\AiManager;
 use Symfony\Component\HttpFoundation\Response;
 
 class InjectUserAnthropicKey
@@ -26,7 +27,7 @@ class InjectUserAnthropicKey
             if (filled($key)) {
                 config(['ai.providers.anthropic.key' => $key]);
                 // Veiligheidsnet: forceer herresolve mocht laravel/ai de provider al hebben opgebouwd.
-                app(\Laravel\Ai\AiManager::class)->forgetInstance('anthropic');
+                app(AiManager::class)->forgetInstance('anthropic');
             }
         }
 
