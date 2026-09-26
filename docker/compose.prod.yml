@@ -1,16 +1,23 @@
+# app en queue draaien allebei docker/entrypoint.sh, dat bij APP_ENV=production
+# config:cache draait, en ze delen het volume app_bootstrap_cache. Wie als laatste
+# opstart schrijft bootstrap/cache/config.php, dus beide containers moeten exact
+# dezelfde environment krijgen. Daarom komt die uit dit ene anker en niet uit
+# twee losse blokken die uit elkaar kunnen lopen.
+#
+# SESSION_SECURE_COOKIE staat hier en niet alleen in .env.example, omdat productie
+# zijn .env uit het secret ENV_FILE_B64 krijgt en dat voorbeeldbestand nooit ziet.
+# Een environment-waarde wint van env_file.
+x-laravel-environment: &laravel-environment
+  APP_ENV: production
+  APP_DEBUG: "false"
+  SESSION_SECURE_COOKIE: "true"
+
 services:
   app:
     image: ${REGISTRY_IMAGE}:${IMAGE_TAG}
     env_file:
       - ../.env
-    environment:
-      APP_ENV: production
-      APP_DEBUG: "false"
-      # Staat hier en niet alleen in .env.example, omdat productie zijn .env uit
-      # het secret ENV_FILE_B64 krijgt en dat voorbeeldbestand dus nooit ziet.
-      # Een environment-waarde wint van env_file, dus de vlag staat per
-      # constructie aan in plaats van per leesbeurt van de checklist.
-      SESSION_SECURE_COOKIE: "true"
+    environment: *laravel-environment
     restart: unless-stopped
     depends_on:
       db:
@@ -51,9 +58,7 @@ services:
     image: ${REGISTRY_IMAGE}:${IMAGE_TAG}
     env_file:
       - ../.env
-    environment:
-      APP_ENV: production
-      APP_DEBUG: "false"
+    environment: *laravel-environment
     restart: unless-stopped
     command: php artisan queue:work --tries=3 --backoff=5
     depends_on:

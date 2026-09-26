@@ -17,10 +17,15 @@ Gebruik deze checklist voor productie-uitrol van AimTrack.
 - [ ] TLS beëindigd op load balancer/reverse proxy; `X-Forwarded-*` headers doorgeven en proxies vertrouwd.
 - [ ] `AppServiceProvider` forceert HTTPS in productie; 4xx/5xx logging naar centraal logkanaal.
 - [ ] Sessiecookie draagt `Secure`. `docker/compose.prod.yml` zet `SESSION_SECURE_COOKIE=true`
-      in de `environment` van `app`, en die wint van de `.env` uit `ENV_FILE_B64`. Zonder de
-      vlag laat Laravel `Secure` weg en gaat de sessiecookie ook over onversleuteld HTTP mee;
-      dat speelt zodra de origin naast de TLS-proxy óók direct bereikbaar is. Toets met een
-      plain-HTTP request dat de `Set-Cookie` van de sessie `secure` bevat.
+      in één gedeelde `environment` voor `app` en `queue`, en die wint van de `.env` uit
+      `ENV_FILE_B64`. Beide containers draaien `config:cache` op hetzelfde volume
+      `app_bootstrap_cache`; wie als laatste opstart bepaalt de cache, dus een extra
+      variabele hoort in dat gedeelde anker en niet bij één service. De root
+      `docker-compose.yml` zet de vlag standaard aan, tenzij de `.env` naast dat bestand
+      `SESSION_SECURE_COOKIE=false` zegt. Zonder de vlag laat Laravel `Secure` weg en gaat de
+      sessiecookie ook over onversleuteld HTTP mee; dat speelt zodra de origin naast de
+      TLS-proxy óók direct bereikbaar is. Toets met een plain-HTTP request dat de `Set-Cookie`
+      van de sessie `secure` bevat, ook na een herstart van alleen de queue.
 - [ ] Geen enkele poort van de app-stack rechtstreeks bereikbaar naast de TLS-proxy. Welke
       poorten publiek mogen zijn en welke niet staat per compose-bestand in
       [`docs/infra.md`, Netwerk & poorten](infra.md#netwerk--poorten). Controleer met
