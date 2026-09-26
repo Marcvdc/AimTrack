@@ -234,7 +234,7 @@ One long-scroll page. Sections in order:
 1. **Sticky nav** (18×64 padding, blur backdrop, `var(--bg)cc`) — Wordmark + nav items + "Inloggen" + "Probeer gratis" CTA
 2. **Hero** (88/64 padding): Two-col grid. Left: kicker pill + h1 64px "Je schietsessies, scherp in beeld." with accent 2nd line + sub-text + two CTAs + feature pills. Right: 420×420 hero visual = T2 ring (reticle 420) wrapping TargetRings, with 3 floating callouts (SCORE / GROEP / AI). Top-right corner has subtle large reticle watermark at opacity 0.07.
 3. **Trust strip**: 24×64 padding, top+bottom 1px border, "Gebruikt door…" + 5 club names
-4. **Features grid** (88/64): h2 44px + 3×2 cards. Each card: kicker (mono 10px 0.18em) + h3 (display 22px) + body + a demo widget. Cards have small corner accent (15×15 borderTop+borderRight on top-right — note: this is the original decorative element, NOT a full T3 BracketFrame). The export feature demo has a T4 "EXPORT OK" stamp.
+4. **Features grid** (88/64): h2 44px + 3×2 cards. Each card: kicker (mono 10px 0.18em) + h3 (display 22px) + body + a demo widget. Cards have small corner accent (15×15 borderTop+borderRight on top-right; note: this is the original decorative element, NOT a full T3 BracketFrame). The export feature demo has a T4 "EXPORT OK" stamp.
 5. **AI-coach deep dive** (96/64, top border): 2-col grid. Left: kicker + h2 + body + 4 check-marked features. Right: T3 BracketFrame around mock chat (header strip + alternating user/AI bubbles + sparkline attachment).
 6. **Self-hosted CTA** (64/64, top+bottom border): 2-col. Left: kicker + h2 "Eén command, eigen instance." + body. Right: terminal mock (panel bg, mono 13px, traffic-light dots, 3 lines).
 7. **Pricing** (88/64): centered intro + 3-card row. Middle card "Schutter" is primary (accent gradient bg, accent border, "POPULAIR" tag). Each card: kicker + price (44px display + sub) + divider + 4 check features + CTA button.
@@ -292,7 +292,7 @@ Build these as reusable primitives in your codebase. The HTML prototypes show th
 
 ### `<MonogramStamp palette fonts label variant size corner color>` (T4 utility)
 - ATMark + label in a small pill
-- `variant: 'solid' | 'outline'` — solid for primary trust moments, outline as a softer "verified" indicator
+- `variant: 'solid' | 'outline'`: solid for the primary status marker, outline as a quieter status marker
 - `corner: 'top-right' | 'top-left'` — absolutely positions at -10 top, 16 inset; otherwise inline
 
 ### `<TargetRings size hits accent dim ringStroke scoreLabels>`

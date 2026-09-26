@@ -24,22 +24,49 @@ Vragen, feedback of een bug gevonden? We horen het graag.
 AimTrack is open-source onder de MIT-licentie en self-hosted: de app en de database
 draaien op je eigen server, en je logboek blijft daar staan.
 
-Op één punt gaat er wel data naar buiten, en dat is de AI-coach. Vraag je een
-reflectie of een wapeninzicht aan, dan stuurt AimTrack je vraag naar Anthropic
-(api.anthropic.com) om het antwoord te laten genereren. Mee gaan:
+### De AI-coach
 
-- **Sessiecontext**: datum, baan en locatie, je ruwe notities, de schotstatistiek
-  (series, scores, groepering) en je handmatige reflectie.
-- **Wapengegevens**: naam, type, kaliber, **serienummer** en **opslaglocatie**, plus
-  per sessie de afstand, het aantal patronen, de munitiesoort en de groepering.
+Van zichzelf stuurt AimTrack alleen gegevens naar buiten voor de AI-coach. Dat gebeurt
+op twee manieren: als je een reflectie of een wapeninzicht aanvraagt, en als je de chat
+op de coachpagina gebruikt. In beide gevallen gaat je vraag naar Anthropic (standaard
+`api.anthropic.com`; een beheerder kan dat adres wijzigen met `ANTHROPIC_BASE_URL` en
+`ANTHROPIC_URL`). De chat haalt zelf op wat hij nodig heeft, dus welke gegevens
+meegaan hangt af van je vraag. Het kan gaan om:
 
-Al het overige, dus je account, je volledige logboek en je exports, blijft op je eigen
-server.
+- **Sessies**: datum, baan en locatie, je ruwe sessienotities, je handmatige
+  reflectie, en scores en treffpunten van je schoten, als statistiek.
+- **Per wapen in een sessie**: afstand, aantal patronen, munitiesoort, afwijking en
+  je omschrijving van de groepering.
+- **Wapens**: naam, type, kaliber, **serienummer**, **opslaglocatie**, of het wapen
+  actief of uit gebruik is, en je vrije wapennotities.
+- **Eerdere AI-uitkomsten**: eerdere AI-reflecties op je sessies en eerdere
+  AI-inzichten per wapen.
+- **Het chatgesprek**: je vragen en de eerdere berichten uit hetzelfde gesprek, en
+  wat de coach over je heeft onthouden (herinneringen).
+
+Wat niet in die lijst staat, zoals je account, je exports en de wapenvelden voor
+korrel, vizier, trekkergewicht en grip, stuurt de AI-coach niet mee.
 
 Die verwerking loopt op de Claude-key die is ingesteld: die van jou, of de gedeelde key
 van je vereniging. Onder dat account wordt de vraag dus verwerkt.
 
-Je kunt het uitzetten. Zonder API-key doet AimTrack geen enkele call naar buiten; je
-krijgt dan alleen de melding dat de AI-configuratie ontbreekt. Een beheerder kan de
-AI-functie voor de hele instance uitzetten met de omgevingsvariabele
-`FEATURE_AIMTRACK_AI`. Zonder AI-coach verlaat er niets je eigen server.
+Je kunt het uitzetten. Zonder API-key doet AimTrack geen enkele AI-call; je krijgt dan
+alleen de melding dat de AI-configuratie ontbreekt, en de chat blijft dicht. Een
+beheerder zet de AI-functie uit met `FEATURE_AIMTRACK_AI=false`. Let op: AimTrack
+onthoudt per gebruiker of de AI aan stond. Voor nieuwe gebruikers geldt het uitzetten
+direct, maar wie de AI al gebruikte houdt hem tot de beheerder
+`php artisan pennant:purge aimtrack-ai` draait.
+
+### Wat een beheerder verder kan inrichten
+
+Buiten de AI-coach gaat er alleen iets naar buiten als de beheerder van je installatie
+dat inricht. De repository kent drie van zulke routes:
+
+- **Mail** via een SMTP-server (`MAIL_MAILER`), voor onder meer het contactformulier en
+  meldingen. Storingsmeldingen van de AI-coach gaan standaard naar
+  support@aimtrack.nl (`AI_ALERT_EMAIL`).
+- **Foutrapportage** naar Sentry, zodra `SENTRY_LARAVEL_DSN` is gezet.
+- **Offsite backup** van de database via `rclone`, zodra `RCLONE_REMOTE` is gezet (zie
+  [BACKUPS.md](../BACKUPS.md)).
+
+Of die aan staan, weet de beheerder van je installatie.

@@ -4,7 +4,7 @@
 //   T1 · WatermarkBg     — ambient reticle, "atmosphere"
 //   T2 · RingMedaillon   — ring-as-frame, "showpiece" (one per screen max)
 //   T3 · BracketFrame    — crosshair-tick corners, "emphasis" on AI/score cards
-//   T4 · MonogramStamp   — AT mark, "verification" badge for trust moments
+//   T4 · MonogramStamp   : AT mark, status marker (reflectie klaar, export gedraaid)
 //
 // Rule of thumb: T1 + max 1× T2 per screen; T3 marks AI emphasis;
 // T4 marks auth/export trust moments. Never stack T3 + T4 on same card.
@@ -150,7 +150,7 @@ function RingMedaillon({
 function MonogramStamp({
   palette: c,
   fonts,
-  label = 'VERIFIED',
+  label = 'OK',
   variant = 'solid',          // 'solid' | 'outline'
   size = 'sm',                // 'sm' | 'md'
   corner,                     // 'top-right' | 'top-left' | undefined (inline)
@@ -347,7 +347,7 @@ function LogoSystemReference({ palette, fonts }) {
           <p style={body}>Het AT-monogram als kleine stempel. Markeert dat iets in de app klaar is: een reflectie staat er, een export is gedraaid. Geen validatie- of conformiteitsclaim.</p>
           <div style={{ marginTop: 8, padding: 16, background: c.bg, border: `1px solid ${c.line}`, borderRadius: 6, display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
             <MonogramStamp palette={c} fonts={f} label="EXPORT OK" />
-            <MonogramStamp palette={c} fonts={f} label="VERIFIED" variant="outline" />
+            <MonogramStamp palette={c} fonts={f} label="REFLECTIE OK" variant="outline" />
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', width: '100%' }}>
               <ATMark size={18} color={c.accent} />
               <div style={{ flex: 1, height: 1, background: c.line }} />

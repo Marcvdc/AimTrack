@@ -212,7 +212,7 @@ function MarketingLanding({ palette, fonts }) {
               icon: ICONS.shield,
               kicker: '05 · PRIVACY',
               title: 'Self-hosted, op je eigen server',
-              body: 'Draai AimTrack op je eigen server (Docker, 5 min setup). Je logboek blijft daar staan; alleen de AI-coach stuurt gegevens naar buiten, en die kun je uitzetten.',
+              body: 'Draai AimTrack op je eigen server (Docker, 5 min setup). Je logboek blijft daar staan. De AI-coach stuurt gegevens naar Anthropic en kun je uitzetten; mail, foutrapportage en een offsite backup gaan alleen naar buiten als je ze zelf inricht.',
               demo: (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <div style={{ flex: 1, padding: '10px 12px', background: c.bg, border: `1px solid ${c.accent}40`, borderRadius: 8 }}>
