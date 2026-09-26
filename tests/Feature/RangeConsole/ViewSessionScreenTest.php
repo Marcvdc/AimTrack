@@ -102,6 +102,10 @@ it('renders the reflectie-stamp only when the session has an AI reflection', fun
     Livewire::actingAs($user)
         ->test(ViewSession::class, ['record' => $sessionWithRefl->id])
         ->assertSee('REFLECTIE OK')
+        // Het stempel hangt aan het bestaan van een reflectie en zegt niets over
+        // volledigheid of conformiteit. Het oude 'WM-4 OK' mag niet terugkomen (#131).
+        ->assertDontSee('WM-4')
+        ->assertDontSee('VERIFIED')
         ->assertSee('Sterke openingsserie');
 });
 

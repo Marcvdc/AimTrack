@@ -569,16 +569,23 @@
         </div>
     </section>
 
-    {{-- ── Trust strip ──────────────────────────────────────────────── --}}
-    <section class="mk-trust">
-        <div class="mk-trust-label">Gebruikt door sportschutters bij</div>
-        <div class="mk-trust-logos">
-            <span class="mk-club">{{ $club ?? config('landing.club') }}</span>
-            @foreach (($partnerClubs ?? []) as $partnerClub)
-                <span>{{ $partnerClub }}</span>
-            @endforeach
-        </div>
-    </section>
+    {{-- ── Trust strip (alleen als er echt een club is ingesteld) ───── --}}
+    @php
+        $trustClubs = array_values(array_filter(
+            array_merge([$club ?? config('landing.club')], $partnerClubs ?? []),
+            fn ($name) => filled(trim((string) $name)),
+        ));
+    @endphp
+    @if ($trustClubs !== [])
+        <section class="mk-trust">
+            <div class="mk-trust-label">Gebruikt door sportschutters bij</div>
+            <div class="mk-trust-logos">
+                @foreach ($trustClubs as $trustClub)
+                    <span @class(['mk-club' => $loop->first])>{{ $trustClub }}</span>
+                @endforeach
+            </div>
+        </section>
+    @endif
 
     {{-- ── Features ─────────────────────────────────────────────────── --}}
     <section class="mk-features" id="features">
@@ -673,8 +680,8 @@
                     <x-aimtrack.icon name="shield" :size="18" color="var(--at-accent)" />
                     <div class="mk-kicker">05 · PRIVACY</div>
                 </div>
-                <h3 class="mk-feature-title">Self-hosted of bij ons — jij kiest</h3>
-                <p class="mk-feature-body">Draai AimTrack op je eigen server (Docker, 5 min setup) of gebruik onze NL-cloud. Je data is van jou, altijd.</p>
+                <h3 class="mk-feature-title">Self-hosted, op je eigen server</h3>
+                <p class="mk-feature-body">Draai AimTrack op je eigen server (Docker, 5 min setup). Je logboek blijft daar staan. De AI-coach stuurt gegevens naar Anthropic en kun je uitzetten; mail, foutrapportage en een offsite backup gaan alleen naar buiten als je ze zelf inricht.</p>
                 <div class="mk-feature-demo">
                     <div class="mk-demo-privacy">
                         <div class="mk-demo-privacy-card is-active">
@@ -683,7 +690,7 @@
                         </div>
                         <div class="mk-demo-privacy-card">
                             <div class="mk-demo-privacy-tag">OFF</div>
-                            <div class="mk-demo-privacy-name">NL-cloud</div>
+                            <div class="mk-demo-privacy-name">AI-coach</div>
                         </div>
                     </div>
                 </div>
@@ -697,7 +704,7 @@
                     <div class="mk-kicker">06 · WAPENS</div>
                 </div>
                 <h3 class="mk-feature-title">Eén overzicht per wapen</h3>
-                <p class="mk-feature-body">Schotaantal, onderhoud, kalibratie, gem. score. Alles wat je nodig hebt voor de keuringsbrief en je eigen ritueel.</p>
+                <p class="mk-feature-body">Schotaantal, onderhoud, kalibratie, gem. score. Alles bij elkaar per wapen, voor je eigen overzicht en je eigen ritueel.</p>
                 <div class="mk-feature-demo">
                     <div class="mk-demo-weapons">
                         @foreach (['Walther LP500', 'CZ Shadow 2', 'Pardini K22'] as $i => $weaponName)
@@ -728,7 +735,7 @@
                         'Per-sessie reflectie zonder dat je iets hoeft te typen',
                         'Trainingsdoelen automatisch voorgesteld, jij kiest',
                         'Vergelijk wapens, disciplines, of periodes naast elkaar',
-                        'Alles draait lokaal — je data verlaat de server niet',
+                        \App\Support\Ai\AiPrivacyNotice::landingCheckItem(),
                     ] as $checkItem)
                         <div class="mk-check-item">
                             <span class="mk-check-badge" aria-hidden="true">
