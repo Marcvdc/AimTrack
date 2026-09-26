@@ -69,8 +69,6 @@ class SessionResource extends Resource implements CopilotResourceContract
         return $schema
             ->columns(1)
             ->components([
-                static::userIdField(),
-
                 InfoSection::make('Sessie')
                     ->description('Basisgegevens van de sessie')
                     ->columns(2)
@@ -92,14 +90,6 @@ class SessionResource extends Resource implements CopilotResourceContract
                     ])
                     ->collapsed(),
             ]);
-    }
-
-    public static function userIdField(): Hidden
-    {
-        return Hidden::make('user_id')
-            ->default(fn () => auth()->id())
-            ->required()
-            ->dehydrated(fn ($state) => filled($state));
     }
 
     /**

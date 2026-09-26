@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\SessionResource\Pages;
 
+use App\Filament\Concerns\AssignsOwnerOnCreate;
 use App\Filament\Resources\SessionResource;
 use App\Models\User;
 use Filament\Resources\Pages\CreateRecord;
@@ -14,6 +15,7 @@ use Filament\Support\Icons\Heroicon;
 
 class CreateSession extends CreateRecord
 {
+    use AssignsOwnerOnCreate;
     use HasWizard;
 
     protected static string $resource = SessionResource::class;
@@ -75,7 +77,6 @@ class CreateSession extends CreateRecord
                 ->icon(Heroicon::OutlinedBolt)
                 ->description('Welke wapens gebruik je?')
                 ->schema([
-                    SessionResource::userIdField(),
                     SessionResource::sessionWeaponsRepeater(),
                 ]),
 
