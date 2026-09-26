@@ -13,9 +13,11 @@ services:
     environment:
       APP_FORCE_HTTPS: "true"
       TRUSTED_PROXIES: 172.16.0.0/12,127.0.0.1/32
-      # Productie draait op dit moment deze stack vanaf een git-checkout (#120), en
-      # die leest geen .env.example. Zie docker/compose.prod.yml voor de uitleg.
-      SESSION_SECURE_COOKIE: "true"
+      # Productie draait op dit moment deze stack vanaf een git-checkout (#120),
+      # dus standaard aan. Lokaal over plain HTTP inloggen kan alleen met
+      # SESSION_SECURE_COOKIE=false in de .env naast dit bestand of in de shell;
+      # een waarde in .env.local wint hier niet van. Zie docs/user/quickstart.md.
+      SESSION_SECURE_COOKIE: "${SESSION_SECURE_COOKIE:-true}"
       MAIL_MAILER: smtp
       MAIL_HOST: mailpit
       MAIL_PORT: 1025
@@ -74,6 +76,7 @@ services:
     environment:
       APP_FORCE_HTTPS: "true"
       TRUSTED_PROXIES: 172.16.0.0/12,127.0.0.1/32
+      SESSION_SECURE_COOKIE: "${SESSION_SECURE_COOKIE:-true}"
       MAIL_MAILER: smtp
       MAIL_HOST: mailpit
       MAIL_PORT: 1025
