@@ -24,3 +24,6 @@
 *.log
 .DS_Store
 Thumbs.db
+
+# Lokale meetset voor de foto-detectie (honderden MB fotos, hoort niet in de image)
+/.ai/meetset

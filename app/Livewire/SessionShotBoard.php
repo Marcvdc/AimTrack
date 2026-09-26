@@ -2,13 +2,17 @@
 
 namespace App\Livewire;
 
+use App\Jobs\AnalyzeTurnPhotoJob;
 use App\Models\Session;
 use App\Models\SessionShot;
+use App\Models\SessionTurnAnalysis;
 use App\Services\Sessions\SessionShotService;
 use App\Services\Sessions\ShotScoringService;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
@@ -69,6 +73,9 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
     public bool $decimalNotation = true;
 
     public ?int $pendingDeleteShotId = null;
+
+    /** @var array<int, array<string, mixed>> */
+    public array $turnAnalyses = [];
 
     protected SessionShotService $shotService;
 
@@ -245,6 +252,31 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
         $this->resetTable();
     }
 
+    /**
+     * Versleep een bestaand schot naar een nieuwe plek.
+     *
+     * Bedoeld voor het corrigeren van een marker die uit een foto komt, maar werkt
+     * ook op handmatig geplaatste schoten; een verkeerde tik rechtzetten hoort net
+     * zo goed te kunnen.
+     */
+    public function moveShot(int $shotId, float $xNormalized, float $yNormalized): void
+    {
+        if (! $this->canEdit) {
+            return;
+        }
+
+        $shot = $this->session->shots()->find($shotId);
+
+        if (! $shot instanceof SessionShot) {
+            return;
+        }
+
+        $this->shotService->moveShot($shot, $xNormalized, $yNormalized);
+
+        $this->refreshData();
+        $this->resetTable();
+    }
+
     public function deleteShot(int $shotId): void
     {
         if (! $this->canEdit) {
@@ -288,6 +320,8 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
     #[On('shots::refresh')]
     public function refreshData(): void
     {
+        $this->loadTurnAnalyses();
+
         $this->session->refresh()->load('shots');
 
         $grouped = $this->session->shots
@@ -397,6 +431,124 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
             ->prepend('Alle beurten', 'all')
             ->prepend('Huidige beurt', 'current')
             ->all();
+    }
+
+    /**
+     * De foto-analyses per beurt, zodat het bord kan tonen welke beurt nog
+     * gecontroleerd moet worden.
+     */
+    protected function loadTurnAnalyses(): void
+    {
+        $this->turnAnalyses = $this->session
+            ->turnAnalyses()
+            ->get()
+            ->mapWithKeys(fn (SessionTurnAnalysis $analysis): array => [$analysis->turn_index => [
+                'status' => $analysis->status,
+                'needs_review' => $analysis->needs_review,
+                'reason' => $analysis->review_reason,
+                'detected' => $analysis->detected_count,
+                'expected' => $analysis->expected_shot_count,
+            ]])
+            ->all();
+    }
+
+    /**
+     * Upload een foto van de roos voor de huidige beurt.
+     *
+     * De analyse gaat naar de wachtrij en niet in dit verzoek: een vision-call met
+     * denkwerk duurde in de metingen ongeveer 90 seconden.
+     */
+    public function uploadTurnPhotoAction(): Action
+    {
+        return Action::make('uploadTurnPhoto')
+            ->label('Foto uploaden')
+            ->icon('heroicon-m-camera')
+            ->modalHeading('Foto van de roos')
+            ->modalDescription('AimTrack zet de verse kogelgaten om in markers. Oude treffers onder een plakker worden overgeslagen.')
+            ->modalSubmitActionLabel('Analyseren')
+            ->visible(fn (): bool => $this->canEdit)
+            ->schema([
+                FileUpload::make('photo')
+                    ->label('Foto')
+                    ->image()
+                    // HEIC staat er bewust bij: dat levert een iPhone standaard, en
+                    // ImageMagick leest het. Zonder deze regel weigert de upload al
+                    // voordat de analyse eraan toekomt.
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/heic', 'image/heif'])
+                    ->maxSize(20480)
+                    ->disk('local')
+                    ->directory('turn-photos')
+                    ->visibility('private')
+                    ->required()
+                    ->helperText('Maak de foto het liefst recht van voren en vóór het plakken.'),
+                TextInput::make('expected_shot_count')
+                    ->label('Aantal schoten in deze beurt')
+                    ->numeric()
+                    ->minValue(1)
+                    ->maxValue(60)
+                    ->helperText('Laat leeg als je het niet zeker weet. Er wordt nooit een plakker '
+                        .'als schot geplaatst om aan dit aantal te komen.'),
+            ])
+            ->action(function (array $data): void {
+                $expected = filled($data['expected_shot_count'] ?? null)
+                    ? (int) $data['expected_shot_count']
+                    : null;
+
+                SessionTurnAnalysis::updateOrCreate(
+                    ['session_id' => $this->session->id, 'turn_index' => $this->currentTurnIndex],
+                    [
+                        'status' => SessionTurnAnalysis::STATUS_PENDING,
+                        'needs_review' => true,
+                        'review_reason' => 'De foto wordt geanalyseerd.',
+                        'expected_shot_count' => $expected,
+                        'photo_path' => $data['photo'],
+                    ],
+                );
+
+                AnalyzeTurnPhotoJob::dispatch(
+                    $this->session,
+                    $this->currentTurnIndex,
+                    $data['photo'],
+                    $expected,
+                    'local',
+                );
+
+                $this->loadTurnAnalyses();
+
+                Notification::make()
+                    ->title('Foto in behandeling')
+                    ->body('De schoten verschijnen zodra de analyse klaar is. Dat duurt ongeveer een minuut.')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * De analyse van de beurt die nu getoond wordt, of null bij 'alle beurten'.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function currentTurnAnalysis(): ?array
+    {
+        return $this->turnAnalyses[$this->currentTurnIndex] ?? null;
+    }
+
+    /**
+     * Bevestigt de beurt: de schutter heeft de markers gezien en akkoord bevonden.
+     */
+    public function confirmTurnReview(): void
+    {
+        if (! $this->canEdit) {
+            return;
+        }
+
+        SessionTurnAnalysis::where('session_id', $this->session->id)
+            ->where('turn_index', $this->currentTurnIndex)
+            ->update(['needs_review' => false, 'review_reason' => null]);
+
+        $this->loadTurnAnalyses();
+
+        Notification::make()->title('Beurt bevestigd')->success()->send();
     }
 
     public function table(Table $table): Table
