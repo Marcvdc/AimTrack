@@ -8,6 +8,7 @@ use App\Models\Session;
 use App\Models\SessionWeapon;
 use App\Models\User;
 use App\Models\Weapon;
+use App\Support\DateFormat;
 use EslamRedaDiv\FilamentCopilot\Tools\BaseTool;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Carbon;
@@ -100,7 +101,7 @@ class ShooterContextTool extends BaseTool
 
             return sprintf(
                 "- Sessie %s (%s)\n%s",
-                $session->date?->format('Y-m-d') ?? 'onbekend',
+                DateFormat::machineDate($session->date) ?? 'onbekend',
                 $session->range_name ?: ($session->location ?? 'onbekende locatie'),
                 $weaponLines !== '' ? $weaponLines : '  • (geen wapenregels)'
             );
@@ -140,7 +141,7 @@ class ShooterContextTool extends BaseTool
             $row['caliber'] ?: 'onbekend kaliber',
             $row['sessions'],
             $row['rounds'],
-            $row['last'] ? Carbon::parse($row['last'])->format('Y-m-d') : 'nooit',
+            $row['last'] ? DateFormat::machineDate(Carbon::parse($row['last'])) : 'nooit',
         ))->implode("\n");
     }
 

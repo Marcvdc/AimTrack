@@ -4,6 +4,7 @@ namespace App\Filament\Resources\WeaponResource\RelationManagers;
 
 use App\Enums\Deviation;
 use App\Models\AmmoType;
+use App\Support\DateFormat;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -37,7 +38,7 @@ class SessionWeaponsRelationManager extends RelationManager
                     )
                     ->getOptionLabelFromRecordUsing(fn ($record) => sprintf(
                         '%s - %s (%s)',
-                        optional($record->date)->format('Y-m-d'),
+                        DateFormat::date($record->date),
                         $record->range_name ?? 'onbekend',
                         $record->location ?? 'locatie n.v.t.',
                     ))

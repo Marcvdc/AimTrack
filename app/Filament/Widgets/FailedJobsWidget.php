@@ -51,7 +51,7 @@ class FailedJobsWidget extends BaseWidget
                 ->tooltip(fn (FailedJob $record) => $record->exception_message ?: null),
             TextColumn::make('failed_at')
                 ->label('Mislukt op')
-                ->dateTime('d-m-Y H:i'),
+                ->dateTime(),
         ];
     }
 

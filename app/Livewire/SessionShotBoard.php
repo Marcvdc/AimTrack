@@ -6,6 +6,7 @@ use App\Models\Session;
 use App\Models\SessionShot;
 use App\Services\Sessions\SessionShotService;
 use App\Services\Sessions\ShotScoringService;
+use App\Support\DateFormat;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
@@ -307,7 +308,7 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
                 'x_normalized' => $shot->x_normalized,
                 'y_normalized' => $shot->y_normalized,
                 'distance_from_center' => $shot->distance_from_center,
-                'created_at' => $shot->created_at?->format('H:i'),
+                'created_at' => DateFormat::time($shot->created_at),
             ])->values()->all())
             ->toArray();
 
@@ -441,7 +442,7 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
                     ]),
                 TextColumn::make('created_at')
                     ->label('Tijd')
-                    ->dateTime('H:i')
+                    ->dateTime(DateFormat::TIME)
                     ->default('—'),
             ])
             ->filters([

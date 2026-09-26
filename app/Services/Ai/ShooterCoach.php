@@ -9,6 +9,7 @@ use App\Models\SessionWeapon;
 use App\Models\Weapon;
 use App\Notifications\AiCoachFailureNotification;
 use App\Services\SessionStatsService;
+use App\Support\DateFormat;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -133,6 +134,10 @@ class ShooterCoach
 
         $manualReflection = $session->manual_reflection ? "Handmatige reflectie gebruiker: {$session->manual_reflection}" : 'Geen handmatige reflectie ingevoerd.';
 
+        // ISO-datum, geen d-m-Y: deze prompt wordt door een taalmodel gelezen,
+        // niet door de gebruiker. Zie App\Support\DateFormat::MACHINE_DATE.
+        $sessionDate = DateFormat::machineDate($session->date) ?? 'onbekend';
+
         $shotStatistics = $this->buildShotStatistics($session);
 
         return trim(<<<PROMPT
@@ -140,7 +145,7 @@ Je bent een AI-coach voor sportschutters. Geef veilige, constructieve adviezen, 
 Baseer je analyse op de concrete schotstatistiek hieronder: benoem reeksen, dips en cijfers expliciet (bv. "serie 4 zakt naar 87").
 
 Context sessie:
-- Datum: {$session->date?->format('Y-m-d')}
+- Datum: {$sessionDate}
 - Locatie/baan: {$session->range_name} ({$session->location})
 - Ruwe notities: {$session->notes_raw}
 - Wapenregels:
@@ -208,7 +213,7 @@ PROMPT);
         $entriesText = $recentEntries
             ->map(fn (SessionWeapon $entry) => sprintf(
                 '- %s op %s m, %s schoten, afwijking: %s, notitie: %s',
-                $entry->session?->date?->format('Y-m-d') ?? 'onbekende datum',
+                DateFormat::machineDate($entry->session?->date) ?? 'onbekende datum',
                 $entry->distance_m ?? 'n.v.t.',
                 $entry->rounds_fired ?? '0',
                 $entry->deviation?->value ?? 'n.v.t.',
