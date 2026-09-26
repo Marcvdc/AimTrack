@@ -73,3 +73,18 @@ test('de weggevallen zekerheden zijn terug te vinden in het overzicht', function
         ->and($overzicht['dropped_low_confidence'])->toBe(1)
         ->and($overzicht['low_confidence_values'])->toBe([0.1]);
 });
+
+test('een gat dat het model als mis las komt niet als schot op het bord', function (): void {
+    /*
+     * Het echte geval uit de eerste upload: het model wees een gat aan op 1,19
+     * ring1-stralen, dus buiten de kaartrand, en las er ring 0 bij. Zonder deze
+     * zeef rekende het bord daar een score van 5 uit de positie.
+     */
+    $mis = new DetectedShot(0.84, -0.84, 0, 0.4, 'hole');
+
+    $selection = (new ShotSelector(0.25))->select([candidate(0.9), $mis], null);
+
+    expect($selection->kept)->toHaveCount(1)
+        ->and($selection->droppedOffTarget)->toHaveCount(1)
+        ->and($selection->droppedOffTarget[0]->ring)->toBe(0);
+});

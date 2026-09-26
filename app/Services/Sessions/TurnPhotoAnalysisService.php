@@ -176,6 +176,13 @@ class TurnPhotoAnalysisService
             );
         }
 
+        if ($selection->droppedOffTarget !== []) {
+            $redenen[] = sprintf(
+                '%d gat(en) lagen buiten de kaart en zijn niet geplaatst.',
+                count($selection->droppedOffTarget),
+            );
+        }
+
         $redenen[] = 'Controleer de markers en bevestig de beurt.';
 
         return implode(' ', $redenen);

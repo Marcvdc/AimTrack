@@ -31,8 +31,22 @@ class ShotSelector
     {
         $kept = [];
         $lowConfidence = [];
+        $offTarget = [];
 
         foreach ($shots as $shot) {
+            /*
+             * Ring 0 betekent dat het model geen gedrukte ring bij het gat kon
+             * aanwijzen, dus een mis. Zonder deze zeef belandt zo'n gat alsnog op
+             * het bord, en dan leidt ShotScoringService een ring af uit de afstand
+             * en extrapoleert die lineair. Een gat naast de kaart werd op die
+             * manier een treffer van 5.
+             */
+            if ($shot->ring === 0) {
+                $offTarget[] = $shot;
+
+                continue;
+            }
+
             if ($shot->confidence >= $this->minConfidence) {
                 $kept[] = $shot;
             } else {
@@ -52,6 +66,7 @@ class ShotSelector
             kept: array_values($kept),
             droppedLowConfidence: array_values($lowConfidence),
             droppedOverCount: array_values($overCount),
+            droppedOffTarget: array_values($offTarget),
         );
     }
 }

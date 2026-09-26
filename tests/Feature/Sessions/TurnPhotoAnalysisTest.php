@@ -162,6 +162,22 @@ test('een te onzeker schot wordt niet geplaatst maar wel gemeld', function (): v
         ->and($analysis->review_reason)->toContain('te onzeker');
 });
 
+test('een gat buiten de kaart wordt niet geplaatst maar wel gemeld', function (): void {
+    /*
+     * Ring 0 is het oordeel van het model dat er bij dit gat geen gedrukte ring
+     * meer staat. Kwam dat toch op het bord, dan leidde de scoring een ring af uit
+     * de afstand en werd een gat naast de kaart een treffer van 5.
+     */
+    fakeTurnVision([shot(0.1, 0.1, 9, 0.9), shot(0.84, -0.84, 0, 0.5)]);
+
+    $session = photoSession();
+
+    $analysis = app(TurnPhotoAnalysisService::class)->analyze($session, 0, storeTurnPhoto(), null, 'local');
+
+    expect($session->shots()->count())->toBe(1)
+        ->and($analysis->review_reason)->toContain('buiten de kaart');
+});
+
 test('opnieuw analyseren vervangt de vorige fotoschoten in plaats van ze te verdubbelen', function (): void {
     fakeTurnVision([shot(0.1, 0.1, 9), shot(0.2, 0.2, 8)]);
 
