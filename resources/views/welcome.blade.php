@@ -681,7 +681,7 @@
                     <div class="mk-kicker">05 · PRIVACY</div>
                 </div>
                 <h3 class="mk-feature-title">Self-hosted, op je eigen server</h3>
-                <p class="mk-feature-body">Draai AimTrack op je eigen server (Docker, 5 min setup). Je logboek blijft daar staan; alleen de AI-coach stuurt gegevens naar buiten, en die kun je uitzetten.</p>
+                <p class="mk-feature-body">Draai AimTrack op je eigen server (Docker, 5 min setup). Je logboek blijft daar staan. De AI-coach stuurt gegevens naar Anthropic en kun je uitzetten; mail, foutrapportage en een offsite backup gaan alleen naar buiten als je ze zelf inricht.</p>
                 <div class="mk-feature-demo">
                     <div class="mk-demo-privacy">
                         <div class="mk-demo-privacy-card is-active">

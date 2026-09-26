@@ -36,18 +36,35 @@ gecorrigeerd in `project/` en in de beide afgeleide kopieën:
   Het monogram-stempel (T4) is daarmee een statusmarkering (`REFLECTIE OK`, `EXPORT OK`) en
   geen validatie- of vertrouwenssignaal. Zie ook de noot boven `chats/chat1.md`.
 - **De AI-coach stuurt wel data naar buiten.** De regel "alles draait lokaal, je data
-  verlaat de server niet" was onjuist. De app en de database draaien op de eigen server,
-  maar voor een AI-antwoord gaan de vraag, de sessiecontext en de wapengegevens (inclusief
-  serienummer en opslaglocatie) naar Anthropic (api.anthropic.com). Zonder API-key gebeurt
-  er niets en de hele functie is uit te zetten met `FEATURE_AIMTRACK_AI`.
+  verlaat de server niet" was onjuist, en "alleen de AI-coach stuurt gegevens naar buiten"
+  ook: een beheerder kan daarnaast mail, Sentry en een offsite backup inrichten. De app en
+  de database draaien op de eigen server, maar voor een AI-antwoord (reflectie,
+  wapeninzicht en de chat op de coachpagina) gaan de vraag en de gegevens die de coach
+  erbij haalt naar Anthropic. Welke gegevens dat zijn, staat in `docs/user/README.md`
+  onder "Waar je gegevens staan" en komt uit `app/Support/Ai/AiPrivacyNotice.php`;
+  schrijf die opsomming hier niet over, want dan loopt hij weer uit de pas.
+- **Geen "verified".** Het T4-stempel had `VERIFIED` als label en heette een
+  "verification badge". Dat is weg uit `logo-system.jsx`, `logo-treatments.jsx`, de
+  artboard-subtitel in `AimTrack Designs.html` en de componentbeschrijving in
+  `design_handoff_aimtrack/README.md`.
 
 Ook weggehaald omdat de dienst niet bestaat: de "NL-cloud" op de privacy-kaart en de
 keuringsbrief op de wapenkaart.
 
-**Nog open, bewust niet door de agent beslist:** het bundel bestaat uit drie kopieën van
-hetzelfde materiaal (`project/`, `project/design_handoff_aimtrack/` en
-`project/uploads/AimTrack (Remix)/`). Alle drie zijn nu gecorrigeerd, maar ze blijven uit
-de pas lopen. Houd `project/` aan als bron en ruim de andere twee op; dat is een keuze voor
-de eigenaar van het ontwerp. Het prijsblok in `marketing.jsx` noemt daarnaast nog een
-gehoste dienst ("Hosted bij AimTrack NL") en betaalde abonnementen die niet bestaan; dat is
-een productbeslissing en valt buiten deze issues.
+**Het bronproject moet ook worden gecorrigeerd.** Dit bundel is een export uit Claude
+Design. Alle correcties hierboven staan alleen in de geëxporteerde bestanden; het project
+in Claude Design zelf is niet aangepast, want daar kan de agent niet bij. Een volgende
+export zet de claims dus terug, tenzij iemand ze eerst in Claude Design weghaalt. Als
+vangnet faalt `tests/Feature/DesignHandoffClaimsTest.php` zodra een van de bekende claims
+weer in de `.jsx`- of `.html`-bestanden van dit bundel staat.
+
+**Nog open, bewust niet door de agent beslist:**
+
+- Het bundel bestaat uit drie kopieën van hetzelfde materiaal (`project/`,
+  `project/design_handoff_aimtrack/` en `project/uploads/AimTrack (Remix)/`). Alle drie
+  zijn gecorrigeerd, maar ze blijven uit de pas lopen. Houd `project/` aan als bron en ruim
+  de andere twee op; dat is een keuze voor de eigenaar van het ontwerp.
+- Het prijsblok in `marketing.jsx` noemt een gehoste dienst ("Hosted bij AimTrack NL") en
+  betaalde abonnementen die niet bestaan, en daarbinnen ook "Eigen AI-model (optioneel)",
+  "SSO via KNSA" en "Batch-export". Geen van die drie bestaat in de app. Een prijsmodel
+  aanpassen is een productbeslissing en valt buiten deze issues.

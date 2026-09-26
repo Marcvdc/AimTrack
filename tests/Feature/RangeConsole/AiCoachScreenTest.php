@@ -176,5 +176,8 @@ it('tells the truth about where the AI data goes, on both spots', function (): v
         ->assertSee('api.anthropic.com')
         ->assertSee('FEATURE_AIMTRACK_AI')
         ->assertSee('serienummer')
-        ->assertSee('Zonder API-key doet AimTrack geen enkele call');
+        ->assertSee('je vrije wapennotities')
+        ->assertSee('herinneringen')
+        ->assertSee('pennant:purge aimtrack-ai')
+        ->assertSee('Zonder API-key doet AimTrack geen enkele AI-call');
 });

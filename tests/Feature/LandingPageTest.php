@@ -153,14 +153,16 @@ test('landing page does not claim that data stays on the server', function (): v
         ->assertDontSee('je data verlaat de server niet')
         ->assertDontSee('Geen data verlaat de server')
         ->assertDontSee('Alles draait lokaal')
-        ->assertDontSee('data is van jou, altijd');
+        ->assertDontSee('data is van jou, altijd')
+        ->assertDontSee('alleen de AI-coach stuurt gegevens naar buiten');
 });
 
 test('landing page names Anthropic as the destination of AI data', function (): void {
     $this->get('/')
         ->assertOk()
         ->assertSee('api.anthropic.com', escape: false)
-        ->assertSee('zonder eigen Claude-key geen enkele call', escape: false);
+        ->assertSee('zonder eigen Claude-key geen enkele AI-call', escape: false)
+        ->assertSee('als je ze zelf inricht', escape: false);
 });
 
 test('landing page carries no WM-4 or compliance claim', function (): void {

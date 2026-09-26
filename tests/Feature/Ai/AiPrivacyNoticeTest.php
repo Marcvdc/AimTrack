@@ -7,7 +7,9 @@ use App\Models\Weapon;
 use App\Services\Ai\ShooterCoach;
 use App\Support\Ai\AiPrivacyNotice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
+use Laravel\Pennant\Feature;
 
 uses(RefreshDatabase::class);
 
@@ -29,6 +31,17 @@ test('de privacytekst noemt de ontvanger, de uitschakelroute en de gedeelde veld
         ->and(AiPrivacyNotice::landingCheckItem())->toContain('api.anthropic.com');
 });
 
+test('de ontvanger volgt de geconfigureerde endpoints', function (): void {
+    config([
+        'ai.base_url' => 'https://proxy.example.test',
+        'ai.providers.anthropic.url' => 'https://gateway.example.test/v1',
+    ]);
+
+    expect(AiPrivacyNotice::provider())->toBe('Anthropic (proxy.example.test, gateway.example.test)')
+        ->and(AiPrivacyNotice::panel())->not->toContain('api.anthropic.com')
+        ->and(AiPrivacyNotice::panel())->toContain('gateway.example.test');
+});
+
 test('geen enkele privacytekst belooft nog dat data de server niet verlaat', function (): void {
     $teksten = [
         AiPrivacyNotice::intro(),
@@ -44,7 +57,7 @@ test('geen enkele privacytekst belooft nog dat data de server niet verlaat', fun
     }
 });
 
-test('de wapenprompt stuurt precies de velden die de privacytekst noemt', function (): void {
+test('de wapenprompt stuurt het serienummer en de opslaglocatie echt mee', function (): void {
     Http::fake([
         'api.anthropic.com/*' => Http::response([
             'content' => [[
@@ -70,8 +83,8 @@ test('de wapenprompt stuurt precies de velden die de privacytekst noemt', functi
         baseUrl: 'https://api.anthropic.com',
     ))->generateWeaponInsight($weapon);
 
-    // Gaat het serienummer of de opslaglocatie ooit uit de prompt, dan faalt deze
-    // test en moet de privacytekst mee. Zo lopen code en tekst niet uit de pas.
+    // Dit toetst de echte HTTP-body. Welke velden per pad meegaan, in beide
+    // richtingen, toetst AiDataFlowTest.
     Http::assertSent(function (\Illuminate\Http\Client\Request $r): bool {
         $prompt = $r['messages'][0]['content'];
 
@@ -106,6 +119,54 @@ test('de gebruikersdocumentatie vertelt hetzelfde verhaal als de app', function 
         ->toContain('FEATURE_AIMTRACK_AI')
         ->toContain('serienummer')
         ->toContain('opslaglocatie')
+        ->toContain(AiPrivacyNotice::PURGE_COMMAND)
         ->not->toContain('je data verlaat je')
-        ->not->toContain('verlaat de server niet');
+        ->not->toContain('verlaat de server niet')
+        ->not->toContain('verlaat er niets')
+        ->not->toContain('blijft op je eigen')
+        ->not->toContain('alleen de AI-coach');
+});
+
+test('uitzetten met de omgevingsvlag geldt pas na een purge voor wie de AI al gebruikte', function (): void {
+    $zetVlag = function (string $waarde): void {
+        putenv(AiPrivacyNotice::FEATURE_FLAG.'='.$waarde);
+        $_ENV[AiPrivacyNotice::FEATURE_FLAG] = $waarde;
+        $_SERVER[AiPrivacyNotice::FEATURE_FLAG] = $waarde;
+        Feature::flushCache();
+    };
+
+    $eerder = User::factory()->create();
+    $nieuw = User::factory()->create();
+
+    try {
+        $zetVlag('true');
+        expect(Feature::for($eerder)->active('aimtrack-ai'))->toBeTrue();
+
+        $zetVlag('false');
+        expect(Feature::for($eerder)->active('aimtrack-ai'))->toBeTrue()
+            ->and(Feature::for($nieuw)->active('aimtrack-ai'))->toBeFalse();
+
+        Artisan::call(str_replace('php artisan ', '', AiPrivacyNotice::PURGE_COMMAND));
+        Feature::flushCache();
+
+        expect(Feature::for($eerder)->active('aimtrack-ai'))->toBeFalse();
+    } finally {
+        putenv(AiPrivacyNotice::FEATURE_FLAG);
+        unset($_ENV[AiPrivacyNotice::FEATURE_FLAG], $_SERVER[AiPrivacyNotice::FEATURE_FLAG]);
+    }
+
+    expect(AiPrivacyNotice::panel())->toContain(AiPrivacyNotice::PURGE_COMMAND);
+});
+
+test('zonder API-key weigert de chat en gaat er niets naar buiten', function (): void {
+    Http::fake();
+    Feature::activate('aimtrack-ai');
+
+    $user = User::factory()->create(['anthropic_api_key' => null]);
+
+    $this->actingAs($user)
+        ->postJson('/copilot/stream', ['message' => 'Hoe was mijn laatste sessie?', 'panel_id' => 'admin'])
+        ->assertForbidden();
+
+    Http::assertNothingSent();
 });
