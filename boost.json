@@ -1,6 +1,8 @@
 {
     "agents": [
         "claude_code",
+        "codex",
+        "copilot",
         "windsurf"
     ],
     "editors": [
