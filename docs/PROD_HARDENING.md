@@ -21,8 +21,16 @@ instellingen levend. Controleer ze bij het opzetten van de (nieuwe) productiehos
       `docker compose exec app php artisan tinker --execute="print_r(config('trustedproxy.proxies'));"`.
 - [ ] Die effectieve waarde mag **geen `*`** zijn. Met `*` vertrouwt de applicatie de
       `X-Forwarded-For` van elke aanroeper, dus wie de origin buiten de proxy om bereikt (#123) kan
-      zijn client-IP vervalsen. Zet een concreet bereik dat past bij de netwerkopzet van de host;
-      `.env.example` bevat het RFC1918-voorbeeld.
+      zijn client-IP vervalsen. Zet een concreet bereik dat past bij de netwerkopzet van de host,
+      bijvoorbeeld een RFC1918-bereik zoals in `.env.example` (alleen als voorbeeldwaarde: dat
+      bestand komt nooit op de productiehost terecht).
+- [ ] Werk de waarde bij in de bron die bij de stack hoort, niet in het bestand op de host:
+      - `docker/compose.prod.yml` leest `TRUSTED_PROXIES` uit `env_file: ../.env`, en
+        `scripts/remote_deploy.sh` schrijft die `.env` bij elke deploy opnieuw uit het GitHub-secret
+        `ENV_FILE_B64`. Een handmatige correctie van `<DEPLOY_PATH>/.env` houdt dus geen stand: de
+        volgende deploy zet stilzwijgend de oude waarde terug. Pas het secret `ENV_FILE_B64` zelf aan.
+      - De root `docker-compose.yml` zet `TRUSTED_PROXIES` hard in het `environment:`-blok, en dat
+        wint van `env_file`. Daar is het secret niet de bron; wijzig het `environment:`-blok.
 - [ ] `APP_URL` staat op de hostnaam waarop de applicatie **daadwerkelijk** benaderd wordt.
       `TrustHosts` vertrouwt zonder argumenten alleen `APP_URL` en subdomeinen daarvan, en
       beantwoordt een afwijkende `Host`-header met 400. Staat `APP_URL` verkeerd, dan is de
