@@ -66,7 +66,14 @@ echo "==> Worktree aanmaken: $WORKTREE_PATH (branch: $BRANCH, basis: $BASE_BRANC
 git worktree add -b "$BRANCH" "$WORKTREE_PATH" "$BASE_BRANCH"
 
 # Kopieer .env.local zodat Laravel zelf z'n env heeft (DB_PASSWORD, APP_KEY, etc.)
-for candidate in .env.local .env.example; do
+#
+# Volgorde is belangrijk. .env.local is gitignored en ontbreekt dus op een verse
+# clone; viel het script dan terug op .env.example, dan kreeg de worktree een
+# PRODUCTIE-env: APP_ENV=production, APP_URL=https://... en (sinds deze wijziging)
+# SESSION_SECURE_COOKIE=true. Een Secure-cookie wordt door de browser niet bewaard
+# op http://localhost:190xx, dus inloggen in die worktree was onmogelijk.
+# .env.local.example staat wél in git en is de bedoelde dev-basis.
+for candidate in .env.local .env.local.example .env.example; do
   if [[ -f "$REPO_ROOT/$candidate" ]]; then
     cp "$REPO_ROOT/$candidate" "$WORKTREE_PATH/.env.local"
     echo "==> .env.local gekopieerd uit $candidate"
