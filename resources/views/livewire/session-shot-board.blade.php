@@ -134,7 +134,7 @@
                     x-ref="board"
                     wire:ignore
                 >
-                    <canvas x-ref="canvas" class="absolute inset-0 w-full h-full" style="cursor: crosshair;"
+                    <canvas x-ref="canvas" class="absolute inset-0 w-full h-full" style="cursor: crosshair; touch-action: none;"
                     @click="handleCanvasClick($event)"
                     @contextmenu.prevent="handleCanvasRightClick($event)"
                     @pointerdown="handlePointerDown($event)"
@@ -211,6 +211,8 @@
                 dragCandidate: null,
                 dragging: null,
                 dragStart: null,
+                // Zie handlePointerUp: de browser stuurt na een sleep alsnog een click.
+                suppressNextClick: false,
                 currentMarkers: [],
                 turns: Array.isArray(turns) ? [...turns] : [],
                 currentTurn: Number(currentTurn ?? 0),
@@ -458,6 +460,13 @@
                     };
                 },
                 handlePointerDown(event) {
+                    /*
+                     * Schoon beginnen bij elke aanraking. Eindigt een sleep buiten
+                     * de canvas, dan volgt er geen click en zou de vlag anders
+                     * blijven staan en de eerstvolgende echte klik opeten.
+                     */
+                    this.suppressNextClick = false;
+
                     if (! this.canEdit || event.button === 2) {
                         return;
                     }
@@ -513,6 +522,14 @@
                     this.dragCandidate = null;
                     this.dragStart = null;
 
+                    /*
+                     * pointerdown en pointerup liggen op hetzelfde element, dus de
+                     * browser vuurt hierna nog een click af. Die zou in
+                     * handleCanvasClick het zojuist verplaatste schot vinden en de
+                     * verwijdertimer starten, waarna de modal ongevraagd opengaat.
+                     */
+                    this.suppressNextClick = true;
+
                     moveShot(marker.id, position.x, position.y);
                 },
                 cancelDrag() {
@@ -533,6 +550,12 @@
                     }
                 },
                 handleCanvasClick(event) {
+                    if (this.suppressNextClick) {
+                        this.suppressNextClick = false;
+
+                        return;
+                    }
+
                     // Check if click is on a marker
                     const clickedMarker = this.getMarkerAtPosition(event);
                     

@@ -93,6 +93,26 @@ test('zonder foto komt er geen job in de wachtrij', function (): void {
     Queue::assertNothingPushed();
 });
 
+test('uploaden kan niet terwijl het bord op alle beurten staat', function (): void {
+    /*
+     * ALL_TURNS_VALUE is de sentinel -1 voor de weergave van alle beurten samen,
+     * geen echte beurt. recordShot weigert die waarde al; zonder dezelfde grens
+     * hier schrijft de upload een analyse en schoten weg op turn_index -1.
+     */
+    Queue::fake();
+    Storage::fake('local');
+
+    $session = boardSession();
+
+    Livewire::test(SessionShotBoard::class, ['session' => $session])
+        ->call('setTurn', SessionShotBoard::ALL_TURNS_VALUE)
+        ->assertSet('currentTurnIndex', SessionShotBoard::ALL_TURNS_VALUE)
+        ->assertActionHidden('uploadTurnPhoto');
+
+    expect(SessionTurnAnalysis::where('turn_index', SessionShotBoard::ALL_TURNS_VALUE)->exists())->toBeFalse();
+    Queue::assertNothingPushed();
+});
+
 test('een beurt die gecontroleerd moet worden toont de melding op het bord', function (): void {
     $session = boardSession();
 
@@ -172,4 +192,25 @@ test('een mislukte analyse meldt dat de foto bewaard is', function (): void {
     Livewire::test(SessionShotBoard::class, ['session' => $session])
         ->assertSee('Mislukt')
         ->assertSee('Je foto is bewaard');
+});
+
+test('de analyse-job loopt niet langer dan de wachtrij hem met rust laat', function (): void {
+    /*
+     * Laravel pakt een job opnieuw op zodra retry_after verstreken is, ook als de
+     * eerste worker nog bezig is. Ligt de timeout van de job daarboven, dan doet
+     * een tweede worker dezelfde betaalde vision-call en racen clearPhotoShots en
+     * persistShots om dezelfde beurt. Deze test bewaakt de verhouding, niet het
+     * getal, zodat hij blijft werken als een van beide verandert.
+     */
+    $job = new AnalyzeTurnPhotoJob(Session::factory()->create(), 0, 'turn-photos/x.jpg', null, 'local');
+
+    $metRetryAfter = collect(config('queue.connections'))
+        ->filter(fn (array $c): bool => isset($c['retry_after']));
+
+    expect($metRetryAfter)->not->toBeEmpty();
+
+    foreach ($metRetryAfter as $naam => $c) {
+        expect($job->timeout)
+            ->toBeLessThan($c['retry_after'], "queue-connection '{$naam}' pakt de job opnieuw op voordat hij klaar mag zijn");
+    }
 });

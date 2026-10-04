@@ -29,6 +29,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class SessionShotBoard extends Component implements HasActions, HasSchemas, HasTable
@@ -66,6 +67,14 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
     /** @var array<int, array<string, string>> */
     public array $turnLegend = [];
 
+    /*
+     * Op slot, want deze vlag stuurt elke muterende actie op het bord aan. Zonder
+     * het slot zet een meekijker hem vanuit de browser op true en kan hij schoten
+     * verplaatsen, beurten bevestigen en foto's uploaden; dat laatste doet een
+     * betaalde vision-call op de sleutel van de schutter. De acties autoriseren
+     * daarnaast zelf, zodat de bewaking niet aan deze ene vlag hangt.
+     */
+    #[Locked]
     public bool $canEdit = false;
 
     public bool $showRings = false;
@@ -219,9 +228,26 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
         return number_format($result, $decimals, '.', '');
     }
 
-    public function recordShot(float $xNormalized, float $yNormalized): void
+    /**
+     * Mag de huidige gebruiker dit bord op dit moment wijzigen?
+     *
+     * De vlag uit mount() alleen is niet genoeg: de component houdt zijn state
+     * tussen requests vast, dus een recht dat intussen vervalt blijft anders
+     * gelden. Daarom hier opnieuw bij de bron langs.
+     */
+    private function mayEdit(): bool
     {
         if (! $this->canEdit) {
+            return false;
+        }
+
+        return Gate::allows('update', $this->session)
+            || $this->session->user_id === auth()->id();
+    }
+
+    public function recordShot(float $xNormalized, float $yNormalized): void
+    {
+        if (! $this->mayEdit()) {
             return;
         }
 
@@ -261,7 +287,7 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
      */
     public function moveShot(int $shotId, float $xNormalized, float $yNormalized): void
     {
-        if (! $this->canEdit) {
+        if (! $this->mayEdit()) {
             return;
         }
 
@@ -279,7 +305,7 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
 
     public function deleteShot(int $shotId): void
     {
-        if (! $this->canEdit) {
+        if (! $this->mayEdit()) {
             return;
         }
 
@@ -466,7 +492,13 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
             ->modalHeading('Foto van de roos')
             ->modalDescription('AimTrack zet de verse kogelgaten om in markers. Oude treffers onder een plakker worden overgeslagen.')
             ->modalSubmitActionLabel('Analyseren')
-            ->visible(fn (): bool => $this->canEdit)
+            /*
+             * ALL_TURNS_VALUE is de sentinel voor de weergave van alle beurten
+             * samen, geen beurt waar een foto bij hoort. Zonder deze grens landt
+             * de analyse op turn_index -1, en die kolom dwingt dat niet af op
+             * pgsql en SQL Server.
+             */
+            ->visible(fn (): bool => $this->mayEdit() && $this->currentTurnIndex !== self::ALL_TURNS_VALUE)
             ->schema([
                 FileUpload::make('photo')
                     ->label('Foto')
@@ -538,7 +570,7 @@ class SessionShotBoard extends Component implements HasActions, HasSchemas, HasT
      */
     public function confirmTurnReview(): void
     {
-        if (! $this->canEdit) {
+        if (! $this->mayEdit()) {
             return;
         }
 
