@@ -1,0 +1,11 @@
+fotos/
+fotos-jpg/
+manifest.json
+
+# De uitvoer van een meetronde is een artefact, geen bron. De regel stond op
+# uit/ terwijl de mappen uit-ronde1, uit-ronde2 enzovoort heten, waardoor de
+# overlays alsnog in de commit belandden.
+uit*/
+
+# Werklijst van een afgebroken run, geen bronbestand.
+manifest-rest.json
