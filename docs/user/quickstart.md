@@ -8,7 +8,7 @@ Korte gids om AimTrack lokaal te starten en de eerste sessie te registreren.
 
 ## Installatie (lokaal)
 1. Clone repo en kopieer `.env.example` naar `.env`. Vul `APP_KEY` later met `php artisan key:generate`.
-   Draai je lokaal zonder TLS, zet dan in die `.env` `SESSION_SECURE_COOKIE=false`. Deze stack zet de vlag standaard aan, en de browser bewaart een Secure-cookie niet over plain HTTP, dus zonder die regel kun je niet inloggen. Staat de stack al, dan pakt `docker compose up -d` de nieuwe waarde op.
+   Deze stack zet `SESSION_SECURE_COOKIE` standaard aan, zodat de sessiecookie de `Secure`-vlag krijgt. Op `http://localhost` is dat geen probleem: de browser bewaart een Secure-cookie daar gewoon. Open je de app over plain HTTP via een andere host, zoals een LAN-IP, zet dan in die `.env` `SESSION_SECURE_COOKIE=false` en draai `docker compose up -d` om de nieuwe waarde op te pakken. Lokaal inloggen over `http://` lukt met deze stack nu nog niet, ook niet met die vlag uit: de stack zet ook `APP_FORCE_HTTPS` aan, waardoor Livewire het inlogformulier naar een `https://`-adres stuurt. Zie [#174](https://github.com/Marcvdc/AimTrack/issues/174).
 2. Start containers: `docker compose up -d`.
 3. Installeer dependencies: `docker compose exec app composer install`.
 4. Genereer app key: `docker compose exec app php artisan key:generate`.

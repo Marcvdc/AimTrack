@@ -14,9 +14,10 @@ services:
       APP_FORCE_HTTPS: "true"
       TRUSTED_PROXIES: 172.16.0.0/12,127.0.0.1/32
       # Productie draait op dit moment deze stack vanaf een git-checkout (#120),
-      # dus standaard aan. Lokaal over plain HTTP inloggen kan alleen met
-      # SESSION_SECURE_COOKIE=false in de .env naast dit bestand of in de shell;
-      # een waarde in .env.local wint hier niet van. Zie docs/user/quickstart.md.
+      # dus standaard aan. Uitzetten (alleen nodig over plain HTTP op een andere
+      # host dan localhost) met SESSION_SECURE_COOKIE=false in de .env naast dit
+      # bestand of in de shell; een waarde in .env.local wint hier niet van.
+      # Zie docs/user/quickstart.md en #174.
       SESSION_SECURE_COOKIE: "${SESSION_SECURE_COOKIE:-true}"
       MAIL_MAILER: smtp
       MAIL_HOST: mailpit
