@@ -1,3 +1,15 @@
+{{--
+    Override van vendor/laravel/boost/.ai/tailwindcss/4/core.blade.php uit laravel/boost v1.8.10.
+    Boost kiest dit bestand boven zijn eigen versie, dus een Boost-update van deze guideline komt
+    hier niet vanzelf binnen. Vergelijk na een Boost-update dit bestand met het vendorbestand.
+
+    Enige wijziging: regel 5 van het origineel. De em-dash tussen "the `@theme` directive" en
+    "no separate `tailwind.config.js` file" is een puntkomma geworden. KJ-tekst bevat geen em-dashes,
+    en zonder deze override komt er via boost:update een terug in CLAUDE.md, AGENTS.md,
+    .github/copilot-instructions.md en .windsurfrules.
+
+    Dit commentaar verschijnt niet in de gegenereerde agentbestanden.
+--}}
 ## Tailwind CSS 4
 
 - Always use Tailwind CSS v4; do not use the deprecated utilities.
