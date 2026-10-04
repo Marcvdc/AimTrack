@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Filament\Pages\Dashboard;
+use App\Filament\Resources\WeaponResource;
 use App\Models\Session;
 use App\Models\User;
 use App\Models\Weapon;
@@ -95,7 +96,7 @@ test('welcome continue CTA points to weapon-create when user has no weapon', fun
 
     $response = $this->get('/admin');
 
-    $response->assertSee(\App\Filament\Resources\WeaponResource::getUrl('create'), escape: false);
+    $response->assertSee(WeaponResource::getUrl('create'), escape: false);
     $response->assertSee('Verder waar ik was', escape: false);
 });
 

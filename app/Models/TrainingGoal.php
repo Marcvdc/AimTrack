@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\TrainingGoalSource;
+use Database\Factories\TrainingGoalFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TrainingGoal extends Model
 {
-    /** @use HasFactory<\Database\Factories\TrainingGoalFactory> */
+    /** @use HasFactory<TrainingGoalFactory> */
     use HasFactory;
 
     protected $fillable = [

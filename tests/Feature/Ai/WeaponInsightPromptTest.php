@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Weapon;
 use App\Services\Ai\ShooterCoach;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
@@ -34,7 +35,7 @@ test('wapen-insight loopt via de Anthropic Messages API met de user-key', functi
 
     expect($insight->summary)->toBe('Consistente prestaties.');
 
-    Http::assertSent(fn (\Illuminate\Http\Client\Request $r): bool => str_contains($r->url(), '/v1/messages')
+    Http::assertSent(fn (Request $r): bool => str_contains($r->url(), '/v1/messages')
         && $r->hasHeader('x-api-key', 'sk-ant-user-key')
         && $r['messages'][0]['role'] === 'user');
 });

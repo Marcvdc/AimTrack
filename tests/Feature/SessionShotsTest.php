@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\SessionShotBoard;
 use App\Models\Session;
 use App\Models\SessionShot;
 use App\Models\User;
@@ -10,7 +11,7 @@ test('renders session shot board with initial data', function () {
     $session = Session::factory()->create(['user_id' => $user->id]);
 
     Livewire::actingAs($user)
-        ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session])
+        ->test(SessionShotBoard::class, ['session' => $session])
         ->assertSet('session.id', $session->id)
         ->assertSet('canEdit', true)
         ->assertSet('currentTurnIndex', 0)
@@ -23,7 +24,7 @@ test('shows all turns option in dropdown', function () {
     $session = Session::factory()->create(['user_id' => $user->id]);
 
     Livewire::actingAs($user)
-        ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session])
+        ->test(SessionShotBoard::class, ['session' => $session])
         ->assertSee('Alle beurten')
         ->assertSee('Beurt 1');
 });
@@ -47,7 +48,7 @@ test('can switch to all turns view', function () {
     ]);
 
     $component = Livewire::actingAs($user)
-        ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session]);
+        ->test(SessionShotBoard::class, ['session' => $session]);
 
     // Switch to all turns
     $component->set('currentTurnIndex', -1)
@@ -67,7 +68,7 @@ test('prevents recording shots when all turns is selected', function () {
     $session = Session::factory()->create(['user_id' => $user->id]);
 
     $component = Livewire::actingAs($user)
-        ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session]);
+        ->test(SessionShotBoard::class, ['session' => $session]);
 
     // Set to all turns
     $component->set('currentTurnIndex', -1);
@@ -90,7 +91,7 @@ test('can delete a shot', function () {
     ]);
 
     $component = Livewire::actingAs($user)
-        ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session]);
+        ->test(SessionShotBoard::class, ['session' => $session]);
 
     // Delete the shot
     $component->call('deleteShot', $shot->id);
@@ -117,7 +118,7 @@ test('table filter syncs with turn selection', function () {
     ]);
 
     $component = Livewire::actingAs($user)
-        ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session]);
+        ->test(SessionShotBoard::class, ['session' => $session]);
 
     // Switch to all turns
     $component->set('currentTurnIndex', -1);
@@ -139,7 +140,7 @@ test('markers include turn labels and colors', function () {
     ]);
 
     $component = Livewire::actingAs($user)
-        ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session]);
+        ->test(SessionShotBoard::class, ['session' => $session]);
 
     $markers = $component->get('markers');
     expect($markers)->toHaveCount(1);
@@ -160,7 +161,7 @@ test('cannot delete shots when not editable', function () {
     ]);
 
     $component = Livewire::actingAs($user)
-        ->test(\App\Livewire\SessionShotBoard::class, ['session' => $session]);
+        ->test(SessionShotBoard::class, ['session' => $session]);
 
     // Should not be editable
     $component->assertSet('canEdit', false);

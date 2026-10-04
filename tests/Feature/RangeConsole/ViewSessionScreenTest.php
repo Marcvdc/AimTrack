@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Filament\Resources\SessionResource;
 use App\Filament\Resources\SessionResource\Pages\ViewSession;
 use App\Models\AiReflection;
 use App\Models\Session;
 use App\Models\SessionShot;
 use App\Models\User;
+use App\Services\SessionStatsService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Livewire\Livewire;
 
 function seedShots(Session $session, int $count, int $ring = 10, int $score = 10): void
@@ -65,7 +68,7 @@ it('highlights the concentration-dip series amber on the shot strip', function (
         ]);
     }
 
-    expect((new App\Services\SessionStatsService($session))->dipRange())->toBe([10, 19]);
+    expect((new SessionStatsService($session))->dipRange())->toBe([10, 19]);
 
     Livewire::actingAs($user)
         ->test(ViewSession::class, ['record' => $session->id])
@@ -122,7 +125,7 @@ it('refuses to render sessions owned by another user via the eloquent scope', fu
 
     Livewire::actingAs($user)
         ->test(ViewSession::class, ['record' => $foreignSession->id]);
-})->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+})->throws(ModelNotFoundException::class);
 
 it('shows AI reflection actions and marks the reflection as read', function (): void {
     $user = User::factory()->create();
@@ -145,7 +148,7 @@ it('links to the interactive shot board (ring view) from the session detail', fu
     $session = Session::factory()->for($user)->create();
     seedShots($session, 10);
 
-    $shotBoardUrl = \App\Filament\Resources\SessionResource::getUrl('shots', ['record' => $session->id]);
+    $shotBoardUrl = SessionResource::getUrl('shots', ['record' => $session->id]);
 
     Livewire::actingAs($user)
         ->test(ViewSession::class, ['record' => $session->id])

@@ -31,6 +31,7 @@ use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section as InfoSection;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -96,7 +97,7 @@ class SessionResource extends Resource implements CopilotResourceContract
      * Basisvelden van de sessie (zonder notities), herbruikt door de
      * Edit-form en de Range Console nieuwe-sessie wizard (stap Sessie).
      *
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     public static function sessionDetailFields(): array
     {
@@ -156,7 +157,7 @@ class SessionResource extends Resource implements CopilotResourceContract
     /**
      * Notitie-velden, herbruikt door de Edit-form en de wizard (stap Notities).
      *
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     public static function notesFields(): array
     {

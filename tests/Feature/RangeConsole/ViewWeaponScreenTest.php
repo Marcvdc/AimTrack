@@ -12,6 +12,7 @@ use App\Models\SessionShot;
 use App\Models\SessionWeapon;
 use App\Models\User;
 use App\Models\Weapon;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Livewire\Livewire;
 
 function weaponShots(Session $session, int $count, int $ring = 10, int $score = 10): void
@@ -107,7 +108,7 @@ it('refuses to render a weapon owned by another user', function (): void {
 
     Livewire::actingAs($user)
         ->test(ViewWeapon::class, ['record' => $foreign->id]);
-})->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+})->throws(ModelNotFoundException::class);
 
 it('renders the AI-wapeninzicht card when an insight exists', function (): void {
     $user = User::factory()->create();

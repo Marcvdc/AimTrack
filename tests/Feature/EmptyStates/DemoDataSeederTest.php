@@ -9,6 +9,7 @@ use App\Models\Weapon;
 use App\Services\DemoDataSeeder;
 use App\Services\SeedResult;
 use App\Support\UserOnboardingState;
+use Database\Seeders\CopilotDemoSeeder;
 
 test('seedFor creates three weapons, five sessions and three AI reflections for the user', function (): void {
     $user = User::factory()->create();
@@ -83,7 +84,7 @@ test('purgeFor wipes demo data and resets the marker', function (): void {
 });
 
 test('CopilotDemoSeeder forcefully reseeds the admin@aimtrack.test user', function (): void {
-    $seeder = new \Database\Seeders\CopilotDemoSeeder;
+    $seeder = new CopilotDemoSeeder;
     $seeder->run();
 
     $first = User::query()->where('email', 'admin@aimtrack.test')->firstOrFail();
