@@ -1,4 +1,281 @@
 <laravel-boost-guidelines>
+=== .ai/aimtrack-context rules ===
+
+# AimTrack Project Context
+
+## Domain
+AimTrack is een shooting training en coaching applicatie voor schutters en coaches.
+Gebruikers kunnen trainingssessies bijhouden met verschillende wapens en ontvangen AI-gebaseerde coaching feedback.
+
+## Key Models
+- **Session**: Trainingssessies met schoten en statistieken
+- **Weapon**: Verschillende wapentypes (pistool, geweer, etc.)
+- **User**: Schutters en coaches
+- **SessionShot**: Individuele schoten binnen een sessie
+- **AiReflection**: AI coaching feedback en analyses
+
+## Important Conventions
+- Gebruik Nederlands voor user-facing tekst
+- Volg bestaande Filament resource patterns
+- AI features gebruiken feature flags via Laravel Pennant
+- Logging voor feature flags blijft in applicatie logs (geen Sentry)
+- Optionele mail notificaties zijn toegestaan
+
+## Architecture Notes
+- Type A (Eloquent) architectuur - voornamelijk database-gebaseerd
+- Filament voor admin interface
+- Livewire voor interactive components
+- Laravel Pennant voor feature management
+- Pest voor testing
+
+## Business Rules
+- Elke sessie moet minimaal één schot bevatten
+- AI coaching is optioneel en via feature flag
+- Weapons hebben specifieke validatie per type
+- Users kunnen zowel schutter als coach zijn
+
+## File Structure Patterns
+- Models: `app/Models/`
+- Filament Resources: `app/Filament/Resources/`
+- Services: `app/Services/`
+- Tests: `tests/Feature/` en `tests/Unit/`
+- Documentation: `docs/AimTrack/`
+
+=== .ai/core-workflow rules ===
+
+# Core Workflow Guidelines
+
+## ROLE
+Je bent een senior Laravel / Filament engineer die werkt volgens het PLAN-FIRST principe.
+Je maakt eerst de repo-documentatie-structuur en het PLAN.
+Je levert geen ontwerp, code of tests voordat het PLAN de status APPROVED heeft.
+
+## CORE PRINCIPLES
+- PLAN-FIRST is verplicht en onomzeilbaar.
+- JIRA-data mag alleen via MCP-verbinding.
+- Elke fase kent STOP-condities die niet kunnen worden overgeslagen.
+- Alle wijzigingen laten direct sporen na in docs (architectuur, implementatie, ADR's).
+- Elke codewijziging moet getest (Pest) en gelint zijn.
+- Committen gebeurt gefaseerd en gecontroleerd.
+- Elke commit vereist expliciete goedkeuring van de gebruiker.
+- Self-healing toegestaan bij veilige fixes (lint-fix, doc-sync, pint).
+
+## STOP-HANDLING
+1. Onderbreek onmiddellijk de actie (geen ontwerp/code/tests uitvoeren).
+2. Meld expliciet:
+   - Reden van STOP
+   - Geblokkeerde fase
+   - Benodigde vervolgstappen
+   - Benodigde input van gebruiker
+3. Herneem procedure op basis van oorzaak:
+   - PLAN ontbreekt → PLAN-LOCATIEKEUZE → genereer PLAN (status DRAFT of NEEDS_INFO)
+   - PLAN incompleet of niet APPROVED → toon ontbrekende secties → update PLAN
+   - MCP/JIRA niet ingesteld → toon setup-stappen → wacht op bevestiging
+   - Lint of syntax faalt → toon fout + voorstel fix → voer uit na akkoord
+   - Tests ontbreken of falen → genereer of verbeter Pest-tests tot groen
+   - Docs niet up-to-date → lijst aanpassingen → update na akkoord
+4. Valideer opnieuw alle STOP-condities.
+5. Ga pas verder als alle condities zijn opgelost.
+6. Log elke STOP-AFHANDELING in .ai-logs/{ISSUE_KEY}/stops-{date}.md.
+
+## BLOCKING RULES / STOP CONDITIONS
+1. PLAN ontbreekt → PLAN-LOCATIEKEUZE → DRAFT → STOP
+2. PLAN incompleet (<3 AC's of verplichte secties missen) → status REVIEW → STOP
+3. PLAN wijzigt tijdens BUILD (meer dan 15% scope) → terug naar REVIEW → STOP
+4. MCP/JIRA niet actief → STOP en toon setup-instructies
+5. Linter of syntax faalt → STOP tot opgelost
+6. Code zonder tests of documentatie → STOP
+7. Secrets in config of ENV gevonden → STOP + mask voorstel
+8. Composer-audit fouten (security of outdated) → STOP + rapport
+9. Testcoverage < 90% van gewijzigde onderdelen → STOP
+10. PLAN en JIRA verschillen (AC's of description) → label DIVERGENT FROM JIRA + STOP voor review
+11. Controller bevat direct Model queries of business logica → STOP + refactor naar Service (ALLEEN nieuwe code)
+12. Filament Resource met inline create/update logica → STOP + Service extractie (ALLEEN nieuwe code)
+13. Service >500 regels of >10 publieke methods → STOP + split voorstel
+14. Repository direct aangeroepen vanuit Controller → STOP + Service tussenlaag (ALLEEN nieuwe code)
+15. API Model zonder timeout configuratie → STOP + timeout toevoegen
+16. API Model zonder retry logic voor mutaties → STOP + retry implementatie
+17. Nieuwe code in legacy style zonder @legacy tag en ADR → STOP + architectuur compliance
+18. Werk (plan-files, code, scratch) in de hoofdrepo (`aimtrack/`, branch `main`) → STOP + verplaats naar de juiste worktree. Hoofdrepo is alleen voor main-sync. Zie [`.ai/guidelines/parallel-worktrees.md`](parallel-worktrees.md).
+19. `worktree-setup.sh` aangeroepen met achterlopende lokale `main` → STOP + `git pull --ff-only` in hoofdrepo, dan opnieuw. Anders splitst de worktree van een verouderde basis en mist gemergde dependencies.
+
+## PHASE 0 – TASK ASSESSMENT (altijd eerst uitvoeren)
+1. Classificeer de input:
+   - SIMPLE: bugfix, 1-file wijziging, <30min werk, geen nieuwe features/AC's.
+   - MEDIUM: kleine feature, 1-3 files, <2u werk.
+   - COMPLEX: nieuwe feature, multi-file, JIRA-ticket met >3 AC's, architectuur-impact.
+2. Bij SIMPLE: Skip PLAN-FIRST. Direct naar BUILD MODE met minimale checks (tests/lint/docs). Vraag directe commit-goedkeuring.
+3. Bij MEDIUM/COMPLEX: Volg bestaande PLAN-FIRST.
+4. Criteria: Woordenaantal input (<50=SIMPLE), keywords (bug/hotfix=SIMPLE), JIRA-presence.
+
+## PHASE 7 – BUILD MODE
+Actief alleen bij PLAN status = APPROVED.
+1. Ontwerp mappen, klassen, migraties, routes.
+2. Codeer per bestand (geen ongekeurde packages).
+3. Vraag altijd: Zijn init tests nodig?
+4. Tests: Pest unit en feature; STOP bij failure of coverage <90%.
+5. Lint: php -l en laravel/pint; STOP bij fout.
+6. Architectuur validatie (ALLEEN voor nieuwe/gewijzigde code):
+   - Detecteer repo architectuur type (Eloquent/API/Hybrid)
+   - Controleer lagenverantwoordelijkheden met TYPE-specifieke checklist
+   - Valideer dat nieuwe Controllers geen directe Model access hebben
+   - Controleer Service/Repository of Service/ApiModel scheiding
+   - Controleer API models op timeout/retry configuratie
+   - STOP als architectuurregels geschonden worden in nieuwe code
+7. Security en performance checklist uitvoeren.
+8. Documentatie updaten binnen dezelfde iteratie als codewijzigingen.
+9. Self-healing toegestaan voor lint-, doc- of testfixes na akkoord.
+10. Commit pas na expliciete goedkeuring van de gebruiker.
+
+## FINAL RULE
+Geen enkel ontwerp, code of test verlaat BUILD MODE tenzij:
+- Alle STOP-condities zijn OK
+- PLAN status = APPROVED met human sign-off
+- Tests groen en coverage ≥90%
+- Documentatie en ADR's up-to-date
+- Commit expliciet goedgekeurd en correct gelogd
+
+=== .ai/parallel-worktrees rules ===
+
+# Parallelle ontwikkeling via Git Worktrees
+
+## Wanneer
+
+Gebruik een aparte worktree zodra je een feature wilt ontwikkelen terwijl een andere stack (`aimtrack_dev` of een andere worktree) actief blijft. Denk aan:
+
+- Parallelle Jira-tickets / feature branches
+- Migratie-trajecten die de hoofd-dev niet mogen blokkeren
+- Browser testen van een nieuwe feature naast een werkende baseline
+
+Niet gebruiken voor: hotfix op de huidige branch, kleine refactor in de huidige stack.
+
+## Branch-model: `main` / `develop`
+
+- **`main`**: productie-trunk. Komt **alleen** binnen via een PR vanuit `develop` (of een losse hotfix-branch). Geen directe feature-merges meer op `main`.
+- **`develop`**: integratie- en testbranch (de "test-versie van `main`"). Alle feature-worktrees worden hiervan afgesplitst en hier weer in gemerged. CI (lint + Pest + build) draait automatisch op elke PR naar `develop` **en** op elke push naar `develop`. Zodra `develop` stabiel is → PR `develop` → `main`.
+
+Concreet: je baseert een worktree op `develop` (niet op `main`) en richt de feature-PR op `develop`. `main` blijft daarmee altijd een gemergde, groene baseline.
+
+## Hoofdrepo-discipline
+
+De hoofd-clone (`/home/brandnetel/projects/aimtrack`, branch `main`) is **alleen voor main-sync**. Geen feature-werk, geen scratch-files, geen plan-bestanden in `.ai/plans/`. Reden:
+
+- Untracked files in de hoofdrepo blokkeren `git pull --ff-only` zodra origin een file met dezelfde naam introduceert ("would be overwritten by merge"). Dit is precies hoe een gemergde feature-PR (die het bijbehorende plan tracked maakt) een schijnbaar onschuldige lokale plan-file in een blocker verandert.
+- De hoofdrepo werkt als sync-knooppunt voor alle worktrees: vies werk kruipt door op elke nieuwe worktree die je vanaf `main` afsplitst.
+
+## Vóór je `worktree-setup.sh` aanroept
+
+1. **Lokale basis-branch bijwerken:** werk de branch bij waarvan je afsplitst. Voor de geïntegreerde flow is dat `develop`: `git -C <hoofdrepo> fetch origin develop:develop` (fast-forwardt de lokale `develop`-ref zonder checkout; de hoofdrepo blijft op `main`). Voor een op `main` gebaseerde worktree: `git -C <hoofdrepo> pull --ff-only`. Het script splitst de nieuwe branch af van de **lokale** basis-branch; staat die achter, dan mist je nieuwe worktree net-gemergde features (incl. de migraties/services waar je plan op leunt).
+2. **Hoofdrepo schoon:** `git status` in de hoofdrepo moet leeg zijn. Verplaats lopende plan-files of scratch-werk eerst naar de worktree waar ze bij horen.
+3. **Bevestig de afhankelijkheden:** als je nieuwe feature op een nog niet-gemergde branch leunt, splits dan vanaf die branch (`git worktree add -b <naam> ../aimtrack-<naam> <basis-branch>`) en niet via het script: het script forceert `main` als basis.
+
+## Plan-files horen in de worktree
+
+Schrijf `.ai/plans/<TICKET>.md` **in de worktree** (`../aimtrack-<naam>/.ai/plans/<TICKET>.md`), niet in de hoofdrepo. Het plan reist dan mee op de feature-branch, wordt onderdeel van de PR-diff, en blokkeert geen pulls op main.
+
+Als je tijdens het scopen al een DRAFT plan in de hoofdrepo hebt geschreven (bijv. omdat de worktree er nog niet was): verplaats hem naar de juiste worktree zodra die bestaat, vóór de eerste commit. Laat de hoofdrepo daarna leeg achter (`git status` clean).
+
+## Hoe: altijd via het setup script
+
+```bash
+./scripts/worktree-setup.sh <feature-naam> [offset] [base-branch]
+```
+
+Voor de geïntegreerde flow baseer je op `develop` (3e arg; laat de offset leeg voor auto):
+
+```bash
+./scripts/worktree-setup.sh <feature-naam> "" develop
+```
+
+Het script:
+1. Maakt `../aimtrack-<feature>` aan met branch `feature/<feature>` (default basis `main`, geef `develop` mee voor de integratie-flow)
+2. Kopieert `.env.local` (Laravel-config) naar de worktree
+3. Maakt een **aparte** `.env` in de worktree project root met de docker-compose overrides (`COMPOSE_PROJECT_NAME`, poorten)
+4. Print de URL's en cleanup-instructies
+
+Vervolgens:
+
+```bash
+cd ../aimtrack-<feature>
+docker compose --env-file .env -f docker/compose.dev.yml up -d
+docker compose --env-file .env -f docker/compose.dev.yml exec app php artisan migrate --seed
+```
+
+**Cruciaal**: gebruik altijd `--env-file .env`. Docker Compose leest `.env.local` niet, en zonder de flag worden alle compose-variabelen genegeerd. Dat heeft als bijwerking dat de containers de hoofd-dev project name (`aimtrack_dev`) en default poorten (8080, 5432, ...) gebruiken, waardoor je hoofd-dev stack wordt overschreven.
+
+## Verboden
+
+- **Niet** de root `docker-compose.yml` gebruiken voor parallelle stacks (heeft hardcoded `container_name` en geeft conflicten). Altijd `-f docker/compose.dev.yml`.
+- **Niet** `--env-file` weglaten in compose commands: zonder die flag mount de worktree per ongeluk de hoofd-dev stack.
+- **Niet** handmatig worktrees aanmaken zonder het script; dan loopt de poort-administratie en `.env`-isolatie uit de pas.
+- **Niet** dezelfde branch in twee worktrees checkouten (Git verbiedt dit, maar zelf opletten).
+- **Niet** plan-files of feature-werk in de hoofdrepo plaatsen (zie "Hoofdrepo-discipline" en "Plan-files horen in de worktree").
+- **Niet** `worktree-setup.sh` aanroepen met een achterlopende lokale `main`: pull eerst, anders splits je van een verouderde basis en mis je gemergde dependencies.
+
+## Cleanup
+
+```bash
+cd ../aimtrack-<feature>
+docker compose --env-file .env -f docker/compose.dev.yml down -v
+cd -
+git worktree remove ../aimtrack-<feature>
+git branch -d feature/<feature>   # alleen na merge
+```
+
+Vergeet de registry hieronder niet bij te werken.
+
+## Registry van actieve worktrees
+
+| Feature | Branch | Pad | Web | DB | Mailpit | Python | Status |
+|---|---|---|---|---|---|---|---|
+| _hoofd-dev_ | _huidige_ | `aimtrack/` | 8080 | 5432 | 8025 | 8000 | actief |
+| copilot | feature/copilot | `aimtrack-copilot/` | 19080 | 15433 | 19025 | 19000 | actief (Filament Copilot migratie) |
+| design-foundation | feature/design-foundation | `aimtrack-design-foundation/` | 19084 | 15436 | 19029 | 19004 | actief (issue #82 · Fase 0 foundation) |
+| prod-backups | feature/prod-backups | `aimtrack-prod-backups/` | 19085 | 15437 | 19030 | 19005 | actief (issue #83: prod backup-strategie in repo) |
+| empty-states | feature/empty-states | `aimtrack-empty-states/` | 19086 | 15438 | 19031 | 19006 | actief (issue #82 · Fase 2 empty-states) |
+| range-console | feature/range-console | `aimtrack-range-console/` | 19087 | 15439 | 19032 | 19007 | actief (issue #82 · Fase 1 Range Console: 5 kernschermen) |
+| marketing | feature/marketing | `aimtrack-marketing/` | 19088 | 15440 | 19033 | 19008 | actief (issue #82 · Fase 3 marketing landing) |
+| ai-byo-key | feature/ai-byo-key | `aimtrack-ai-byo-key/` | 19089 | 15441 | 19034 | 19009 | actief (issue #95 · Fase 1 BYO Claude-key per user) |
+
+Update deze tabel bij setup en cleanup; zo weet iedereen direct welke poort bij welke stack hoort.
+
+## Cross-machine borging
+
+Dit guideline bestand is in git, dus elke developer en elke Claude sessie volgt dezelfde aanpak. MEMORY.md is **niet** geschikt: die is per-machine en zou niet meereizen.
+
+=== .ai/laravel-structuur rules ===
+
+# Applicatiestructuur: Laravel 12, geen Laravel 10-kernels
+
+AimTrack draait op de moderne Laravel-structuur. `bootstrap/app.php` is het enige punt waar
+providers, routing, middleware en exception-handling bedraad worden, via `Application::configure()`.
+
+## Wat waar staat
+
+- **Middleware-klassen**: `app/Http/Middleware/`. **Registratie**: de `withMiddleware()`-callback in
+  `bootstrap/app.php`. Er is geen `app/Http/Kernel.php`.
+- **Let op**: in `withMiddleware()` is de configuratie nog niet geladen, dus `config()` werkt daar
+  niet. Middleware die configuratie nodig heeft leest die zelf op requestmoment; zie
+  `config/trustedproxy.php` en `Illuminate\Http\Middleware\TrustProxies`.
+- **Service providers**: `app/Providers/`, geregistreerd in `withProviders()` in `bootstrap/app.php`.
+  Dit project heeft geen `bootstrap/providers.php`.
+- **Routes**: `withRouting()` wijst de web- en console-routes aan. Daarnaast bestaat
+  `app/Providers/RouteServiceProvider.php` nog; die laadt `routes/web.php` en `routes/api.php`.
+- **Console-commando's en schedule**: `routes/console.php`. Er is geen `app/Console/Kernel.php`.
+- **Exception-handling**: de `withExceptions()`-callback. `app/Exceptions/Handler.php` staat er nog,
+  maar de container bindt `Illuminate\Foundation\Exceptions\Handler`, dus die klasse doet niets.
+
+## Niet opnieuw aanmaken
+
+`app/Http/Kernel.php` en `app/Console/Kernel.php` werden na de Laravel 12-upgrade nooit meer geladen:
+`public/index.php` draait `$app->handleRequest()` en `artisan` draait `$app->handleCommand()`, beide
+via `Application::configure()`. De registraties in die twee bestanden hadden dus geen effect, met een
+ongevalideerde Host-header en ongeconfigureerde proxies tot gevolg. Ze zijn verwijderd, samen met de
+negen nooit-geregistreerde middleware-subklassen die alleen door die Kernel genoemd werden.
+
+`tests/Feature/Http/MiddlewareRegistrationTest.php` faalt zodra een van die bestanden terugkomt.
+Moet er middleware bij, dan gaat dat via `bootstrap/app.php`.
+
 === foundation rules ===
 
 # Laravel Boost Guidelines
@@ -8,16 +285,17 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 ## Foundational Context
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.4.11
-- filament/filament (FILAMENT) - v4
+- php - 8.4.25
+- filament/filament (FILAMENT) - v5
 - laravel/framework (LARAVEL) - v12
 - laravel/pennant (PENNANT) - v1
 - laravel/prompts (PROMPTS) - v0
-- livewire/livewire (LIVEWIRE) - v3
+- livewire/livewire (LIVEWIRE) - v4
 - laravel/mcp (MCP) - v0
 - laravel/pint (PINT) - v1
 - pestphp/pest (PEST) - v4
 - phpunit/phpunit (PHPUNIT) - v12
+- tailwindcss (TAILWINDCSS) - v4
 
 ## Conventions
 - You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
@@ -107,6 +385,13 @@ protected function isAccessible(User $user, ?string $path = null): bool
 ## Enums
 - Typically, keys in an Enum should be TitleCase. For example: `FavoritePerson`, `BestLake`, `Monthly`.
 
+=== tests rules ===
+
+## Test Enforcement
+
+- Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
+- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
+
 === laravel/core rules ===
 
 ## Do Things the Laravel Way
@@ -157,16 +442,15 @@ protected function isAccessible(User $user, ?string $path = null): bool
 ## Laravel 12
 
 - Use the `search-docs` tool to get version-specific documentation.
-- This project upgraded from Laravel 10 without migrating to the new streamlined Laravel file structure.
-- This is **perfectly fine** and recommended by Laravel. Follow the existing structure from Laravel 10. We do not need to migrate to the new Laravel structure unless the user explicitly requests it.
+- Since Laravel 11, Laravel has a new streamlined file structure which this project uses.
 
-### Laravel 10 Structure
-- Middleware typically lives in `app/Http/Middleware/` and service providers in `app/Providers/`.
-- There is no `bootstrap/app.php` application configuration in a Laravel 10 structure:
-    - Middleware registration happens in `app/Http/Kernel.php`
-    - Exception handling is in `app/Exceptions/Handler.php`
-    - Console commands and schedule register in `app/Console/Kernel.php`
-    - Rate limits likely exist in `RouteServiceProvider` or `app/Http/Kernel.php`
+### Laravel 12 Structure
+- In Laravel 12, middleware are no longer registered in `app/Http/Kernel.php`.
+- Middleware are configured declaratively in `bootstrap/app.php` using `Application::configure()->withMiddleware()`.
+- `bootstrap/app.php` is the file to register middleware, exceptions, and routing files.
+- `bootstrap/providers.php` contains application specific service providers.
+- The `app\Console\Kernel.php` file no longer exists; use `bootstrap/app.php` or `routes/console.php` for console configuration.
+- Console commands in `app/Console/Commands/` are automatically available and do not require manual registration.
 
 ### Database
 - When modifying a column, the migration must include all of the attributes that were previously defined on the column. Otherwise, they will be dropped and lost.
@@ -225,41 +509,6 @@ protected function isAccessible(User $user, ?string $path = null): bool
 <code-snippet name="Testing Livewire Component Exists on Page" lang="php">
     $this->get('/posts/create')
     ->assertSeeLivewire(CreatePost::class);
-</code-snippet>
-
-=== livewire/v3 rules ===
-
-## Livewire 3
-
-### Key Changes From Livewire 2
-- These things changed in Livewire 3, but may not have been updated in this application. Verify this application's setup to ensure you conform with application conventions.
-    - Use `wire:model.live` for real-time updates, `wire:model` is now deferred by default.
-    - Components now use the `App\Livewire` namespace (not `App\Http\Livewire`).
-    - Use `$this->dispatch()` to dispatch events (not `emit` or `dispatchBrowserEvent`).
-    - Use the `components.layouts.app` view as the typical layout path (not `layouts.app`).
-
-### New Directives
-- `wire:show`, `wire:transition`, `wire:cloak`, `wire:offline`, `wire:target` are available for use. Use the documentation to find usage examples.
-
-### Alpine
-- Alpine is now included with Livewire; don't manually include Alpine.js.
-- Plugins included with Alpine: persist, intersect, collapse, and focus.
-
-### Lifecycle Hooks
-- You can listen for `livewire:init` to hook into Livewire initialization, and `fail.status === 419` for the page expiring:
-
-<code-snippet name="Livewire Init Hook Example" lang="js">
-document.addEventListener('livewire:init', function () {
-    Livewire.hook('request', ({ fail }) => {
-        if (fail && fail.status === 419) {
-            alert('Your session expired');
-        }
-    });
-
-    Livewire.hook('message.failed', (message, component) => {
-        console.error(message);
-    });
-});
 </code-snippet>
 
 === pint/core rules ===
@@ -365,100 +614,303 @@ $pages = visit(['/', '/about', '/contact']);
 $pages->assertNoJavascriptErrors()->assertNoConsoleLogs();
 </code-snippet>
 
+=== tailwindcss/core rules ===
+
+## Tailwind CSS
+
+- Use Tailwind CSS classes to style HTML; check and use existing Tailwind conventions within the project before writing your own.
+- Offer to extract repeated patterns into components that match the project's conventions (i.e. Blade, JSX, Vue, etc.).
+- Think through class placement, order, priority, and defaults. Remove redundant classes, add classes to parent or child carefully to limit repetition, and group elements logically.
+- You can use the `search-docs` tool to get exact examples from the official documentation when needed.
+
+### Spacing
+- When listing items, use gap utilities for spacing; don't use margins.
+
+<code-snippet name="Valid Flex Gap Spacing Example" lang="html">
+    <div class="flex gap-8">
+        <div>Superior</div>
+        <div>Michigan</div>
+        <div>Erie</div>
+    </div>
+</code-snippet>
+
+### Dark Mode
+- If existing pages and components support dark mode, new pages and components must support dark mode in a similar way, typically using `dark:`.
+
+=== tailwindcss/v4 rules ===
+
+## Tailwind CSS 4
+
+- Always use Tailwind CSS v4; do not use the deprecated utilities.
+- `corePlugins` is not supported in Tailwind v4.
+- In Tailwind v4, configuration is CSS-first using the `@theme` directive; no separate `tailwind.config.js` file is needed.
+
+<code-snippet name="Extending Theme in CSS" lang="css">
+@theme {
+  --color-brand: oklch(0.72 0.11 178);
+}
+</code-snippet>
+
+- In Tailwind v4, you import Tailwind using a regular CSS `@import` statement, not using the `@tailwind` directives used in v3:
+
+<code-snippet name="Tailwind v4 Import Tailwind Diff" lang="diff">
+   - @tailwind base;
+   - @tailwind components;
+   - @tailwind utilities;
+   + @import "tailwindcss";
+</code-snippet>
+
+### Replaced Utilities
+- Tailwind v4 removed deprecated utilities. Do not use the deprecated option; use the replacement.
+- Opacity values are still numeric.
+
+| Deprecated |	Replacement |
+|------------+--------------|
+| bg-opacity-* | bg-black/* |
+| text-opacity-* | text-black/* |
+| border-opacity-* | border-black/* |
+| divide-opacity-* | divide-black/* |
+| ring-opacity-* | ring-black/* |
+| placeholder-opacity-* | placeholder-black/* |
+| flex-shrink-* | shrink-* |
+| flex-grow-* | grow-* |
+| overflow-ellipsis | text-ellipsis |
+| decoration-slice | box-decoration-slice |
+| decoration-clone | box-decoration-clone |
+
 === filament/filament rules ===
 
 ## Filament
-- Filament is used by this application, check how and where to follow existing application conventions.
-- Filament is a Server-Driven UI (SDUI) framework for Laravel. It allows developers to define user interfaces in PHP using structured configuration objects. It is built on top of Livewire, Alpine.js, and Tailwind CSS.
-- You can use the `search-docs` tool to get information from the official Filament documentation when needed. This is very useful for Artisan command arguments, specific code examples, testing functionality, relationship management, and ensuring you're following idiomatic practices.
-- Utilize static `make()` methods for consistent component initialization.
+
+- Filament is a Laravel UI framework built on Livewire, Alpine.js, and Tailwind CSS. UIs are defined in PHP via fluent, chainable components. Follow existing conventions in this app.
+- Use the `search-docs` tool for official documentation on Artisan commands, code examples, testing, relationships, and idiomatic practices. If `search-docs` is unavailable, refer to https://filamentphp.com/docs.
 
 ### Artisan
-- You must use the Filament specific Artisan commands to create new files or components for Filament. You can find these with the `list-artisan-commands` tool, or with `php artisan` and the `--help` option.
-- Inspect the required options, always pass `--no-interaction`, and valid arguments for other options when applicable.
 
-### Filament's Core Features
-- Actions: Handle doing something within the application, often with a button or link. Actions encapsulate the UI, the interactive modal window, and the logic that should be executed when the modal window is submitted. They can be used anywhere in the UI and are commonly used to perform one-time actions like deleting a record, sending an email, or updating data in the database based on modal form input.
-- Forms: Dynamic forms rendered within other features, such as resources, action modals, table filters, and more.
-- Infolists: Read-only lists of data.
-- Notifications: Flash notifications displayed to users within the application.
-- Panels: The top-level container in Filament that can include all other features like pages, resources, forms, tables, notifications, actions, infolists, and widgets.
-- Resources: Static classes that are used to build CRUD interfaces for Eloquent models. Typically live in `app/Filament/Resources`.
-- Schemas: Represent components that define the structure and behavior of the UI, such as forms, tables, or lists.
-- Tables: Interactive tables with filtering, sorting, pagination, and more.
-- Widgets: Small component included within dashboards, often used for displaying data in charts, tables, or as a stat.
+- Always use Filament-specific Artisan commands to create files. Find available commands with the `list-artisan-commands` tool, or run `php artisan --help`.
+- Inspect required options before running, and always pass `--no-interaction`.
 
-### Relationships
-- Determine if you can use the `relationship()` method on form components when you need `options` for a select, checkbox, repeater, or when building a `Fieldset`:
+### Patterns
 
-<code-snippet name="Relationship example for Form Select" lang="php">
-Forms\Components\Select::make('user_id')
-    ->label('Author')
-    ->relationship('author')
+Always use static `make()` methods to initialize components. Most configuration methods accept a `Closure` for dynamic values.
+
+Use `Get $get` to read other form field values for conditional logic:
+
+<code-snippet name="Conditional form field visibility" lang="php">
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Utilities\Get;
+
+Select::make('type')
+    ->options(CompanyType::class)
+    ->required()
+    ->live(),
+
+TextInput::make('company_name')
+    ->required()
+    ->visible(fn (Get $get): bool => $get('type') === 'business'),
+
+</code-snippet>
+
+Use `Set $set` inside `->afterStateUpdated()` on a `->live()` field to mutate another field reactively. Prefer `->live(onBlur: true)` on text inputs to avoid per-keystroke updates:
+
+<code-snippet name="Reactive field update" lang="php">
+use Filament\Schemas\Components\Utilities\Set;
+use Illuminate\Support\Str;
+
+TextInput::make('title')
+    ->required()
+    ->live(onBlur: true)
+    ->afterStateUpdated(fn (Set $set, ?string $state) => $set(
+        'slug',
+        Str::slug($state ?? ''),
+    )),
+
+TextInput::make('slug')
     ->required(),
+
 </code-snippet>
 
-## Testing
-- It's important to test Filament functionality for user satisfaction.
-- Ensure that you are authenticated to access the application within the test.
-- Filament uses Livewire, so start assertions with `livewire()` or `Livewire::test()`.
+Compose layout by nesting `Section` and `Grid`. Children need explicit `->columnSpan()` or `->columnSpanFull()`:
 
-### Example Tests
+<code-snippet name="Section and Grid layout" lang="php">
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 
-<code-snippet name="Filament Table Test" lang="php">
-    livewire(ListUsers::class)
-        ->assertCanSeeTableRecords($users)
-        ->searchTable($users->first()->name)
-        ->assertCanSeeTableRecords($users->take(1))
-        ->assertCanNotSeeTableRecords($users->skip(1))
-        ->searchTable($users->last()->email)
-        ->assertCanSeeTableRecords($users->take(-1))
-        ->assertCanNotSeeTableRecords($users->take($users->count() - 1));
+Section::make('Details')
+    ->schema([
+        Grid::make(2)->schema([
+            TextInput::make('first_name')
+                ->columnSpan(1),
+            TextInput::make('last_name')
+                ->columnSpan(1),
+            TextInput::make('bio')
+                ->columnSpanFull(),
+        ]),
+    ]),
+
 </code-snippet>
 
-<code-snippet name="Filament Create Resource Test" lang="php">
-    livewire(CreateUser::class)
-        ->fillForm([
-            'name' => 'Howdy',
-            'email' => 'howdy@example.com',
-        ])
-        ->call('create')
-        ->assertNotified()
-        ->assertRedirect();
+Use `Repeater` for inline `HasMany` management. `->relationship()` with no args binds to the relationship matching the field name:
 
-    assertDatabaseHas(User::class, [
-        'name' => 'Howdy',
-        'email' => 'howdy@example.com',
-    ]);
+<code-snippet name="Repeater for HasMany" lang="php">
+use Filament\Forms\Components\Repeater;
+
+Repeater::make('qualifications')
+    ->relationship()
+    ->schema([
+        TextInput::make('institution')
+            ->required(),
+        TextInput::make('qualification')
+            ->required(),
+    ])
+    ->columns(2),
+
 </code-snippet>
 
-<code-snippet name="Testing Multiple Panels (setup())" lang="php">
-    use Filament\Facades\Filament;
+Use `state()` with a `Closure` to compute derived column values:
 
-    Filament::setCurrentPanel('app');
+<code-snippet name="Computed table column value" lang="php">
+use Filament\Tables\Columns\TextColumn;
+
+TextColumn::make('full_name')
+    ->state(fn (User $record): string => "{$record->first_name} {$record->last_name}"),
+
 </code-snippet>
 
-<code-snippet name="Calling an Action in a Test" lang="php">
-    livewire(EditInvoice::class, [
-        'invoice' => $invoice,
-    ])->callAction('send');
+Use `SelectFilter` for enum or relationship filters, and `Filter` with a `->query()` closure for custom logic:
 
-    expect($invoice->refresh())->isSent()->toBeTrue();
+<code-snippet name="Table filters" lang="php">
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Database\Eloquent\Builder;
+
+SelectFilter::make('status')
+    ->options(UserStatus::class),
+
+SelectFilter::make('author')
+    ->relationship('author', 'name'),
+
+Filter::make('verified')
+    ->query(fn (Builder $query) => $query->whereNotNull('email_verified_at')),
+
 </code-snippet>
 
-### Important Version 4 Changes
-- File visibility is now `private` by default.
-- The `deferFilters` method from Filament v3 is now the default behavior in Filament v4, so users must click a button before the filters are applied to the table. To disable this behavior, you can use the `deferFilters(false)` method.
-- The `Grid`, `Section`, and `Fieldset` layout components no longer span all columns by default.
-- The `all` pagination page method is not available for tables by default.
-- All action classes extend `Filament\Actions\Action`. No action classes exist in `Filament\Tables\Actions`.
-- The `Form` & `Infolist` layout components have been moved to `Filament\Schemas\Components`, for example `Grid`, `Section`, `Fieldset`, `Tabs`, `Wizard`, etc.
-- A new `Repeater` component for Forms has been added.
-- Icons now use the `Filament\Support\Icons\Heroicon` Enum by default. Other options are available and documented.
+Actions are buttons that encapsulate optional modal forms and behavior:
 
-### Organize Component Classes Structure
-- Schema components: `Schemas/Components/`
-- Table columns: `Tables/Columns/`
-- Table filters: `Tables/Filters/`
-- Actions: `Actions/`
+<code-snippet name="Action with modal form" lang="php">
+use Filament\Actions\Action;
+
+Action::make('updateEmail')
+    ->schema([
+        TextInput::make('email')
+            ->email()
+            ->required(),
+    ])
+    ->action(fn (array $data, User $record) => $record->update($data)),
+
+</code-snippet>
+
+### Testing
+
+Testing setup (requires `pestphp/pest-plugin-livewire` in `composer.json`):
+
+- Always call `$this->actingAs(User::factory()->create())` before testing panel functionality.
+- For edit pages, pass `['record' => $user->id]`, use `->call('save')` (not `->call('create')`), and do not assert `->assertRedirect()` (edit pages do not redirect after save).
+
+<code-snippet name="Table test" lang="php">
+use function Pest\Livewire\livewire;
+
+livewire(ListUsers::class)
+    ->assertCanSeeTableRecords($users)
+    ->searchTable($users->first()->name)
+    ->assertCanSeeTableRecords($users->take(1))
+    ->assertCanNotSeeTableRecords($users->skip(1));
+
+</code-snippet>
+
+<code-snippet name="Create resource test" lang="php">
+use function Pest\Laravel\assertDatabaseHas;
+
+livewire(CreateUser::class)
+    ->fillForm([
+        'name' => 'Test',
+        'email' => 'test@example.com',
+    ])
+    ->call('create')
+    ->assertNotified()
+    ->assertHasNoFormErrors()
+    ->assertRedirect();
+
+assertDatabaseHas(User::class, [
+    'name' => 'Test',
+    'email' => 'test@example.com',
+]);
+
+</code-snippet>
+
+<code-snippet name="Edit resource test" lang="php">
+livewire(EditUser::class, ['record' => $user->id])
+    ->fillForm(['name' => 'Updated'])
+    ->call('save')
+    ->assertNotified()
+    ->assertHasNoFormErrors();
+
+assertDatabaseHas(User::class, [
+    'id' => $user->id,
+    'name' => 'Updated',
+]);
+
+</code-snippet>
+
+<code-snippet name="Testing validation" lang="php">
+livewire(CreateUser::class)
+    ->fillForm([
+        'name' => null,
+        'email' => 'invalid-email',
+    ])
+    ->call('create')
+    ->assertHasFormErrors([
+        'name' => 'required',
+        'email' => 'email',
+    ])
+    ->assertNotNotified();
+
+</code-snippet>
+
+Use `->callAction(DeleteAction::class)` for page actions, or `->callAction(TestAction::make('name')->table($record))` for table actions:
+
+<code-snippet name="Calling actions" lang="php">
+use Filament\Actions\Testing\TestAction;
+
+livewire(ListUsers::class)
+    ->callAction(TestAction::make('promote')->table($user), [
+        'role' => 'admin',
+    ])
+    ->assertNotified();
+
+</code-snippet>
+
+### Correct Namespaces
+
+- Form fields (`TextInput`, `Select`, `Repeater`, etc.): `Filament\Forms\Components\`
+- Infolist entries (`TextEntry`, `IconEntry`, etc.): `Filament\Infolists\Components\`
+- Layout components (`Grid`, `Section`, `Fieldset`, `Tabs`, `Wizard`, etc.): `Filament\Schemas\Components\`
+- Schema utilities (`Get`, `Set`, etc.): `Filament\Schemas\Components\Utilities\`
+- Table columns (`TextColumn`, `IconColumn`, etc.): `Filament\Tables\Columns\`
+- Table filters (`SelectFilter`, `Filter`, etc.): `Filament\Tables\Filters\`
+- Actions (`DeleteAction`, `CreateAction`, etc.): `Filament\Actions\`. Never use `Filament\Tables\Actions\`, `Filament\Forms\Actions\`, or any other sub-namespace for actions.
+- Icons: `Filament\Support\Icons\Heroicon` enum (e.g., `Heroicon::PencilSquare`)
+
+### Common Mistakes
+
+- **Never assume public file visibility.** File visibility is `private` by default. Always use `->visibility('public')` when public access is needed.
+- **Never assume full-width layout.** `Grid`, `Section`, `Fieldset`, and `Repeater` do not span all columns by default.
+- **Use `Select::make('author_id')->relationship('author', 'name')` for BelongsTo fields.** `BelongsToSelect` does not exist in v4.
+- **`Repeater` uses `->schema()`, not `->fields()`.**
+- **Never add `->dehydrated(false)` to fields that need to be saved.** It strips the value from form state before `->action()` or the save handler runs. Only use it for helper/UI-only fields.
+- **Use correct property types when overriding `Page`, `Resource`, and `Widget` properties.** These properties have union types or changed modifiers that must be preserved:
+  - `$navigationIcon`: `protected static string | BackedEnum | null` (not `?string`)
+  - `$navigationGroup`: `protected static string | UnitEnum | null` (not `?string`)
+  - `$view`: `protected string` (not `protected static string`) on `Page` and `Widget` classes
 </laravel-boost-guidelines>
