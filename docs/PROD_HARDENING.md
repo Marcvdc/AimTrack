@@ -25,10 +25,10 @@ instellingen levend. Controleer ze bij het opzetten van de (nieuwe) productiehos
       bijvoorbeeld een RFC1918-bereik zoals in `.env.example` (alleen als voorbeeldwaarde: dat
       bestand komt nooit op de productiehost terecht).
 - [ ] Werk de waarde bij in de bron die bij de stack hoort, niet in het bestand op de host:
-      - `docker/compose.prod.yml` leest `TRUSTED_PROXIES` uit `env_file: ../.env`, en
-        `scripts/remote_deploy.sh` schrijft die `.env` bij elke deploy opnieuw uit het GitHub-secret
-        `ENV_FILE_B64`. Een handmatige correctie van `<DEPLOY_PATH>/.env` houdt dus geen stand: de
-        volgende deploy zet stilzwijgend de oude waarde terug. Pas het secret `ENV_FILE_B64` zelf aan.
+      - `docker/compose.prod.yml` leest `TRUSTED_PROXIES` uit `env_file: ../.env`. Er is geen
+        automatische deploy meer die die `.env` overschrijft (zie
+        `docs/plans/deploy-pipeline-uit-plan.md`); de bron is het bestand op de host. Op de
+        homelab-VM zet de eigen compose de waarde in het `environment:`-blok, en die wint.
       - De root `docker-compose.yml` zet `TRUSTED_PROXIES` hard in het `environment:`-blok, en dat
         wint van `env_file`. Daar is het secret niet de bron; wijzig het `environment:`-blok.
 - [ ] `APP_URL` staat op de hostnaam waarop de applicatie **daadwerkelijk** benaderd wordt.

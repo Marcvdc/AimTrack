@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Sinds 2026-10-12 roept geen workflow dit script meer aan: de deploy naar de oude Pi is
+# uitgezet (docs/plans/deploy-pipeline-uit-plan.md). Productie wordt met de hand bijgewerkt,
+# zie docs/operations.md.
+#
 # Zet de stack terug op een eerdere image-tag.
 #
 #   bash scripts/rollback.sh              # terug naar de vorige geslaagde tag

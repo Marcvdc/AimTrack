@@ -94,36 +94,21 @@ Voorbeeld:
    - `docker compose -f docker/compose.dev.yml --env-file .env.local build --no-cache`  
    - `docker compose -f docker/compose.dev.yml --env-file .env.local up -d`
 
-## Staging Deployment
-- Branch: `staging` → workflow `.github/workflows/deploy-staging.yml`.
-- GitHub Environment: **staging** met secrets:
-  - `SSH_HOST` (WireGuard IP), `SSH_USER`, `SSH_PORT` (optioneel), `SSH_KEY` (PEM), `DEPLOY_PATH`
-  - `APP_URL`, `ENV_FILE_B64` (base64 van `.env`), `WG_CONFIG`
-  - Voor GHCR zijn geen losse secrets nodig: de workflow logt in met `github.actor` en de ingebouwde `GITHUB_TOKEN`, en geeft diezelfde token door aan de host.
-- Flow: build & push image naar `ghcr.io/<owner>/aimtrack` met tags `<short_sha>` + `staging-latest`, installeer/start WireGuard in de workflow (config via `WG_CONFIG`), rsync `docker/` + `scripts/` naar de Pi, `remote_deploy.sh` draait `docker compose -f docker/compose.staging.yml pull/up`, optioneel migrations en healthcheck (`/health`). Tunnel wordt in een cleanup-stap weer afgesloten.
-- Networking: `staging.aimtrack.nl` verwijst naar het publieke IP van de Pi; forward extern poort 8080 (of gewenste poort) naar de host `WEB_PORT` (default 8080). TLS is optioneel voor staging; verkeer loopt via VPN/forwarding.
-- Concurrency: één staging deploy tegelijk. De tag van de laatste geslaagde deploy staat in `${DEPLOY_PATH}/.deploy/last_successful_tag`; faalt de migratie of de healthcheck, dan zet `remote_deploy.sh` die tag automatisch terug. Handmatig terugzetten gaat met `bash scripts/rollback.sh [tag]`. Zie [docs/operations.md](docs/operations.md#rollback-van-een-deploy) voor de volledige procedure en voor wat een rollback níet terugzet.
+## Deployment
+Productie draait sinds 2026-10-11 op een eigen VM in de homelab van Marc, achter een Caddy-proxy.
+Een update gaat met de hand op die VM: `git pull`, `docker compose build`, `up -d`,
+`package:discover` en `migrate --force`. De exacte commando's, de compose en de controles na de
+uitrol staan in het runbook `docs/runbooks/aimtrack.md` in de (privé) repo `Marcvdc/homelab`.
 
-## Production Deployment
-- Branch: `main` → job `deploy-production` in `.github/workflows/ci.yml`, die pas draait na de jobs `lint`, `test` en `build`.
-- GitHub Environment: **production** met dezelfde secret-namen als staging (andere waarden, inclusief `WG_CONFIG`).
-- Tags: `<short_sha>` + `prod-latest`.
-- Compose file: `docker/compose.prod.yml` (image uit GHCR, volumes voor code/storage/bootstrap cache).
-- Deploy stap gebruikt dezelfde scripts als staging, inclusief het rollbackpad; healthcheck via `APP_URL/health`. Publiek verkeer komt binnen op extern poort 18080 → forwarded naar webcontainer (inclusief HTTPS offload volgens hostconfig).
+Er is geen automatische deploy meer. De pipelines naar de oude Raspberry Pi (job
+`deploy-production` in `ci.yml` en `deploy-staging.yml`) zijn op 2026-10-12 uitgezet, omdat die
+host gecompromitteerd is geweest; zie `docs/plans/deploy-pipeline-uit-plan.md`. CI draait nog
+wel: lint, audit, test en een build van de productie-image, zonder push. De test
+`tests/Unit/GeenDeployWorkflowTest.php` faalt als er een deploy-workflow terugkomt; een nieuwe
+pipeline naar de homelab-VM vraagt dus een eigen plan.
 
-## Raspberry Pi / SSH & Runner Setup
-- Maak user `deploy` (of vergelijkbaar), voeg toe aan `docker`-group en zet `PermitRootLogin no`, key-only auth in `~deploy/.ssh/authorized_keys`.
-- Installeer Docker Engine + Compose plugin. Controleer dat `docker compose version` werkt voor de deploy user.
-- Bereid `DEPLOY_PATH` (bijv. `/opt/aimtrack`) en zorg voor schrijfrechten voor `deploy`.
-- Netwerk: als de Pi alleen op LAN bereikbaar is, gebruik een self-hosted runner met labels `self-hosted`, `linux` (en evt. `arm64`), of zorg voor VPN/Tailscale zodat GitHub-hosted runners via SSH kunnen verbinden.
-- SSH firewall open voor GitHub runner of LAN-runner; `ssh-keyscan` wordt in workflows gebruikt voor known_hosts.
-
-## Checklist (in te vullen)
-- [ ] Secrets per Environment in GitHub: `SSH_HOST`, `SSH_USER`, `SSH_KEY`, `DEPLOY_PATH`, `APP_URL`, `WG_CONFIG`, optioneel `SSH_PORT`, `ENV_FILE_B64`.
-- [ ] Raspberry Pi: deploy user + docker group, Docker/Compose geïnstalleerd, `DEPLOY_PATH` aangemaakt.
-- [ ] Runner-keuze: GitHub-hosted (als host publiek bereikbaar) of self-hosted op het LAN/VPN.
-- [ ] `.env.staging` en `.env.production` klaar op de server (of base64 in secrets).
-- [ ] DNS/hostnames naar staging/production URL ingesteld; poorten afgestemd (`WEB_PORT` in `.env`, extern 8080 voor staging, 18080/443 voor productie).
+`scripts/remote_deploy.sh`, `scripts/rollback.sh` en `docker/compose.staging.yml` staan er nog,
+voor als er zo'n pipeline komt. Geen workflow roept ze aan.
 
 ## Licentie
 MIT – zie [LICENSE](LICENSE).
