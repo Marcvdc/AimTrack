@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
+/**
+ * Publiek bereikbaar via /health en /api/health, dus het antwoord bevat per check
+ * alleen de status en bij een fout een vaste foutcode. Welke queue-connection,
+ * queue of disk er draait, blijft binnen de applicatie (zie #119 en #123).
+ */
 class HealthController extends Controller
 {
     public function __invoke(): JsonResponse
@@ -45,16 +50,11 @@ class HealthController extends Controller
     private function checkQueue(): array
     {
         try {
-            $connection = config('queue.default');
-            $queue = config("queue.connections.{$connection}.queue", 'default');
-
             // Touch the connection to ensure configuration is valid.
-            app('queue')->connection($connection);
+            app('queue')->connection(config('queue.default'));
 
             return [
                 'status' => 'ok',
-                'connection' => $connection,
-                'queue' => $queue,
             ];
         } catch (Throwable $exception) {
             return [
@@ -75,7 +75,6 @@ class HealthController extends Controller
 
             return [
                 'status' => 'ok',
-                'disk' => $disk,
             ];
         } catch (Throwable $exception) {
             return [

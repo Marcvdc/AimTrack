@@ -21,7 +21,7 @@ Runbook voor dagelijks beheer, incidentrespons en onderhoud van AimTrack.
 4. Zorg dat queue-worker opnieuw start na deploy (supervisor/systemd of compose restart).
 5. Vul `APP_KEY`, `APP_ENV=production`, `APP_DEBUG=false`, database- en AI-credentials in.
 
-De job `deploy-production` in `.github/workflows/ci.yml` doet dit op de Pi via `scripts/remote_deploy.sh`. Loopt dat mis, zie de rollbackprocedure hieronder.
+Sinds 2026-10-12 gebeurt dit met de hand op de productie-VM in de homelab (runbook `docs/runbooks/aimtrack.md` in `Marcvdc/homelab`). De job `deploy-production` die dit via `scripts/remote_deploy.sh` op de Pi deed, is uitgezet; zie `docs/plans/deploy-pipeline-uit-plan.md`. Terug naar een vorige stand gaat daar met een snapshot van de VM van vóór de update, of door de vorige commit opnieuw te bouwen. De rollbackprocedure hieronder hoort bij `scripts/remote_deploy.sh` en geldt pas weer als er een pipeline komt die dat script aanroept.
 
 ## Rollback van een deploy
 
@@ -114,8 +114,8 @@ Wel: de applicatiecontainers (`app`, `queue`, `backup`) draaien weer op het oude
 Niet:
 
 - **Het databaseschema.** Migraties draaien vooruit en worden bij een rollback niet teruggedraaid. Daarom geldt de regel hieronder over additieve migraties.
-- **De `.env` op de host.** Die wordt bij elke deploy overschreven vanuit het secret `ENV_FILE_B64`.
-- **De compose-bestanden en de scripts in `docker/` en `scripts/`.** Die worden bij elke deploy met rsync overschreven. Wil je ook die terug, deploy dan de oude commit opnieuw (push die commit naar `main`, of draai de workflow op die sha).
+- **De `.env` op de host.** Die werd bij elke deploy overschreven vanuit het secret `ENV_FILE_B64`; dat secret verdwijnt met het opruimen van de GitHub-environments (zie het plan).
+- **De compose-bestanden en de scripts in `docker/` en `scripts/`.** Die werden bij elke deploy met rsync overschreven. Er is nu geen workflow meer die dat doet; terug naar een oude stand gaat op de host zelf, zie *Deploy flow (productie)* hierboven.
 
 ### Migraties: alleen additief
 

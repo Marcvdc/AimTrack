@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources\AmmoTypeResource\Pages;
 
+use App\Filament\Concerns\PreservesOwnerOnSave;
 use App\Filament\Resources\AmmoTypeResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditAmmoType extends EditRecord
 {
+    use PreservesOwnerOnSave;
+
     protected static string $resource = AmmoTypeResource::class;
 
     protected function getHeaderActions(): array

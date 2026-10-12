@@ -1,0 +1,133 @@
+<?php
+
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+
+test('health endpoint reports ok when database, queue and storage all work', function () {
+    Storage::fake(config('filesystems.default'));
+
+    $response = $this->getJson(route('health'));
+
+    $response->assertOk()
+        ->assertJsonPath('status', 'ok')
+        ->assertJsonPath('checks.database.status', 'ok')
+        ->assertJsonPath('checks.queue.status', 'ok')
+        ->assertJsonPath('checks.storage.status', 'ok');
+});
+
+test('health endpoint only reports a status per check, no infrastructure details', function (string $route) {
+    Storage::fake(config('filesystems.default'));
+
+    $response = $this->getJson(route($route))->assertOk();
+
+    expect($response->json('checks'))->toBe([
+        'database' => ['status' => 'ok'],
+        'queue' => ['status' => 'ok'],
+        'storage' => ['status' => 'ok'],
+    ]);
+})->with(['health', 'api.health']);
+
+test('health endpoint leaves no probe file behind', function () {
+    $disk = config('filesystems.default');
+    Storage::fake($disk);
+
+    $this->getJson(route('health'))->assertOk();
+
+    Storage::disk($disk)->assertMissing('healthchecks/storage-check.txt');
+});
+
+test('health endpoint degrades to 503 when the storage disk is not writable', function () {
+    Storage::shouldReceive('disk')
+        ->andThrow(new RuntimeException('Unable to create directory at storage/app/private'));
+
+    $response = $this->getJson(route('health'));
+
+    $response->assertServiceUnavailable()
+        ->assertJsonPath('status', 'degraded')
+        ->assertJsonPath('checks.storage.status', 'failed')
+        ->assertJsonPath('checks.storage.error', 'storage_unwritable')
+        ->assertJsonPath('checks.database.status', 'ok');
+});
+
+test('health endpoint degrades to 503 when the database is unreachable', function () {
+    Storage::fake(config('filesystems.default'));
+
+    DB::shouldReceive('connection')
+        ->andThrow(new RuntimeException('could not connect to server'));
+
+    $this->getJson(route('health'))
+        ->assertServiceUnavailable()
+        ->assertJsonPath('status', 'degraded')
+        ->assertJsonPath('checks.database.status', 'failed')
+        ->assertJsonPath('checks.database.error', 'database_unreachable');
+});
+
+test('api health route reports the real state instead of a fixed ok', function () {
+    Storage::shouldReceive('disk')
+        ->andThrow(new RuntimeException('Unable to create directory at storage/app/private'));
+
+    $this->getJson(route('api.health'))
+        ->assertServiceUnavailable()
+        ->assertJsonPath('status', 'degraded')
+        ->assertJsonPath('checks.storage.error', 'storage_unwritable');
+});
+
+test('api health route and web health route share one controller', function () {
+    Storage::fake(config('filesystems.default'));
+
+    $api = $this->getJson(route('api.health'));
+    $web = $this->getJson(route('health'));
+
+    $api->assertOk();
+    $web->assertOk();
+    expect($api->json('checks'))->toEqual($web->json('checks'));
+});
+
+test('health endpoint does not leak exception details', function () {
+    Storage::shouldReceive('disk')
+        ->andThrow(new RuntimeException('/var/www/html/storage/app/private is owned by root'));
+
+    $response = $this->getJson(route('health'));
+
+    $response->assertServiceUnavailable();
+    expect($response->getContent())
+        ->not->toContain('owned by root')
+        ->not->toContain('/var/www/html');
+});
+
+test('health endpoint goes from 503 to 200 once the disk root exists on a read-only parent', function () {
+    if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+        test()->markTestSkipped('Als root negeert het bestandssysteem de schrijfrechten.');
+    }
+
+    $disk = config('filesystems.default');
+    $parent = sys_get_temp_dir().'/aimtrack-health-'.bin2hex(random_bytes(6));
+    mkdir($parent, 0755);
+    chmod($parent, 0555);
+
+    config(["filesystems.disks.{$disk}.root" => $parent.'/private']);
+    Storage::forgetDisk($disk);
+
+    try {
+        $this->getJson(route('health'))
+            ->assertServiceUnavailable()
+            ->assertJsonPath('checks.storage.error', 'storage_unwritable');
+
+        expect(is_dir($parent.'/private'))->toBeFalse();
+
+        chmod($parent, 0755);
+        mkdir($parent.'/private', 0775);
+        chmod($parent, 0555);
+        Storage::forgetDisk($disk);
+
+        $this->getJson(route('health'))
+            ->assertOk()
+            ->assertJsonPath('checks.storage.status', 'ok');
+
+        expect(glob($parent.'/private/healthchecks/*'))->toBe([]);
+    } finally {
+        chmod($parent, 0755);
+        exec('rm -rf '.escapeshellarg($parent));
+        Storage::forgetDisk($disk);
+    }
+});
