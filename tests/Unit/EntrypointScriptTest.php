@@ -52,7 +52,7 @@ function entrypointSandbox(): array
     writeEntrypointStub($root.'/bin/id', ['echo 0']);
 
     writeEntrypointStub($root.'/bin/setpriv', [
-        'echo "$*" >> "${SETPRIV_LOG}"',
+        'echo "$* HOME=${HOME}" >> "${SETPRIV_LOG}"',
         'while [ "${1#--}" != "$1" ]; do shift; done',
         'exec "$@"',
     ]);
@@ -157,7 +157,7 @@ test('entrypoint draait elk ander commando als www-data', function () {
 
     expect($result->exitCode())->toBe(0, $result->errorOutput())
         ->and(file_get_contents($root.'/setpriv.log'))
-        ->toBe("--reuid=www-data --regid=www-data --init-groups php artisan queue:work --tries=3\n")
+        ->toBe("--reuid=www-data --regid=www-data --init-groups php artisan queue:work --tries=3 HOME=/var/www\n")
         ->and(file_get_contents($root.'/chown.log'))->toContain('php artisan queue:work --tries=3');
 
     removeEntrypointSandbox($root);

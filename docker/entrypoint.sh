@@ -76,9 +76,10 @@ chmod -R 775 storage bootstrap/cache
 # Elk ander commando, zoals queue:work, krijgt geen eigen userwissel en zou als
 # root jobs uitpakken met unserialize(). Die gaan via setpriv naar www-data.
 # ENTRYPOINT_AS_ROOT=1 is de ontsnapping voor beheer. Draait de container al niet
-# als root, dan valt er niets te wisselen.
+# als root, dan valt er niets te wisselen. setpriv laat de environment staan, dus
+# HOME gaat expliciet naar die van www-data in plaats van /root.
 if [ "${1:-}" = "php-fpm" ] || [ "${ENTRYPOINT_AS_ROOT:-0}" = "1" ] || [ "$(id -u)" != "0" ]; then
     exec "$@"
 fi
 
-exec setpriv --reuid=www-data --regid=www-data --init-groups "$@"
+HOME=/var/www exec setpriv --reuid=www-data --regid=www-data --init-groups "$@"

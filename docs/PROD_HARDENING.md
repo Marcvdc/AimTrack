@@ -12,7 +12,7 @@ Gebruik deze checklist voor productie-uitrol van AimTrack.
 - [ ] `php artisan optimize` (config/route/view/event cache) uitgevoerd in de container.
 - [ ] Opcache actief (controleer `opcache.enable=1`, validate timestamps uit in productie).
 - [ ] Queue worker draait met `queue:work --tries=3 --backoff=5` en `restart: unless-stopped`.
-- [ ] Queue worker draait als `www-data`, niet als root: `docker compose exec queue ps -o user= -p 1` toont `www-data`. De entrypoint start alleen `php-fpm` als root (de master zakt zelf naar `www-data`); elk ander commando gaat via `setpriv` naar `www-data`. `ENTRYPOINT_AS_ROOT=1` laat een beheercommando bewust als root draaien.
+- [ ] Queue worker draait als `www-data`, niet als root: `docker compose -f docker/compose.prod.yml --env-file .env top queue` toont in de kolom `UID` `www-data` (vanaf de host, dus zonder `ps` in de image; die heeft geen procps). De entrypoint start alleen `php-fpm` als root (de master zakt zelf naar `www-data`); elk ander commando gaat via `setpriv` naar `www-data`. `ENTRYPOINT_AS_ROOT=1` laat een beheercommando bewust als root draaien.
 
 ## Veiligheid & netwerk
 - [ ] TLS beëindigd op load balancer/reverse proxy; `X-Forwarded-*` headers doorgeven en proxies vertrouwd.
@@ -27,7 +27,7 @@ Gebruik deze checklist voor productie-uitrol van AimTrack.
 
 ## Data & backup
 - [ ] Database backups (snapshot of dump) gepland en getest.
-- [ ] `pg_dump` in de image past bij de server: `docker compose exec backup pg_dump --version` toont 16.x bij `postgres:16`. Een oudere client weigert een nieuwere server en laat een leeg `.sql` achter. De image haalt `postgresql-client-16` uit de PGDG-repository; gaat de database naar een nieuwe major, dan gaat de client in de `Dockerfile` mee.
+- [ ] `pg_dump` in de image past bij de server: `docker compose -f docker/compose.prod.yml --env-file .env exec backup pg_dump --version` toont 16.x bij `postgres:16`. Een oudere client weigert een nieuwere server en laat een leeg `.sql` achter. De image haalt `postgresql-client-16` uit de PGDG-repository; gaat de database naar een nieuwe major, dan gaat de client in de `Dockerfile` mee.
 - [ ] Logretentie ingesteld (bijv. Docker logging driver/central log shipper).
 - [ ] Exporteerbare data (CSV/PDF) conform beleid opgeslagen/verwijderd na gebruik.
 
