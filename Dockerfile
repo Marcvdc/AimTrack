@@ -6,7 +6,19 @@ FROM php:${PHP_VERSION}-fpm-bookworm AS base
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_NO_INTERACTION=1
 
+# postgresql-client-16 uit de PGDG-repository: bookworm heeft alleen client 15, en
+# pg_dump weigert een nieuwere server (de database is postgres:16). De sleutel wordt
+# op zijn vingerafdruk gecontroleerd voordat apt hem vertrouwt.
+ARG PGDG_KEY_FINGERPRINT=B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
+
 RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
+    && install -d -m 755 /etc/apt/keyrings \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/keyrings/pgdg.asc \
+    && gpg --show-keys --with-colons /etc/apt/keyrings/pgdg.asc | grep -q "^fpr:::::::::${PGDG_KEY_FINGERPRINT}:" \
+    && echo "deb [signed-by=/etc/apt/keyrings/pgdg.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
         cron \
         git \
@@ -20,7 +32,7 @@ RUN apt-get update \
         libicu-dev \
         locales \
         libonig-dev \
-        postgresql-client \
+        postgresql-client-16 \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" gd intl mbstring pdo pdo_pgsql pdo_mysql zip exif \
     && docker-php-ext-enable opcache \
