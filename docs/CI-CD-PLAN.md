@@ -1,5 +1,11 @@
 # CI/CD Plan voor AimTrack
 
+> **Stand 2026-10-12:** de twee deploy-pipelines hieronder (staging en productie) zijn uitgezet.
+> Ze deployden naar de Raspberry Pi, die gecompromitteerd is geweest. Productie wordt nu met de
+> hand bijgewerkt op een VM in de homelab; zie de sectie Deployment in de README en
+> `docs/plans/deploy-pipeline-uit-plan.md`. Alleen de CI-pipeline is nog actief. De rest van dit
+> document beschrijft het oorspronkelijke ontwerp.
+
 ## Doel en uitgangspunten
 - Laravel 12 + Filament 5 app met Docker-first deploystrategie.
 - Branches: `staging` → staging deploy, `main` → productie deploy.
@@ -12,13 +18,13 @@
 - Caching: Composer cache + Node cache.
 - PHP-versie: 8.4 (minimaal).
 
-### Deploy staging (push → `staging`)
+### Deploy staging (push → `staging`), uitgezet op 2026-10-12
 - Environment: `staging` (secrets: SSH_HOST/USER/PORT/KEY, DEPLOY_PATH, APP_URL, ENV_FILE_B64 optioneel). GHCR gebruikt `github.actor` + de ingebouwde `GITHUB_TOKEN`, dus daar zijn geen losse secrets voor nodig.
 - Build + push image naar GHCR met tags `<short_sha>` en `staging-latest`.
 - Sync compose/shell scripts naar server, docker login, compose pull/up, optioneel artisan migrate, healthcheck via curl.
 - Concurrency: één staging deploy tegelijk; rollback naar de vorige sha-tag gebeurt automatisch bij een falende migratie of healthcheck, en handmatig via `scripts/rollback.sh`.
 
-### Deploy productie (push → `main`)
+### Deploy productie (push → `main`), uitgezet op 2026-10-12
 - Environment: `production` (zelfde secret-namen, andere waarden).
 - Zelfde flow als staging maar tags `<short_sha>` en `prod-latest`.
 - Veiligheden: vereist geslaagde CI, Environment protections mogelijk, concurrency 1.

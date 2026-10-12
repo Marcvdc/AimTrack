@@ -98,6 +98,7 @@ Vergeet de registry hieronder niet bij te werken.
 | marketing | feature/marketing | `aimtrack-marketing/` | 19088 | 15440 | 19033 | 19008 | actief (issue #82 · Fase 3 marketing landing) |
 | ai-byo-key | feature/ai-byo-key | `aimtrack-ai-byo-key/` | 19089 | 15441 | 19034 | 19009 | actief (issue #95 · Fase 1 BYO Claude-key per user) |
 | homelab-hardening | feature/homelab-hardening | `aimtrack-homelab-hardening/` | 19092 | 15444 | 19037 | 19012 | actief (pg_dump 16 en queue als www-data, Marcvdc/homelab#8) |
+| deploy-pipeline-uit | feature/deploy-pipeline-uit | `aimtrack-deploy-pipeline-uit/` | 19093 | 15445 | 19038 | 19013 | actief (deploys naar de oude Pi uitzetten, Marcvdc/homelab#1) |
 
 Update deze tabel bij setup en cleanup; zo weet iedereen direct welke poort bij welke stack hoort.
 
