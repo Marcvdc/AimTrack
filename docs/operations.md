@@ -115,7 +115,7 @@ Niet:
 
 - **Het databaseschema.** Migraties draaien vooruit en worden bij een rollback niet teruggedraaid. Daarom geldt de regel hieronder over additieve migraties.
 - **De `.env` op de host.** Die werd bij elke deploy overschreven vanuit het secret `ENV_FILE_B64`; dat secret verdwijnt met het opruimen van de GitHub-environments (zie het plan).
-- **De compose-bestanden en de scripts in `docker/` en `scripts/`.** Die worden bij elke deploy met rsync overschreven. Wil je ook die terug, deploy dan de oude commit opnieuw (push die commit naar `main`, of draai de workflow op die sha).
+- **De compose-bestanden en de scripts in `docker/` en `scripts/`.** Die werden bij elke deploy met rsync overschreven. Er is nu geen workflow meer die dat doet; terug naar een oude stand gaat op de host zelf, zie *Deploy flow (productie)* hierboven.
 
 ### Migraties: alleen additief
 

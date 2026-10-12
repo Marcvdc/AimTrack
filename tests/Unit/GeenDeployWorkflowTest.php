@@ -35,14 +35,15 @@ it('heeft geen deploy-workflow voor staging of productie', function () {
         ->not->toHaveKey('deploy-production.yml');
 });
 
-it('verwijst in geen workflow naar een deploy-environment of de deploymiddelen', function (string $patroon) {
+// Elke environment-sleutel telt, ook de mapping-vorm (environment:\n  name: ...)
+// en een expressie: een environment is precies waar deploy-secrets aan hangen.
+it('verwijst in geen workflow naar een environment of de deploymiddelen', function (string $patroon) {
     foreach (workflowBestanden() as $naam => $inhoud) {
         expect(preg_match($patroon, $inhoud))
             ->toBe(0, "{$naam} bevat {$patroon}");
     }
 })->with([
-    'environment production' => ['/^\s*environment:\s*[\'"]?production\b/m'],
-    'environment staging' => ['/^\s*environment:\s*[\'"]?staging\b/m'],
+    'een environment, in elke vorm' => ['/^\s*environment\s*:/m'],
     'remote_deploy.sh' => ['/remote_deploy\.sh/'],
     'wg-quick' => ['/wg-quick/'],
     'secrets.SSH_KEY' => ['/secrets\.SSH_KEY\b/'],
