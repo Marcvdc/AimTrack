@@ -13,6 +13,7 @@ class SessionShot extends Model
         'session_id',
         'turn_index',
         'shot_index',
+        'source',
         'x_normalized',
         'y_normalized',
         'distance_from_center',

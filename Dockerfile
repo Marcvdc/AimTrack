@@ -21,6 +21,11 @@ RUN apt-get update \
         locales \
         libonig-dev \
         postgresql-client \
+        # ImageMagick leest HEIC (via libheif) en decodeert in een apart proces,
+        # zodat een 12MP-telefoonfoto niet tegen PHP's memory_limit aan loopt.
+        # Zonder dit strandt elke upload rechtstreeks vanaf een iPhone.
+        imagemagick \
+        libheif1 \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" gd intl mbstring pdo pdo_pgsql pdo_mysql zip exif \
     && docker-php-ext-enable opcache \

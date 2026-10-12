@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use App\Http\Responses\Auth\AdminLogoutResponse;
 use App\Services\Ai\ShooterCoach;
+use App\Services\Vision\ShotSelector;
+use App\Services\Vision\TargetPhotoAnalyzer;
+use App\Services\Vision\TargetPhotoPreparer;
 use App\Support\Features\AimtrackFeatureToggle;
 use App\Support\StoragePathInitializer;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse as LogoutResponseContract;
@@ -20,6 +23,19 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(ShooterCoach::class, fn () => ShooterCoach::make());
         $this->app->singleton(AimtrackFeatureToggle::class);
+
+        /*
+         * De vision-diensten hebben scalaire instellingen in hun constructor, dus de
+         * container kan ze niet zelf samenstellen. Hier komen ze uit config/vision.php.
+         */
+        $this->app->bind(TargetPhotoAnalyzer::class, fn () => TargetPhotoAnalyzer::make());
+        $this->app->bind(TargetPhotoPreparer::class, fn () => new TargetPhotoPreparer(
+            maxDimension: (int) config('vision.max_image_dimension'),
+            jpegQuality: (int) config('vision.jpeg_quality'),
+        ));
+        $this->app->bind(ShotSelector::class, fn () => new ShotSelector(
+            (float) config('vision.min_shot_confidence'),
+        ));
 
         $this->app->bind(LogoutResponseContract::class, AdminLogoutResponse::class);
     }

@@ -13,16 +13,29 @@
         </testsuite>
     </testsuites>
     <php>
+        <!-- De suite draait in een proces en heeft rond de 192M nodig; de
+             php.ini van de container staat op 128M, waardoor de run halverwege
+             omviel op een Livewire-render. Een plafond reserveert geen geheugen,
+             dus hier ruimte voor groei. -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="sqlite" force="true"/>
         <env name="DB_DATABASE" value=":memory:" force="true"/>
-        <!-- Laravel leest env uit $_SERVER; de dev-container injecteert
-             DB_CONNECTION=pgsql via env_file. <server force> overschrijft dat
-             zodat tests nooit tegen de dev-DB draaien (en die wissen). -->
+        <!-- Laravel leest env uit $_SERVER; de dev-container injecteert deze
+             waarden via env_file. <env> raakt alleen $_ENV en putenv, dus zonder
+             een <server force> hieronder wint de containerwaarde en draait de
+             suite met de dev-instellingen: tegen de dev-DB, met een cache en
+             sessie op schijf die state tussen runs laat lekken, met de
+             database-queue in plaats van sync, en met echte SMTP. -->
+        <server name="APP_ENV" value="testing" force="true"/>
         <server name="DB_CONNECTION" value="sqlite" force="true"/>
         <server name="DB_DATABASE" value=":memory:" force="true"/>
+        <server name="CACHE_STORE" value="array" force="true"/>
+        <server name="SESSION_DRIVER" value="array" force="true"/>
+        <server name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <server name="MAIL_MAILER" value="array" force="true"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
