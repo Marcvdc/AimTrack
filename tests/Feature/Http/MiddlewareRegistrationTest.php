@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Middleware\InjectUserAnthropicKey;
 use Illuminate\Contracts\Http\Kernel as HttpKernelContract;
+use Illuminate\Foundation\Http\Middleware\TrimStrings;
 use Illuminate\Http\Middleware\TrustHosts;
 use Illuminate\Http\Middleware\TrustProxies;
 
@@ -104,7 +106,7 @@ test('.env.example vertrouwt niet elke proxy', function () {
 test('InjectUserAnthropicKey hangt in de web-groep', function () {
     $groups = app(HttpKernelContract::class)->getMiddlewareGroups();
 
-    expect($groups['web'] ?? [])->toContain(App\Http\Middleware\InjectUserAnthropicKey::class);
+    expect($groups['web'] ?? [])->toContain(InjectUserAnthropicKey::class);
 });
 
 test('de dode Laravel 10-kernels bestaan niet meer', function () {
@@ -161,7 +163,7 @@ test('een gast op een auth-route krijgt json-401 in plaats van een redirect', fu
  * uit. Deze test legt vast dat we daarop mogen leunen.
  */
 test('het framework knipt de wachtwoordvelden zelf al niet', function () {
-    $except = (new ReflectionClass(Illuminate\Foundation\Http\Middleware\TrimStrings::class))
+    $except = (new ReflectionClass(TrimStrings::class))
         ->getDefaultProperties()['except'];
 
     expect($except)->toContain('current_password')
