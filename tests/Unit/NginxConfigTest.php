@@ -8,5 +8,6 @@
 it('verbergt de nginx-versie in headers en foutpagina\'s', function () {
     $config = (string) file_get_contents(base_path('docker/nginx/default.conf'));
 
-    expect($config)->toMatch('/^\s*server_tokens\s+off\s*;/m');
+    expect($config)->toMatch('/^\s*server_tokens\s+off\s*;/m')
+        ->not->toMatch('/^\s*server_tokens\s+(on|build)\b/m');
 });
