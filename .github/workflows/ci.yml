@@ -63,9 +63,11 @@ jobs:
           extensions: intl, mbstring, bcmath, zip
           coverage: none
 
-      # Faalt zodra er een security advisory op composer.lock staat. De uitvoer gaat
-      # altijd naar de job summary, ook als de stap faalt. Sinds #179 is de set leeg,
-      # dus elke nieuwe advisory maakt de run rood (issue #189, deel van #136).
+      # Faalt zodra er een security advisory op composer.lock staat, en sinds Composer
+      # 2.7 ook bij een abandoned package (audit.abandoned staat standaard op fail).
+      # De uitvoer gaat altijd naar de job summary, ook als de stap faalt. Sinds #179
+      # is de set leeg, dus elke nieuwe melding maakt de run rood (issue #189, deel
+      # van #136).
       - name: Run composer audit
         id: composer-audit
         run: |
@@ -83,7 +85,7 @@ jobs:
 
       - name: Report audit outcome
         if: ${{ failure() && steps.composer-audit.outcome == 'failure' }}
-        run: echo "::error title=composer audit::Er staan advisories open op composer.lock, zie de job summary."
+        run: echo "::error title=composer audit::composer.lock heeft een security advisory of een abandoned package, zie de job summary."
 
   test:
     name: Tests (Pest)

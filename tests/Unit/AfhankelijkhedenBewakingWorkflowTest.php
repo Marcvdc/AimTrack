@@ -25,19 +25,27 @@ function geparsteYaml(string $relatiefPad): array
 /**
  * @return array<string, mixed>
  */
-function composerAuditStap(): array
+function auditJob(): array
 {
     $workflow = geparsteYaml('.github/workflows/ci.yml');
 
-    foreach ($workflow['jobs'] ?? [] as $job) {
-        foreach ($job['steps'] ?? [] as $stap) {
-            if (str_contains((string) ($stap['run'] ?? ''), 'composer audit')) {
-                return $stap;
-            }
+    expect($workflow['jobs'] ?? [])->toHaveKey('audit');
+
+    return $workflow['jobs']['audit'];
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function composerAuditStap(): array
+{
+    foreach (auditJob()['steps'] ?? [] as $stap) {
+        if (str_contains((string) ($stap['run'] ?? ''), 'composer audit')) {
+            return $stap;
         }
     }
 
-    throw new RuntimeException('Geen stap met composer audit gevonden in ci.yml.');
+    throw new RuntimeException('Geen stap met composer audit gevonden in de audit-job van ci.yml.');
 }
 
 it('draait composer audit in ci', function () {
@@ -48,8 +56,19 @@ it('laat de composer audit falen bij een advisory', function () {
     $stap = composerAuditStap();
 
     expect($stap)->not->toHaveKey('continue-on-error')
+        ->and(auditJob())->not->toHaveKey('continue-on-error')
+        ->and($stap['run'])->toContain('status=${PIPESTATUS[0]}')
+        ->and($stap['run'])->not->toContain('status=$?')
         ->and($stap['run'])->toContain('exit "${status}"')
         ->and($stap['run'])->toContain('$GITHUB_STEP_SUMMARY');
+});
+
+it('meldt een gefaalde audit ook echt, met failure() in de conditie', function () {
+    $rapportage = collect(auditJob()['steps'] ?? [])
+        ->firstWhere('name', 'Report audit outcome');
+
+    expect($rapportage)->not->toBeNull()
+        ->and((string) ($rapportage['if'] ?? ''))->toContain('failure()');
 });
 
 it('heeft een dependabot-configuratie voor composer, npm en github-actions', function () {
@@ -76,6 +95,9 @@ it('werkt elk ecosysteem wekelijks bij, gegroepeerd en met een limiet op open PR
             ->flatMap(fn (array $groep): array => $groep['update-types'] ?? [])
             ->all();
 
-        expect($updateTypes)->toContain('minor', 'patch');
+        expect(in_array('minor', $updateTypes, true) && in_array('patch', $updateTypes, true))
+            ->toBeTrue("{$naam} groepeert minor en patch niet")
+            ->and(in_array('major', $updateTypes, true))
+            ->toBeFalse("{$naam} groepeert ook major-updates");
     }
 });
