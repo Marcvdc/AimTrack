@@ -14,7 +14,7 @@
 
 ## Pipelines
 ### CI (pull_request + push)
-- Jobs: lint (Pint), audit (`composer audit --locked`, rapporteert maar laat de run niet falen), test (Pest/PHPUnit + SQLite), optionele Node/Vite build (alleen als package-lock/pnpm-lock aanwezig).
+- Jobs: lint (Pint), audit (`composer audit --locked`, laat de run falen bij een security advisory en bij een abandoned package), test (Pest/PHPUnit + SQLite), optionele Node/Vite build (alleen als package-lock/pnpm-lock aanwezig).
 - Caching: Composer cache + Node cache.
 - PHP-versie: 8.4 (minimaal).
 
