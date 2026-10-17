@@ -7,6 +7,7 @@ namespace App\Filament\Copilot\Tools;
 use App\Models\Session;
 use App\Models\SessionWeapon;
 use App\Models\User;
+use App\Support\DateFormat;
 use EslamRedaDiv\FilamentCopilot\Tools\BaseTool;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Str;
@@ -76,7 +77,9 @@ class SessionLookupTool extends BaseTool
         return trim(sprintf(
             "Sessie #%d op %s\nBaan: %s | Locatie: %s\nNotities: %s\nHandmatige reflectie: %s\nWapenregels:\n%s\nIndividuele schoten: %d (gemiddelde score: %s)\nAI-reflectie: %s",
             $session->id,
-            $session->date?->format('Y-m-d') ?? 'onbekend',
+            // ISO-datum: deze regel gaat als tool-payload naar het AI-model.
+            // Zie App\Support\DateFormat::MACHINE_DATE.
+            DateFormat::machineDate($session->date) ?? 'onbekend',
             $session->range_name ?: '-',
             $session->location ?: '-',
             Str::limit($session->notes_raw ?? '-', 200),

@@ -22,7 +22,7 @@ class CoachSessiesTable
                     ->sortable(),
                 TextColumn::make('date')
                     ->label('Datum')
-                    ->date('d-m-Y')
+                    ->date()
                     ->sortable(),
                 TextColumn::make('range_name')
                     ->label('Baan')

@@ -141,7 +141,7 @@
                         <div style="font-size: 13.5px; line-height: 1.55; color: var(--at-text); margin-top: 6px;">
                             @if ($lastSession)
                                 Wil je een reflectie op <strong>sessie {{ 'S-'.str_pad((string) $lastSession->id, 4, '0', STR_PAD_LEFT) }}</strong>
-                                ({{ $lastSession->date?->translatedFormat('d M') ?? '—' }})? Of stel een open vraag over je training.
+                                ({{ \App\Support\DateFormat::date($lastSession->date) ?? '—' }})? Of stel een open vraag over je training.
                             @else
                                 Log eerst een sessie of stel direct een open vraag — de coach werkt ook zonder data.
                             @endif
@@ -194,7 +194,7 @@
                     @endphp
                     <div style="padding: 12px; background: var(--at-panel-2); border: 1px solid var(--at-line); border-radius: var(--at-r-md); display: flex; align-items: center; gap: 10px;">
                         <div style="flex: 1; min-width: 0;">
-                            <div style="font-size: 12px; color: var(--at-text); font-weight: 600;">{{ $sessionLabel }} · {{ $lastSession->date?->translatedFormat('d M') ?? '—' }}</div>
+                            <div style="font-size: 12px; color: var(--at-text); font-weight: 600;">{{ $sessionLabel }} · {{ \App\Support\DateFormat::date($lastSession->date) ?? '—' }}</div>
                             <div style="font-size: 11px; color: var(--at-muted); font-family: var(--at-font-mono);">{{ $lastSession->range_name ?? '—' }}</div>
                         </div>
                         <span style="display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 4px; background: var(--at-accent-12); color: var(--at-accent); border: 1px solid var(--at-accent-25); font-family: var(--at-font-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;">IN</span>

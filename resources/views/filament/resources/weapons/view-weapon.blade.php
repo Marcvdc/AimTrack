@@ -21,7 +21,7 @@
 
     $statusRows = [
         ['Status', $weapon->is_active ? 'Actief' : 'Uit gebruik', $weapon->is_active ? 'ok' : null],
-        ['Aangeschaft', $weapon->owned_since?->translatedFormat('M Y') ?? '—', null],
+        ['Aangeschaft', \App\Support\DateFormat::date($weapon->owned_since) ?? '—', null],
         ['Kaliber', $caliberLabel, null],
         ['Type', $typeLabel, null],
         ['Opslag', $weapon->storageLocation?->name ?? ($weapon->storage_location ?? '—'), null],
@@ -94,7 +94,7 @@
                 <x-aimtrack.stat-card
                     label="Beste"
                     :value="$bestScore !== null ? (string) $bestScore : '—'"
-                    :sub="$bestDate?->translatedFormat('d M Y') ?? '—'"
+                    :sub="\App\Support\DateFormat::date($bestDate) ?? '—'"
                 />
             </div>
 
@@ -107,8 +107,9 @@
                     <x-aimtrack.sparkline :data="array_values($trendData)" :width="760" :height="140" :stroke-width="2" :fill="true" fluid />
                     @if (count($trendData) >= 2)
                         <div style="display: flex; justify-content: space-between; margin-top: 10px; font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.12em;">
-                            <span>{{ Carbon::parse(array_key_first($trendData))->translatedFormat('M Y') }}</span>
-                            <span>{{ Carbon::parse(array_key_last($trendData))->translatedFormat('M Y') }}</span>
+                            {{-- Maand-granulariteit: de trendas draait op maandbuckets, niet op losse datums. Zie App\Support\DateFormat::MONTH. --}}
+                            <span>{{ \App\Support\DateFormat::month(Carbon::parse(array_key_first($trendData))) }}</span>
+                            <span>{{ \App\Support\DateFormat::month(Carbon::parse(array_key_last($trendData))) }}</span>
                         </div>
                     @else
                         <div style="margin-top: 10px; font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.12em; text-align: center;">Onvoldoende data voor trend</div>
@@ -168,7 +169,7 @@
                         @endphp
                         <div style="display: grid; grid-template-columns: 100px minmax(160px, 1fr) 90px 80px 80px; min-width: 510px; padding: 12px 16px; border-bottom: 1px solid var(--at-line); align-items: center; font-size: 12px;">
                             <div style="font-family: var(--at-font-mono); color: var(--at-muted); font-size: 11px;">
-                                {{ $session->date?->translatedFormat('d M') ?? '—' }}
+                                {{ \App\Support\DateFormat::date($session->date) ?? '—' }}
                                 <div style="font-size: 9px; opacity: 0.7;">{{ $sessionLabel }}</div>
                             </div>
                             <div style="color: var(--at-text);">{{ $session->range_name ?? '—' }}</div>

@@ -18,7 +18,7 @@ class CoachSessieInfolist
                             ->label('Lid'),
                         TextEntry::make('date')
                             ->label('Datum')
-                            ->date('d-m-Y'),
+                            ->date(),
                         TextEntry::make('range_name')
                             ->label('Baan'),
                         TextEntry::make('manual_reflection')

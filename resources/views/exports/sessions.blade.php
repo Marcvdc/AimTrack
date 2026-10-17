@@ -65,7 +65,7 @@
             <div class="session-header">
                 <div>
                     <strong>Datum</strong>
-                    {{ optional($session['date'])?->format('Y-m-d') ?? 'Onbekend' }}
+                    {{ \App\Support\DateFormat::date($session['date'] ?? null) ?? 'Onbekend' }}
                 </div>
                 <div>
                     <strong>Baan</strong>

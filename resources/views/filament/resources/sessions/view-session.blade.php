@@ -20,7 +20,7 @@
     $dipRange = $stats->dipRange();
 
     $sessionLabel = 'S-'.str_pad((string) $session->id, 4, '0', STR_PAD_LEFT);
-    $dateLabel = $session->date ? Carbon::parse($session->date)->translatedFormat('l d F Y') : '—';
+    $dateLabel = \App\Support\DateFormat::date($session->date) ?? '—';
 
     $firstSessionWeapon = $session->sessionWeapons->first();
     $weapon = $firstSessionWeapon?->weapon;
@@ -49,7 +49,7 @@
     $lastShotAt = $session->shots->max('created_at');
     $durationMin = ($firstShotAt && $lastShotAt) ? (int) round($firstShotAt->diffInSeconds($lastShotAt) / 60) : 0;
     $timeWindow = $durationMin > 0
-        ? Carbon::parse($firstShotAt)->format('H:i').'–'.Carbon::parse($lastShotAt)->format('H:i').' · '.$durationMin.' min'
+        ? \App\Support\DateFormat::time($firstShotAt).'–'.\App\Support\DateFormat::time($lastShotAt).' · '.$durationMin.' min'
         : null;
 @endphp
 

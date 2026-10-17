@@ -15,7 +15,7 @@
         <div>
             <h3 class="font-semibold text-gray-900 dark:text-gray-100">Periode</h3>
             <p class="text-sm text-gray-700 dark:text-gray-300">
-                {{ $record->period_from->format('d/m/Y') }} - {{ $record->period_to->format('d/m/Y') }}
+                {{ \App\Support\DateFormat::date($record->period_from) }} - {{ \App\Support\DateFormat::date($record->period_to) }}
             </p>
         </div>
     @endif
@@ -26,6 +26,6 @@
     </div>
 
     <div class="text-xs text-gray-500 dark:text-gray-400">
-        Gesteld op {{ $record->asked_at->format('d-m-Y H:i') }}
+        Gesteld op {{ \App\Support\DateFormat::dateTime($record->asked_at) }}
     </div>
 </div>

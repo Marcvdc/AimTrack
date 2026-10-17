@@ -65,7 +65,7 @@ class UserResource extends Resource
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->label('Geregistreerd')
-                    ->dateTime('d-m-Y')
+                    ->dateTime()
                     ->sortable()
                     ->toggleable(),
             ])

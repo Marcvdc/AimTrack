@@ -4,6 +4,7 @@ namespace App\Services\Export;
 
 use App\Models\Session;
 use App\Models\User;
+use App\Support\DateFormat;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Response;
@@ -69,6 +70,9 @@ class SessionExportService
             $handle = fopen('php://output', 'w');
             fputcsv($handle, $columns);
 
+            // Bewust ISO 8601 en niet de d-m-Y-weergavenotatie: een CSV wordt
+            // door Excel en scripts gelezen, en die willen een eenduidige,
+            // sorteerbare datum. Zie App\Support\DateFormat.
             foreach ($sessions as $session) {
                 /** @var Collection $entries */
                 $entries = $session['entries'];
@@ -76,7 +80,7 @@ class SessionExportService
 
                 if ($entries->isEmpty()) {
                     fputcsv($handle, [
-                        optional($session['date'])?->format('Y-m-d'),
+                        DateFormat::machineDate($session['date'] ?? null),
                         $session['range_name'],
                         $session['location_name'],
                         null,
@@ -96,7 +100,7 @@ class SessionExportService
 
                 foreach ($entries as $entry) {
                     fputcsv($handle, [
-                        optional($session['date'])?->format('Y-m-d'),
+                        DateFormat::machineDate($session['date'] ?? null),
                         $session['range_name'],
                         $session['location_name'],
                         $entry['weapon_name'],
