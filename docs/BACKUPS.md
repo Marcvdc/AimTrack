@@ -25,13 +25,19 @@ De dienst gebruikt dezelfde image als de app. In het kort:
 
 De dump is platte SQL, gezipt, gemaakt met `--no-owner --no-privileges`. Hij bevat alleen de database. De uploads in `storage` (volume `app_storage`) en de `.env` zitten er niet in; die komen alleen terug via de offsite-kopie van de VM.
 
-De retentie ruimt alleen `*.sql.gz` op. Mislukt een dump, dan blijft er een leeg `.sql`-bestand staan dat nooit vanzelf verdwijnt. Dat is meteen het teken dat er iets mis is.
+De retentie ruimt alleen `*.sql.gz` op. Mislukt een dump, dan blijft er een los `.sql`-bestand (leeg of half gevuld) staan dat nooit vanzelf verdwijnt. Dat is meteen het teken dat er iets mis is.
 
 De dumps staan onversleuteld op het volume, op dezelfde VM als de database. Ze beschermen tegen een fout in de applicatie of een verkeerde migratie, niet tegen het verlies van de VM. Daarvoor is de offsite-kopie.
 
 ## Controleren of de dump werkt
 
-De commando's hieronder draai je vanuit de map met de stack, met `C` als afkorting voor `docker compose -f docker/compose.prod.yml --env-file .env`. Op de VM is de aanroep iets anders (een eigen compose-bestand en een extra env-bestand); zie daarvoor het runbook.
+De commando's hieronder draai je in bash vanuit de map met de stack. `C` is een korte functie voor de compose-aanroep; zet die eerst in je shell:
+
+```bash
+C() { docker compose -f docker/compose.prod.yml --env-file .env "$@"; }
+```
+
+Op de VM is de aanroep iets anders (een eigen compose-bestand en een extra env-bestand); pas de functie daarop aan, zie het runbook.
 
 ```bash
 # Welke dumps er zijn en wat de laatste runs meldden
@@ -58,12 +64,14 @@ set -o pipefail
 DUMP=prod-db-JJJJMMDD-UUMMSS.sql.gz   # kies de dump uit de lijst hierboven
 
 # 1. Lege database naast de bestaande
-C exec -T db sh -c 'createdb -U "$POSTGRES_USER" aimtrack_restore'
+C exec -T db sh -c 'createdb -U "$POSTGRES_USER" -O "$DB_USERNAME" aimtrack_restore'
 
 # 2. De dump erin, in één transactie, stoppen bij de eerste fout
 C exec -T backup cat "/backups/${DUMP}" | gunzip -c \
-  | C exec -T db sh -c 'psql -U "$POSTGRES_USER" -d aimtrack_restore -v ON_ERROR_STOP=1 --single-transaction --quiet'
+  | C exec -T db sh -c 'psql -U "$DB_USERNAME" -d aimtrack_restore -v ON_ERROR_STOP=1 --single-transaction --quiet -o /dev/null'
 ```
+
+De database maak je aan als de beheerrol van de container (`POSTGRES_USER`), de inhoud zet je terug als de rol van de app (`DB_USERNAME`). Dan is de app eigenaar van alles wat de dump aanmaakt, want de dump zelf zet geen eigenaren (`--no-owner`). In `docker/compose.prod.yml` zijn die twee dezelfde rol, en krijgt de `db`-dienst de `.env` mee, zodat `DB_USERNAME` in die container bestaat. Op de VM is de app-rol bewust geen superuser en staat die variabele niet in de `db`-container; gebruik daar de rolnamen uit het runbook. Zet je daar terug als de beheerrol, dan wordt die eigenaar van alle tabellen en loopt de app bij de eerste query tegen `permission denied`. `-o /dev/null` houdt de uitvoer van de `setval`-regels uit de dump stil; fouten komen gewoon op het scherm.
 
 `pipefail` en `--single-transaction` zijn niet optioneel. Zonder `pipefail` telt alleen de exitcode van `psql`: ontbreekt de dump of breekt `gunzip` af, dan krijgt `psql` een lege of halve invoer en meldt het gewoon succes. Met `--single-transaction` en `ON_ERROR_STOP` blijft er bij een fout niets half staan.
 

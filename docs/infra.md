@@ -38,7 +38,7 @@ Belangrijkste variabelen:
 - Logs gaan naar stdout/stderr (container-friendly) en/of Sentry wanneer geconfigureerd.
 
 ## Backups
-- Zie `docs/BACKUPS.md` voor strategie (pg_dump + storage sync). Plan cron/automation buiten de app; minimaal dagelijkse DB-dump en storage sync naar object storage.
+- Zie `docs/BACKUPS.md`. De `backup`-dienst in de prod-compose maakt elke nacht een `pg_dump` naar een eigen volume; uploads en `.env` worden niet apart gebackupt, die komen terug via de offsite-kopie van de VM in de homelab.
 
 ## Deploy
 - Multi-stage Docker image mogelijk: builder (composer install zonder dev) + runtime (php-fpm + opcache).
