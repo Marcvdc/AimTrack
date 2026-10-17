@@ -1,168 +1,112 @@
-# Back-upstrategie AimTrack
+# Backups AimTrack
 
-Doel: eenvoudige, herstelbare back-ups voor database (PostgreSQL) en uploads (storage). Deze stappen zijn bedoeld voor self-hosted deployments; automatiseer waar mogelijk via cron/CI.
+Productie draait op een eigen VM in de homelab, met de stack uit `docker/compose.prod.yml`. De backup bestaat uit twee lagen:
 
-## Database (PostgreSQL)
-- **Frequentie:** dagelijks (nacht) volledige `pg_dump` + optioneel 4-uurlijkse WAL-archivering bij zware belasting.
-- **Command voorbeeld:**
-  - `PGPASSWORD="$DB_PASSWORD" pg_dump -Fc -h $DB_HOST -p $DB_PORT -U $DB_USERNAME $DB_DATABASE > /backups/aimtrack_$(date +%F).dump`
-- **Rotatie:** bewaar 7 dagelijkse dumps + 4 wekelijkse + 3 maandelijkse. Gebruik `find ... -mtime` voor pruning.
-- **Versleuteling:** versleutel archieven met bijv. `age` of `gpg` voordat ze offsite gaan.
-- **Offsite opslag:** sync `/backups` naar object storage (S3/Backblaze) met lifecycle policy (versies + retentie).
-- **Herstel test:** maandelijks hersteltest naar een tijdelijke database:
-  - `pg_restore -d aimtrack_restore -h $DB_HOST -p $DB_PORT -U $DB_USERNAME /backups/aimtrack_YYYY-MM-DD.dump`
-  - Draai `php artisan migrate --env=testing` of applicatie smoke-test tegen restore DB.
+1. **De nachtelijke databasedump.** De dienst `backup` in de prod-compose maakt elke nacht een `pg_dump` van de database en bewaart die op een volume naast de database. Dat deel staat in deze repo en is hieronder beschreven.
+2. **De offsite-kopie.** De VM, met de volumes van de stack, valt onder de versleutelde offsite-backup van de homelab. Hoe die loopt en hoe je de hersteltest vanaf die kopie doet, staat in het runbook `docs/runbooks/aimtrack.md` in het (private) repo `Marcvdc/homelab`. Hostnamen, paden op de VM en wachtwoorden staan alleen daar.
 
-## Storage (uploads)
-- **Pad:** `storage/app` (default disk) en eventuele externe disks.
-- **Frequentie:** dagelijks `rsync` naar back-up volume + wekelijkse sync naar object storage.
-- **Command voorbeeld:**
-  - `rsync -a --delete /var/www/html/storage/app/ /backups/storage/`
-  - `aws s3 sync /backups/storage s3://<bucket>/aimtrack/storage --delete`
-- **Controle:** periodieke checksum (`sha256sum`) op een steekproef van bestanden.
-- **Rechten:** zorg dat back-up gebruiker alleen leesrechten op uploads heeft, schrijfrechten op back-up locatie.
+Tot de verhuizing naar de VM draaide productie op een Raspberry Pi, met eigen scripts voor dump, rotatie en een sync naar Backblaze B2. Die opzet bestaat niet meer, en de scripts zijn uit de repo gehaald (#190).
 
-## Config & secrets
-- **Niet in repo:** `.env`, SSL keys en database credentials horen in een secrets manager of versleutelde storage.
-- **Back-up:** sla een versleutelde kopie van `.env` op samen met back-up instructies en rotatie.
+## De `backup`-dienst
 
-## Herstelprocedure (samenvatting)
-1. Nieuwe omgeving klaarzetten (PHP/Laravel dependencies, storage directories, `.env`).
-2. Database herstellen via `pg_restore` en daarna `php artisan migrate --force` indien schema-updates nodig zijn.
-3. Storage back-up terugplaatsen naar `storage/app` (rechten + eigenaarschap herstellen).
-4. Caches regenereren: `php artisan config:cache && php artisan route:cache && php artisan view:cache`.
-5. Queue workers en scheduler herstarten, healthcheck `/health` controleren.
+De dienst gebruikt dezelfde image als de app. In het kort:
 
-## Monitoring & verificatie
-- **Healthcheck:** `/health` endpoint monitort DB/queue/storage toegankelijkheid.
-- **Logboek:** documenteer uitgevoerde back-ups (tijdstip, resultaat, locatie) en hersteltesten.
-- **Alerting:** configureer alerts op mislukte back-ups en healthcheck failures via Sentry/monitoring.
+- `docker/backup/entrypoint.sh` schrijft een cron-job naar `/etc/cron.d/aimtrack-backup` en start Debian-`cron` op de voorgrond. Cron geeft de omgeving van de container niet door, dus de entrypoint zet de backup- en DB-variabelen boven in dat cron-bestand.
+- `docker/backup/run-backup.sh` roept `scripts/backup-dev-db.sh` aan in `direct` mode. Dat is een gewone `pg_dump` tegen de `db`-dienst; de naam "dev" is historisch.
+- De client is `pg_dump` 16 uit de PGDG-repository (#176). Die moet dezelfde major hebben als de database (`postgres:16`). Gaat de database naar een nieuwe major, dan gaat de client in de `Dockerfile` mee.
 
-## Productie installatie
+| Wat | Standaard in `docker/compose.prod.yml` | Instelbaar via `.env` |
+|---|---|---|
+| Schema | elke nacht om 03:00 (tijd van de container) | `BACKUP_SCHEDULE` |
+| Bewaartermijn | 14 dagen | `BACKUP_RETENTION_DAYS` |
+| Bestandsnaam | `prod-db-JJJJMMDD-UUMMSS.sql.gz` | `BACKUP_PREFIX_PROD` |
+| Locatie | `/backups` in de container, volume `db_backups_prod` | |
+| Log | `/backups/cron.log` | |
 
-De repo bevat twee scripts die op de productie-host (`madmin`) draaien:
+De dump is platte SQL, gezipt, gemaakt met `--no-owner --no-privileges`. Hij bevat alleen de database. De uploads in `storage` (volume `app_storage`) en de `.env` zitten er niet in; die komen alleen terug via de offsite-kopie van de VM.
 
-- `scripts/backup-aimtrack.sh` — dagelijkse `pg_dump` van container `aimtrack_db` + `rsync` van `storage/app` + rotatie (7 dagelijks, 4 wekelijks, 3 maandelijks).
-- `scripts/restore-test-aimtrack.sh` — maandelijkse hersteltest naar tijdelijke database `aimtrack_restore_test`, controleert tabel- en rijcounts.
+De retentie ruimt alleen `*.sql.gz` op. Mislukt een dump, dan blijft er een los `.sql`-bestand (leeg of half gevuld) staan dat nooit vanzelf verdwijnt. Dat is meteen het teken dat er iets mis is.
 
-### Installatie
+De dumps staan onversleuteld op het volume, op dezelfde VM als de database. Ze beschermen tegen een fout in de applicatie of een verkeerde migratie, niet tegen het verlies van de VM. Daarvoor is de offsite-kopie.
+
+## Controleren of de dump werkt
+
+De commando's hieronder draai je in bash vanuit de map met de stack. `C` is een korte functie voor de compose-aanroep; zet die eerst in je shell:
 
 ```bash
-# als madmin op de prod-host
-cp /var/www/AimTrack/scripts/backup-aimtrack.sh       /home/madmin/backup-aimtrack.sh
-cp /var/www/AimTrack/scripts/restore-test-aimtrack.sh /home/madmin/restore-test-aimtrack.sh
-chmod +x /home/madmin/backup-aimtrack.sh /home/madmin/restore-test-aimtrack.sh
-mkdir -p /home/madmin/aimtrack-backups/{db,storage,logs}
+C() { docker compose -f docker/compose.prod.yml --env-file .env "$@"; }
 ```
 
-**Eigenaarschap:** beide scripts horen bij gebruiker `madmin` (de cron-eigenaar) en hebben `chmod +x`. De backup-doelmap (`/home/madmin/aimtrack-backups`) is alleen leesbaar voor `madmin`.
-
-### Crontab (madmin)
-
-```cron
-0 3 * * *   /home/madmin/backup-aimtrack.sh        >> /home/madmin/aimtrack-backups/logs/cron.log 2>&1
-0 4 1 * *   /home/madmin/restore-test-aimtrack.sh  >> /home/madmin/aimtrack-backups/logs/cron.log 2>&1
-```
-
-- 03:00 dagelijks → backup.
-- 04:00 op de 1e van de maand → hersteltest.
-- Beide scripts schrijven hun eigen dagrotatie-logbestand in `/home/madmin/aimtrack-backups/logs/`, plus naar de gecombineerde `cron.log`.
-
-### Productie `.env`
-
-Controleer dat productie `.env` `APP_ENV=production` heeft staan (niet `local`). `.env.example` in de repo gebruikt al `production` als default.
-
-### Coverage / verificatie
-
-Bash-scripts zijn niet via Pest gedekt. De runtime-verificatie verloopt via:
-
-1. De maandelijkse hersteltest (cron-regel 2) — exitcode 0 = restore werkt; >0 = pager.
-2. Het dagelijkse cron-log (`/home/madmin/aimtrack-backups/logs/cron.log`) — niet-lege regels = success.
-3. Visuele check `ls -lh /home/madmin/aimtrack-backups/db/` — verwacht 7 daily + tot 4 weekly + tot 3 monthly.
-
-Laatst geslaagde hersteltest: **2026-05-14** → 22 tabellen · 1 user · 7 sessies · 142 schoten · 3 wapens.
-
-## Dev-backup runner (`docker/backup/run-backup.sh`)
-
-Voor lokale dev draait er een aparte runner-container die `scripts/backup-dev-db.sh` aanroept. Het mount-pad in de runner is `/var/www/html/scripts/backup-dev-db.sh` (gelijk aan de andere services in `docker/compose.dev.yml`).
-
-> **Let op:** wanneer `scripts/backup-dev-db.sh` op de host als `app_aimtrack` (of een andere niet-`madmin`/root) eigenaar staat, moet de runner via `sudo` worden gestart — anders kan de container het script niet executable lezen. Zet desnoods `chmod 755 scripts/backup-dev-db.sh` voor brede leesbaarheid.
-
-## Offsite backup
-
-Een tweede kopie van `/home/madmin/aimtrack-backups/` staat buiten de prod-host in een Backblaze B2 bucket, zodat een server-rebuild of disk-failure het meest recente archief niet meeneemt. De replicatie loopt aan het einde van `scripts/backup-aimtrack.sh` via `rclone sync` en is **gated** op de env-var `RCLONE_REMOTE`: alleen wanneer die gezet is wordt er gesynct. Dev/staging laten de variabele leeg en slaan de stap over.
-
-### 1. rclone installeren op de prod-host
+Op de VM is de aanroep iets anders (een eigen compose-bestand en een extra env-bestand); pas de functie daarop aan, zie het runbook.
 
 ```bash
-# als madmin op de prod-host
-curl https://rclone.org/install.sh | sudo bash
-rclone version
+# Welke dumps er zijn en wat de laatste runs meldden
+C exec backup sh -c 'ls -l /backups; tail -n 20 /backups/cron.log'
+
+# Is de nieuwste dump compleet? Moet 1 geven.
+C exec backup sh -c 'zcat "$(ls -t /backups/*.sql.gz | head -n 1)" | tail -n 8 | grep -c "dump complete"'
 ```
 
-### 2. Backblaze B2 bucket + application key
+Een bestand alleen zegt niets, kijk naar de eindregel. Sinds `pg_dump` 16.10 eindigt een dump op een regel `\unrestrict <token>` en staat `PostgreSQL database dump complete` een paar regels daarboven. Vandaar `tail -n 8` en niet `tail -n 3`.
 
-1. Maak in de B2-console een private bucket aan, bv. `aimtrack-prod-backups`.
-2. Maak een **application key** met scope beperkt tot uitsluitend die bucket (geen master key gebruiken).
-3. Noteer de `keyID` en `applicationKey` — die komen alleen in de rclone-config terecht, niet in de repo.
-
-### 3. rclone remote configureren
-
-Configureer een remote `b2-aimtrack` (encrypted-at-rest aanbevolen via een `crypt`-wrapper):
+Een dump buiten het schema om, bijvoorbeeld vlak voor een riskante migratie:
 
 ```bash
-# als madmin
-rclone config
-#  n) new remote → naam: b2-aimtrack → type: b2
-#     account: <keyID> · key: <applicationKey>
-#  (aanbevolen) n) new remote → naam: b2-aimtrack-crypt → type: crypt
-#     remote: b2-aimtrack:aimtrack-prod-backups
-#     filename + directory name encryption: standard · wachtwoorden bewaren in secrets manager
+C exec backup /usr/local/bin/run-backup
 ```
 
-De rclone-config (`~/.config/rclone/rclone.conf`, mode `600`) bevat secrets en hoort **niet** in de repo — bewaar een versleutelde kopie samen met de overige backup-secrets (zie *Config & secrets*).
+## Een dump terugzetten
 
-### 4. Sync activeren in de backup-cron
-
-`scripts/backup-aimtrack.sh` synct het hele `BACKUP_ROOT` (db + storage, logs uitgesloten) naar `RCLONE_REMOTE`. Zet de variabele alleen op de prod-host, in de crontab-regel:
-
-```cron
-0 3 * * *   RCLONE_REMOTE="b2-aimtrack-crypt:" /home/madmin/backup-aimtrack.sh >> /home/madmin/aimtrack-backups/logs/cron.log 2>&1
-```
-
-> Gebruik `b2-aimtrack-crypt:` (de crypt-remote) wanneer je encrypted-at-rest hebt geconfigureerd; anders `b2-aimtrack:aimtrack-prod-backups`. Faalt de sync, dan stopt het script met een niet-nul exitcode (pager via cron).
-
-### 5. Retentie + lifecycle policy in B2
-
-Stel op de bucket een **lifecycle policy** in met file-versies, zodat een per ongeluk verwijderd of overschreven archief terug te halen is:
-
-- Bewaar oude versies minimaal 30 dagen (`keepOnlyLastVersion` uitzetten).
-- Hard-delete pas na de minimum-bewaartermijn, afgestemd op de lokale rotatie (7 dagelijks / 4 wekelijks / 3 maandelijks).
-
-Zo voorkomt de versie-historie dat `rclone sync` (die aan de offsite-kant verwijdert wat lokaal weg is) data definitief weggooit voordat de bewaartermijn voorbij is.
-
-### 6. Eenmalige verificatie
-
-Zet een testbestand offsite en haal het lokaal weer terug:
+Zet een dump altijd eerst terug in een **nieuwe** database naast de bestaande, controleer die, en wissel pas daarna om. Een restore zonder foutmelding is nog geen restore die klopt.
 
 ```bash
-echo "offsite-test $(date)" > /tmp/offsite-test.txt
-rclone copy /tmp/offsite-test.txt "${RCLONE_REMOTE:-b2-aimtrack-crypt:}/_verify/"
-rclone copy "${RCLONE_REMOTE:-b2-aimtrack-crypt:}/_verify/offsite-test.txt" /tmp/offsite-back/
-diff /tmp/offsite-test.txt /tmp/offsite-back/offsite-test.txt && echo "Offsite round-trip OK"
-rclone delete "${RCLONE_REMOTE:-b2-aimtrack-crypt:}/_verify/offsite-test.txt"
+set -o pipefail
+DUMP=prod-db-JJJJMMDD-UUMMSS.sql.gz   # kies de dump uit de lijst hierboven
+
+# 1. Lege database naast de bestaande
+C exec -T db sh -c 'createdb -U "$POSTGRES_USER" -O "$DB_USERNAME" aimtrack_restore'
+
+# 2. De dump erin, in één transactie, stoppen bij de eerste fout
+C exec -T backup cat "/backups/${DUMP}" | gunzip -c \
+  | C exec -T db sh -c 'psql -U "$DB_USERNAME" -d aimtrack_restore -v ON_ERROR_STOP=1 --single-transaction --quiet -o /dev/null'
 ```
 
-Een dry-run van de volledige backup controleer je met:
+De database maak je aan als de beheerrol van de container (`POSTGRES_USER`), de inhoud zet je terug als de rol van de app (`DB_USERNAME`). Dan is de app eigenaar van alles wat de dump aanmaakt, want de dump zelf zet geen eigenaren (`--no-owner`). In `docker/compose.prod.yml` zijn die twee dezelfde rol, en krijgt de `db`-dienst de `.env` mee, zodat `DB_USERNAME` in die container bestaat. Op de VM is de app-rol bewust geen superuser en staat die variabele niet in de `db`-container; gebruik daar de rolnamen uit het runbook. Zet je daar terug als de beheerrol, dan wordt die eigenaar van alle tabellen en loopt de app bij de eerste query tegen `permission denied`. `-o /dev/null` houdt de uitvoer van de `setval`-regels uit de dump stil; fouten komen gewoon op het scherm.
+
+`pipefail` en `--single-transaction` zijn niet optioneel. Zonder `pipefail` telt alleen de exitcode van `psql`: ontbreekt de dump of breekt `gunzip` af, dan krijgt `psql` een lege of halve invoer en meldt het gewoon succes. Met `--single-transaction` en `ON_ERROR_STOP` blijft er bij een fout niets half staan.
+
+Controleer daarna de inhoud, bijvoorbeeld het aantal rijen in de kerntabellen, tegen wat je verwacht of tegen de live database:
 
 ```bash
-RCLONE_REMOTE="b2-aimtrack-crypt:" /home/madmin/backup-aimtrack.sh --dry-run
+C exec -T db sh -c 'psql -U "$POSTGRES_USER" -d aimtrack_restore -c "
+  SELECT (SELECT count(*) FROM users) AS users,
+         (SELECT count(*) FROM sessions) AS sessions,
+         (SELECT count(*) FROM session_shots) AS session_shots,
+         (SELECT count(*) FROM weapons) AS weapons;"'
 ```
 
-### Coverage / verificatie
+Klopt dat, wissel dan om. Zet eerst alles stil wat met de database praat, want een database met open verbindingen kun je niet hernoemen:
 
-Net als de overige backup-scripts is dit bash-werk niet via Pest gedekt; runtime-verificatie verloopt via:
+```bash
+C stop app queue backup
+C exec -T db sh -c 'psql -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 \
+  -c "ALTER DATABASE aimtrack RENAME TO aimtrack_oud" \
+  -c "ALTER DATABASE aimtrack_restore RENAME TO aimtrack"'
+C up -d
+```
 
-1. Het cron-log (`/home/madmin/aimtrack-backups/logs/cron.log`) — de regel `Offsite sync klaar.` bij success, of een `FOUT:`-regel + niet-nul exitcode bij falen.
-2. De eenmalige round-trip uit stap 6.
-3. Steekproef in de B2-console: meest recente `db/daily-*.sql.gz` aanwezig en versie-historie zichtbaar.
+Gebruik de naam uit `DB_DATABASE` als die niet `aimtrack` is. Laat `aimtrack_oud` staan tot vaststaat dat de herstelde database goed is; dat is de weg terug. Controleer daarna `/health`, een login en een sessieoverzicht.
+
+Alles tussen het moment van de dump en het herstel is weg. Bij een dagelijkse dump is dat in het slechtste geval een dag invoer. Overleg daarom met de eigenaar voordat je omwisselt.
+
+Het hele pad bij een mislukte release, inclusief het terugrollen van de code, staat in `docs/operations.md` onder *Als de database ook terug moet*.
+
+## Wat niet in deze repo staat
+
+- **De offsite-kopie en de hersteltest daarvan.** Homelab-werk, zie het runbook `docs/runbooks/aimtrack.md` in `Marcvdc/homelab`.
+- **RPO en RTO.** Die horen bij de offsite-backup en worden in de homelab vastgelegd (#142).
+- **Uploads en `.env`.** Geen aparte backup in deze stack; ze komen terug via de offsite-kopie van de VM.
+
+## Lokale ontwikkeling
+
+`scripts/backup-dev-db.sh` werkt ook los op de dev-stack. Zonder `BACKUP_MODE` gebruikt het `docker compose exec` op de `db`-dienst uit `docker/compose.dev.yml` en schrijft het naar `backups/` in de repo, met een bewaartermijn van 7 dagen. Met `BACKUP_DRY_RUN=1` maakt het alleen een placeholder, zonder `pg_dump`. Meer over de opbouw van de dienst en de variabelen staat in `docs/AimTrack/tech/backups.md`.
