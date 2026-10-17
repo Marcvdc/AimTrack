@@ -16,6 +16,10 @@
 .env
 .env.*
 
+# Afgeleide Laravel-caches van een lokale install. Een dev-packages.php noemt
+# providers uit require-dev die in de --no-dev vendor ontbreken (#175).
+/bootstrap/cache/*.php
+
 # Gegenereerde frontend-assets
 /public/build
 /public/hot

@@ -85,6 +85,36 @@ test('entrypoint is syntactisch geldig onder bash', function () {
     expect($result->exitCode())->toBe(0, $result->errorOutput());
 });
 
+test('entrypoint start ook als bootstrap/cache nog providers van de vorige build noemt', function () {
+    ['root' => $root, 'app' => $app, 'env' => $env] = entrypointSandbox();
+    mkdir($app.'/bootstrap/cache', 0755);
+    $stale = "<?php return ['providers' => ['Verdwenen\\\\VerdwenenServiceProvider']];\n";
+    file_put_contents($app.'/bootstrap/cache/packages.php', $stale);
+    file_put_contents($app.'/bootstrap/cache/services.php', $stale);
+    file_put_contents($app.'/bootstrap/cache/config.php', $stale);
+    file_put_contents($app.'/bootstrap/cache/routes-v7.php', $stale);
+    file_put_contents($app.'/bootstrap/cache/events.php', $stale);
+    file_put_contents($app.'/bootstrap/cache/.gitignore', "*\n!.gitignore\n");
+
+    writeEntrypointStub($root.'/bin/php', [
+        'if grep -qs Verdwenen bootstrap/cache/*.php; then',
+        '  echo \'Class "Verdwenen\VerdwenenServiceProvider" not found\' >&2',
+        '  exit 1',
+        'fi',
+        'echo "php $*" >> "${CHOWN_LOG}"',
+    ]);
+
+    $result = Process::env($env)
+        ->run(['bash', base_path('docker/entrypoint.sh'), 'touch', $root.'/exec-ran']);
+
+    expect($result->exitCode())->toBe(0, $result->errorOutput())
+        ->and(glob($app.'/bootstrap/cache/*.php'))->toBe([])
+        ->and(file_exists($app.'/bootstrap/cache/.gitignore'))->toBeTrue()
+        ->and(file_exists($root.'/exec-ran'))->toBeTrue();
+
+    removeEntrypointSandbox($root);
+});
+
 test('entrypoint maakt de disk-roots aan voordat de rechten worden gezet', function () {
     ['root' => $root, 'app' => $app, 'env' => $env] = entrypointSandbox();
 
