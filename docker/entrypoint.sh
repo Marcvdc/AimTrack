@@ -45,8 +45,9 @@ mkdir -p storage/app/private storage/app/public \
 # packages.php en services.php noemen de service providers van die build; is een
 # pakket sindsdien verdwenen, dan valt de eerste artisan over een ontbrekende
 # klasse en blijft de container herstarten (#181). Alles hierin is afgeleid:
-# Laravel bouwt de providerlijsten bij de volgende artisan opnieuw op uit vendor,
-# en de config-, route- en event-caches worden hieronder opnieuw gemaakt.
+# Laravel bouwt de providerlijsten bij de volgende artisan opnieuw op uit vendor.
+# De config-, route- en event-caches maakt het production-blok hieronder opnieuw;
+# in andere omgevingen draait de app zonder die caches.
 rm -f bootstrap/cache/*.php
 
 if [ -f .env ]; then

@@ -98,6 +98,7 @@ test('entrypoint start ook als bootstrap/cache nog providers van de vorige build
 
     writeEntrypointStub($root.'/bin/php', [
         'if grep -qs Verdwenen bootstrap/cache/*.php; then',
+        '  echo "verouderde cache bij php $*" >> "${CHOWN_LOG}"',
         '  echo \'Class "Verdwenen\VerdwenenServiceProvider" not found\' >&2',
         '  exit 1',
         'fi',
@@ -108,6 +109,7 @@ test('entrypoint start ook als bootstrap/cache nog providers van de vorige build
         ->run(['bash', base_path('docker/entrypoint.sh'), 'touch', $root.'/exec-ran']);
 
     expect($result->exitCode())->toBe(0, $result->errorOutput())
+        ->and(file_get_contents($root.'/chown.log'))->not->toContain('verouderde cache')
         ->and(glob($app.'/bootstrap/cache/*.php'))->toBe([])
         ->and(file_exists($app.'/bootstrap/cache/.gitignore'))->toBeTrue()
         ->and(file_exists($root.'/exec-ran'))->toBeTrue();
