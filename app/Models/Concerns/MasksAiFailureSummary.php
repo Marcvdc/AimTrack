@@ -22,11 +22,6 @@ trait MasksAiFailureSummary
         'Geen AI-antwoord beschikbaar (',
     ];
 
-    public function hasFailedSummary(): bool
-    {
-        return self::isLegacyFailureSummary($this->attributes['summary'] ?? null);
-    }
-
     protected function summary(): Attribute
     {
         return Attribute::get(fn (?string $value): ?string => self::isLegacyFailureSummary($value)

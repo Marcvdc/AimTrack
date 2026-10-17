@@ -13,10 +13,12 @@ use App\Models\AiWeaponInsight;
 use App\Models\Session;
 use App\Models\User;
 use App\Models\Weapon;
+use App\Notifications\AiCoachFailureNotification;
 use App\Services\Ai\ShooterCoach;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Sleep;
 use Livewire\Livewire;
 
@@ -24,6 +26,14 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     Sleep::fake();
+
+    /*
+     * ShooterCoach::maybeAlert() telt mislukkingen in de cache en stuurt bij de
+     * derde een (gequeuede) mail. Een vaste array-cache en een nep-notificatiekanaal
+     * houden die zijlijn los van de omgeving en uit de jobs-tabel.
+     */
+    config(['cache.default' => 'array']);
+    Notification::fake();
 });
 
 function failurePathCoach(): ShooterCoach
@@ -90,11 +100,8 @@ it('laat een bestaande reflectie ongewijzigd als de call faalt', function (): vo
     $session = Session::factory()->for(failurePathUser())->create();
     $reflection = AiReflection::factory()->for($session)->create(goodReflectionContent());
 
-    try {
-        (new GenerateSessionReflectionJob($session))->handle();
-    } catch (AiUnavailableException) {
-        // De job laat de fout door zodat de queue hem opnieuw probeert.
-    }
+    expect(fn () => (new GenerateSessionReflectionJob($session))->handle())
+        ->toThrow(AiUnavailableException::class);
 
     expect($reflection->fresh()->only(array_keys(goodReflectionContent())))
         ->toBe(goodReflectionContent());
@@ -106,11 +113,8 @@ it('laat een bestaand wapeninzicht ongewijzigd als de call faalt', function (): 
     $weapon = Weapon::factory()->for(failurePathUser())->create();
     $insight = $weapon->aiWeaponInsight()->create(goodInsightContent());
 
-    try {
-        (new GenerateWeaponInsightJob($weapon))->handle();
-    } catch (AiUnavailableException) {
-        // De job laat de fout door zodat de queue hem opnieuw probeert.
-    }
+    expect(fn () => (new GenerateWeaponInsightJob($weapon))->handle())
+        ->toThrow(AiUnavailableException::class);
 
     expect($insight->fresh()->only(array_keys(goodInsightContent())))
         ->toBe(goodInsightContent());
@@ -121,12 +125,11 @@ it('retryt een 401 of 403 niet', function (int $status): void {
 
     $session = Session::factory()->for(failurePathUser())->create();
 
-    try {
-        failurePathCoach()->generateSessionReflection($session);
-    } catch (AiUnavailableException $exception) {
-        expect($exception->status)->toBe($status)
-            ->and($exception->isRetryable())->toBeFalse();
-    }
+    expect(fn () => failurePathCoach()->generateSessionReflection($session))
+        ->toThrow(function (AiUnavailableException $exception) use ($status): void {
+            expect($exception->status)->toBe($status)
+                ->and($exception->isRetryable())->toBeFalse();
+        });
 
     Http::assertSentCount(1);
     Sleep::assertNeverSlept();
@@ -137,12 +140,11 @@ it('retryt een 429 en een 5xx met oplopende backoff', function (int $status): vo
 
     $session = Session::factory()->for(failurePathUser())->create();
 
-    try {
-        failurePathCoach()->generateSessionReflection($session);
-    } catch (AiUnavailableException $exception) {
-        expect($exception->status)->toBe($status)
-            ->and($exception->isRetryable())->toBeTrue();
-    }
+    expect(fn () => failurePathCoach()->generateSessionReflection($session))
+        ->toThrow(function (AiUnavailableException $exception) use ($status): void {
+            expect($exception->status)->toBe($status)
+                ->and($exception->isRetryable())->toBeTrue();
+        });
 
     Http::assertSentCount(3);
     Sleep::assertSleptTimes(2);
@@ -167,14 +169,23 @@ it('herstelt na een tijdelijke 5xx en slaat dan de reflectie op', function (): v
     expect($reflection->summary)->toBe('Goede reflectie die moet blijven staan.');
 });
 
-it('geeft beide jobs tries en backoff', function (string $jobClass): void {
+it('geeft beide jobs tries, backoff en een timeout die de langste poging dekt', function (string $jobClass): void {
     $job = $jobClass === GenerateSessionReflectionJob::class
         ? new GenerateSessionReflectionJob(Session::factory()->create())
         : new GenerateWeaponInsightJob(Weapon::factory()->create());
 
+    /*
+     * Langste poging: 3 HTTP-pogingen van max. 20 s (Guzzle-timeout, connect
+     * inbegrepen) plus 1 s en 3 s backoff = 64 s. De job-timeout moet daarboven
+     * liggen en onder retry_after van de database-queue blijven.
+     */
+    $longestAttemptSeconds = 3 * 20 + 1 + 3;
+
     expect($job->tries)->toBeGreaterThan(1)
         ->and($job->backoff)->toBeArray()->not->toBeEmpty()
-        ->and(method_exists($job, 'failed'))->toBeTrue();
+        ->and(method_exists($job, 'failed'))->toBeTrue()
+        ->and($job->timeout)->toBeGreaterThan($longestAttemptSeconds)
+        ->and($job->timeout)->toBeLessThan(config('queue.connections.database.retry_after'));
 })->with([GenerateSessionReflectionJob::class, GenerateWeaponInsightJob::class]);
 
 /**
@@ -237,21 +248,22 @@ it('plant de job opnieuw in bij een 5xx en zet hem na de laatste poging in faile
     app()->instance('sentry', $sentry);
 
     $session = Session::factory()->for(failurePathUser())->create();
+    $tries = (new GenerateSessionReflectionJob($session))->tries;
     $reflection = AiReflection::factory()->for($session)->create(goodReflectionContent());
 
     GenerateSessionReflectionJob::dispatch($session);
-    $tries = (new GenerateSessionReflectionJob($session))->tries;
 
     foreach (range(1, $tries) as $attempt) {
         DB::table('jobs')->update(['available_at' => now()->getTimestamp()]);
         runDatabaseWorkerOnce();
 
         if ($attempt < $tries) {
-            expect(DB::table('jobs')->count())->toBe(1)
+            expect(DB::table('jobs')->value('attempts'))->toBe($attempt)
                 ->and(DB::table('failed_jobs')->count())->toBe(0);
         }
     }
 
+    Notification::assertSentOnDemand(AiCoachFailureNotification::class);
     expect(DB::table('jobs')->count())->toBe(0)
         ->and(DB::table('failed_jobs')->count())->toBe(1)
         ->and($reflection->fresh()->summary)->toBe('Goede reflectie die moet blijven staan.');
@@ -262,9 +274,7 @@ it('toont een nette melding in plaats van een opgeslagen foutstring', function (
     $insight = Weapon::factory()->create()->aiWeaponInsight()->create(['summary' => $legacy]);
 
     expect($reflection->summary)->toBe(AiReflection::FAILED_SUMMARY)
-        ->and($reflection->hasFailedSummary())->toBeTrue()
-        ->and($insight->summary)->toBe(AiWeaponInsight::FAILED_SUMMARY)
-        ->and($insight->hasFailedSummary())->toBeTrue();
+        ->and($insight->summary)->toBe(AiWeaponInsight::FAILED_SUMMARY);
 })->with([
     'AI-configuratie ontbreekt. Voeg je Claude API-key toe bij AI-instellingen om antwoorden te genereren.',
     'Geen AI-antwoord beschikbaar (API-fout of timeout). Probeer het later opnieuw.',
@@ -274,8 +284,7 @@ it('toont een nette melding in plaats van een opgeslagen foutstring', function (
 it('laat een gewone samenvatting met rust', function (): void {
     $reflection = AiReflection::factory()->create(['summary' => 'Sterke serie 2.']);
 
-    expect($reflection->summary)->toBe('Sterke serie 2.')
-        ->and($reflection->hasFailedSummary())->toBeFalse();
+    expect($reflection->summary)->toBe('Sterke serie 2.');
 });
 
 it('toont op de sessiepagina de nette melding en niet de foutstring', function (): void {
@@ -304,4 +313,32 @@ it('toont op de wapenpagina de nette melding en niet de foutstring', function ()
         ->assertOk()
         ->assertSee(AiWeaponInsight::FAILED_SUMMARY)
         ->assertDontSee('Geen AI-antwoord beschikbaar');
+});
+
+it('laat met de sync-queue een tijdelijke fout door naar wie de job dispatcht', function (): void {
+    config(['queue.default' => 'sync']);
+    Http::fake(['api.anthropic.com/*' => Http::response(['error' => 'kapot'], 503)]);
+    app()->instance('sentry', Mockery::spy());
+
+    $session = Session::factory()->for(failurePathUser())->create();
+    $reflection = AiReflection::factory()->for($session)->create(goodReflectionContent());
+
+    expect(fn () => GenerateSessionReflectionJob::dispatch($session))
+        ->toThrow(AiUnavailableException::class);
+
+    expect($reflection->fresh()->summary)->toBe('Goede reflectie die moet blijven staan.');
+});
+
+it('laat met de sync-queue een ontbrekende key stil falen zonder exception', function (): void {
+    config(['queue.default' => 'sync']);
+    Http::fake();
+
+    $sentry = Mockery::mock();
+    $sentry->shouldReceive('captureException')->once()->with(Mockery::type(AiKeyMissingException::class));
+    app()->instance('sentry', $sentry);
+
+    GenerateSessionReflectionJob::dispatch(Session::factory()->for(failurePathUser(null))->create());
+
+    Http::assertNothingSent();
+    expect(AiReflection::query()->count())->toBe(0);
 });

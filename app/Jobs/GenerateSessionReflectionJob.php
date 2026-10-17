@@ -29,6 +29,13 @@ class GenerateSessionReflectionJob implements ShouldQueue
      */
     public array $backoff = [60, 300];
 
+    /**
+     * Langste poging: 3 HTTP-pogingen van max. 20 s plus 1 s en 3 s backoff
+     * in ShooterCoach is 64 s. Ruim daarboven, en onder retry_after (90 s)
+     * van de database-queue zodat een lopende poging niet dubbel wordt opgepakt.
+     */
+    public int $timeout = 80;
+
     public function __construct(public Session $session) {}
 
     /**
