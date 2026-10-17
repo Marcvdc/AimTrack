@@ -38,12 +38,26 @@ test('landing page uses free-tier CTA copy, not trial or pricing language', func
         ->assertDontSee('30 dagen');
 });
 
-test('landing page trust strip shows the configured club, default SSV Scherpschutters', function (): void {
+test('landing page hides the trust strip when no club is configured', function (): void {
+    config()->set('landing.club', '');
+    config()->set('landing.partner_clubs', []);
+
+    // Zonder ingestelde club heeft de instance geen club die AimTrack gebruikt.
+    // De strip blijft dan weg in plaats van een naam te noemen die nergens op slaat (#131).
+    $this->get('/')
+        ->assertOk()
+        ->assertDontSee('Gebruikt door sportschutters bij')
+        ->assertDontSee('SSV Scherpschutters')
+        ->assertDontSee('SV Diemen');
+});
+
+test('landing page trust strip appears once a club is configured', function (): void {
+    config()->set('landing.club', 'PSV De Roos');
+
     $this->get('/')
         ->assertOk()
         ->assertSee('Gebruikt door sportschutters bij', escape: false)
-        ->assertSee('SSV Scherpschutters', escape: false)
-        ->assertDontSee('SV Diemen');
+        ->assertSee('PSV De Roos', escape: false);
 });
 
 test('landing page club name is configurable', function (): void {
@@ -128,8 +142,47 @@ test('landing page renders the AI-coach deep-dive with a bracket frame', functio
         ->assertOk()
         ->assertSee('jouw cijfers', escape: false)
         ->assertSee('aimtrack-bracket-frame', escape: false)
-        ->assertSee('SCORE-DRIFT', escape: false)
-        ->assertSee('je data verlaat de server niet', escape: false);
+        ->assertSee('SCORE-DRIFT', escape: false);
+});
+
+test('landing page does not claim that data stays on the server', function (): void {
+    // De AI-coach stuurt sessie- en wapengegevens naar Anthropic, dus deze belofte
+    // was onwaar en mag niet stilletjes terugkomen (#132).
+    $this->get('/')
+        ->assertOk()
+        ->assertDontSee('je data verlaat de server niet')
+        ->assertDontSee('Geen data verlaat de server')
+        ->assertDontSee('Alles draait lokaal')
+        ->assertDontSee('data is van jou, altijd')
+        ->assertDontSee('alleen de AI-coach stuurt gegevens naar buiten');
+});
+
+test('landing page names Anthropic as the destination of AI data', function (): void {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('api.anthropic.com', escape: false)
+        ->assertSee('zonder eigen Claude-key geen enkele AI-call', escape: false)
+        ->assertSee('als je ze zelf inricht', escape: false);
+});
+
+test('landing page carries no WM-4 or compliance claim', function (): void {
+    // WM-4 is het verlofdocument van de korpschef, geen standaard waaraan software
+    // kan voldoen (#131). Ook de conformiteitstaal eromheen blijft weg.
+    $this->get('/')
+        ->assertOk()
+        ->assertDontSee('WM-4')
+        ->assertDontSee('WM4')
+        ->assertDontSee('Wet-conforme')
+        ->assertDontSee('conforme administratie')
+        ->assertDontSee('klaar voor inlevering');
+});
+
+test('landing page does not advertise services that do not exist', function (): void {
+    // Er is geen NL-cloud en AimTrack levert geen keuringsbrief (#131).
+    $this->get('/')
+        ->assertOk()
+        ->assertDontSee('NL-cloud')
+        ->assertDontSee('keuringsbrief');
 });
 
 test('landing page renders the self-hosted strip in place of pricing', function (): void {

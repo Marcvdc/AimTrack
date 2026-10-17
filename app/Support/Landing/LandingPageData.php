@@ -98,10 +98,13 @@ class LandingPageData
 
     /**
      * Primaire clubnaam voor de trust-strip + footer (per-instance configureerbaar).
+     *
+     * Leeg als er niets is ingesteld: de strip claimt dan geen gebruikers die er
+     * niet zijn.
      */
     public function club(): string
     {
-        return (string) config('landing.club', 'SSV Scherpschutters');
+        return trim((string) config('landing.club', ''));
     }
 
     /**

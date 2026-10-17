@@ -16,7 +16,7 @@ AimTrack kan sessies exporteren naar CSV of PDF voor de eigen verenigingsadminis
 
 ## PDF
 - Eenvoudige Blade-view met periodekop, totalen per wapen/kaliber en tabel met sessies.
-- Disclaimer onderaan: "Let op: dit document is een hulpmiddel; controleer altijd zelf of dit voldoet aan de actuele eisen van de politie / korpschef voor een WM-4 aanvraag." (NL).
+- Disclaimer onderaan: "Let op: dit is een eigen trainingsoverzicht uit AimTrack. Het is niet afgetekend en niet gevalideerd; controleer zelf of het voldoet aan wat je vereniging of een instantie van je vraagt." (NL).
 - Render via lichte PDF-lib (bijv. Dompdf). Houd styles minimalistisch zodat printbaar is.
 
 ## Validatie & beveiliging
