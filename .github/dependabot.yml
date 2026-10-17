@@ -1,0 +1,44 @@
+# Wekelijkse update-PR's voor alle afhankelijkheden (issue #189, deel van #136).
+# Minor- en patch-updates komen per ecosysteem samen in een PR; majors blijven los,
+# omdat die meestal eigen werk vragen. Security-updates lopen hier los van en komen
+# direct binnen zodra er een advisory is.
+version: 2
+updates:
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 5
+    groups:
+      composer-minor-en-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-en-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 5
+    groups:
+      actions-minor-en-patch:
+        update-types:
+          - minor
+          - patch

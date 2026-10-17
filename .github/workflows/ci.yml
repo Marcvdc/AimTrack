@@ -63,12 +63,11 @@ jobs:
           extensions: intl, mbstring, bcmath, zip
           coverage: none
 
-      # Rapporteert de advisories op composer.lock zonder de run rood te maken: de
-      # openstaande set wordt gedicht via de Dependabot-PR's, niet via deze job.
-      # Zie issue #136.
+      # Faalt zodra er een security advisory op composer.lock staat. De uitvoer gaat
+      # altijd naar de job summary, ook als de stap faalt. Sinds #179 is de set leeg,
+      # dus elke nieuwe advisory maakt de run rood (issue #189, deel van #136).
       - name: Run composer audit
         id: composer-audit
-        continue-on-error: true
         run: |
           set +e
           composer audit --locked --no-interaction --format=plain | tee composer-audit.txt
@@ -83,8 +82,8 @@ jobs:
           exit "${status}"
 
       - name: Report audit outcome
-        if: ${{ steps.composer-audit.outcome == 'failure' }}
-        run: echo "::warning title=composer audit::Er staan advisories open op composer.lock, zie de job summary."
+        if: ${{ failure() && steps.composer-audit.outcome == 'failure' }}
+        run: echo "::error title=composer audit::Er staan advisories open op composer.lock, zie de job summary."
 
   test:
     name: Tests (Pest)
