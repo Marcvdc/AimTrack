@@ -115,7 +115,7 @@ it('verifieert het e-mailadres via de link uit de mail als de vlag aan staat', f
 
     $this->actingAs($user)
         ->get(Filament::getPanel('admin')->getVerifyEmailUrl($user))
-        ->assertRedirect();
+        ->assertRedirect(Filament::getPanel('admin')->getUrl());
 
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
 });

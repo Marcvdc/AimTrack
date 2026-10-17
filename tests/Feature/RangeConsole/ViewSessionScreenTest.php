@@ -124,7 +124,8 @@ it('refuses to render sessions owned by another user via the eloquent scope', fu
 
     Livewire::actingAs($user)
         ->test(ViewSession::class, ['record' => $foreignSession->id])
-        ->assertNotFound();
+        ->assertNotFound()
+        ->assertDontSee($foreignSession->range_name);
 });
 
 it('shows AI reflection actions and marks the reflection as read', function (): void {
