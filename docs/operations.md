@@ -127,18 +127,18 @@ Dit is nu een afspraak, geen geautomatiseerde controle. Ook draaien de migraties
 
 Een rollback van de code is niet genoeg wanneer een migratie of een bug data heeft beschadigd. Dat pad loopt via de backups (zie `docs/BACKUPS.md`):
 
-1. Zet de stack stil zodat er niets meer bijkomt: `docker compose -f docker/compose.prod.yml --env-file .env stop app queue`.
-2. Kies de dump: de dagelijkse dumps staan als `daily-*.sql.gz` in `/home/madmin/aimtrack-backups/db`.
-3. Herstel naar een **tijdelijke** database en controleer die eerst: `bash /home/madmin/restore-test-aimtrack.sh --keep` herstelt de nieuwste dump naar `aimtrack_restore_test` en rapporteert tabel- en rijcounts.
-4. Pas als die telling klopt, herstel je over de echte database heen. Maak daarvóór altijd een verse dump van de huidige (beschadigde) staat, anders is de situatie van vóór het herstel onherroepelijk weg.
+1. Zet de stack stil zodat er niets meer bijkomt: `docker compose -f docker/compose.prod.yml --env-file .env stop app queue`. De `backup`-dienst blijft draaien, die heb je nodig om bij de dumps te komen.
+2. Kies de dump: de `backup`-dienst zet elke nacht om 03:00 een `prod-db-JJJJMMDD-UUMMSS.sql.gz` in `/backups` (volume `db_backups_prod`) en bewaart die 14 dagen. `docker compose -f docker/compose.prod.yml --env-file .env exec backup ls -l /backups` toont wat er is. Controleer dat de gekozen dump compleet is, zie *Controleren of de dump werkt* in `docs/BACKUPS.md`.
+3. Herstel naar een **tijdelijke** database `aimtrack_restore` naast de bestaande en controleer die eerst. De commando's staan in `docs/BACKUPS.md` onder *Een dump terugzetten*.
+4. Pas als die controle klopt, wissel je om. Maak daarvóór altijd een verse dump van de huidige (beschadigde) staat met `docker compose -f docker/compose.prod.yml --env-file .env exec backup /usr/local/bin/run-backup`, anders is de situatie van vóór het herstel onherroepelijk weg. Het omwisselen (hernoemen naar `aimtrack_oud`, de herstelde database op de plek van `aimtrack`) staat ook in `docs/BACKUPS.md`; sla de `up -d` aan het eind daarvan hier over, die komt in stap 5.
 5. Rol de code terug naar de tag die bij die dump hoort (zie hierboven) en start de stack weer: `docker compose -f docker/compose.prod.yml --env-file .env up -d`.
 6. Controleer `/health` en een handmatige login plus een sessieoverzicht.
 
 Alles tussen het moment van de dump en het herstel is weg. Bij een dagelijkse dump is dat in het slechtste geval een dag invoer, dus overleg voor stap 4 met de eigenaar.
 
 ## Backups & herstel
-- Zie `docs/BACKUPS.md` voor gedetailleerde stappen (pg_dump + storage sync + restore flow).
-- Test herstel periodiek: herstel DB-dump in een aparte omgeving en valideer login + sessies/weapons.
+- Zie `docs/BACKUPS.md`: de nachtelijke dump van de `backup`-dienst, controleren en terugzetten.
+- De offsite-kopie van de VM en de hersteltest daarvan staan in het runbook `docs/runbooks/aimtrack.md` in `Marcvdc/homelab`.
 
 ## Monitoring & logging
 - Stuur logs naar stdout/Sentry. Configureer alerts op 5xx rate, queue-failures en AI-error spikes.
