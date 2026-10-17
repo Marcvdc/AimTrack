@@ -51,6 +51,24 @@ opzet; ze blokkeren de merge van PR #157 niet, maar wel de eerste deploy erna.
 - [ ] `AppServiceProvider` forceert HTTPS in productie; 4xx/5xx logging naar centraal logkanaal.
 - [ ] Storage permissies gecontroleerd (`storage/`, `bootstrap/cache/` schrijfbaar door web user, geen world-writes).
 - [ ] Uploads op juiste disk (bij voorkeur S3/secure bucket) of lokale opslag afgeschermd via webserver.
+- [ ] `AUTH_REGISTRATION_ENABLED` staat uit (default). Dan bestaat `/admin/register` niet (404). Zet je hem aan, dan is e-mailverificatie verplicht en moet de mailconfig werken. Accounts van vóór migratie `2026_10_17_083301_mark_existing_users_as_verified` zijn als geverifieerd gemarkeerd. Let op: met registratie uit wordt bij een verse install niemand vanzelf beheerder; zet `is_admin` dan zelf voor het eerste account.
+- [ ] PHP-hardening op de FPM-pool (`docker/php/fpm-hardening.conf`): `exec`, `passthru`, `shell_exec`, `system`, `proc_open`, `popen` en `pcntl_exec` uit, `allow_url_fopen` uit. Alleen voor webrequests; de CLI (`queue:work`, `artisan`, de entrypoint) houdt ze, want Symfony Process heeft `proc_open` nodig. `expose_php = Off` via `docker/php/hardening.ini`.
+
+### Controle van de PHP-hardening op een gebouwde image
+
+```bash
+docker build --target production -t aimtrack-prod:check .
+
+# CLI: geen beperking
+docker run --rm --entrypoint php aimtrack-prod:check -r 'var_dump(ini_get("disable_functions"), ini_get("allow_url_fopen"));'
+# verwacht: string(0) "" en string(1) "1"
+
+# FPM-pool: wel beperkt
+docker run --rm --entrypoint php-fpm aimtrack-prod:check -tt 2>&1 | grep -E 'disable_functions|allow_url_fopen'
+# verwacht: php_admin_value[allow_url_fopen] = 0 en de zeven functies
+```
+
+Wil je het in een echt FPM-request zien: start in een wegwerpcontainer `php-fpm -D`, installeer daar `libfcgi-bin` en vraag een scriptje op met `SCRIPT_FILENAME=/pad/naar/probe.php REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:9000`. `ini_get('disable_functions')` geeft dan de lijst terug en `exec()` faalt met `Call to undefined function`. Installeer `libfcgi-bin` niet in de image zelf.
 
 ## AI & externe diensten
 - [ ] AI-provider key beschikbaar als secret; timeouts/retries geactiveerd in `ShooterCoach`.

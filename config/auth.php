@@ -114,4 +114,18 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Self-registration
+    |--------------------------------------------------------------------------
+    |
+    | Of bezoekers zelf een account kunnen aanmaken via /admin/register. Staat
+    | standaard uit: een app die aan het internet hangt, laat niet iedereen
+    | een account aanmaken en uploaden. Staat hij aan, dan moet een nieuwe
+    | gebruiker eerst zijn e-mailadres bevestigen (zie AdminPanelProvider).
+    |
+    */
+
+    'registration_enabled' => (bool) env('AUTH_REGISTRATION_ENABLED', false),
+
 ];

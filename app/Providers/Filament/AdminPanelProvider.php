@@ -5,6 +5,8 @@ namespace App\Providers\Filament;
 use App\Support\Features\AimtrackFeatureToggle;
 use EslamRedaDiv\FilamentCopilot\FilamentCopilotPlugin;
 use Filament\Actions\Action;
+use Filament\Auth\Pages\EmailVerification\EmailVerificationPrompt;
+use Filament\Auth\Pages\Register;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -23,13 +25,19 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
+        $registrationEnabled = (bool) config('auth.registration_enabled');
+
         return $panel
             ->default()
             ->id('admin')
             ->path('admin')
             ->login()
             ->passwordReset()
-            ->registration()
+            ->registration($registrationEnabled ? Register::class : null)
+            ->emailVerification(
+                $registrationEnabled ? EmailVerificationPrompt::class : null,
+                isRequired: $registrationEnabled,
+            )
             ->profile()
             ->brandLogo(fn (): HtmlString => new HtmlString(
                 Blade::render('<x-aimtrack.wordmark size="28" />')
