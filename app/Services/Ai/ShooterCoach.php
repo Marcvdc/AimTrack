@@ -2,6 +2,8 @@
 
 namespace App\Services\Ai;
 
+use App\Exceptions\Ai\AiKeyMissingException;
+use App\Exceptions\Ai\AiUnavailableException;
 use App\Models\AiReflection;
 use App\Models\AiWeaponInsight;
 use App\Models\Session;
@@ -9,6 +11,8 @@ use App\Models\SessionWeapon;
 use App\Models\Weapon;
 use App\Notifications\AiCoachFailureNotification;
 use App\Services\SessionStatsService;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -19,6 +23,13 @@ use Throwable;
 
 class ShooterCoach
 {
+    /**
+     * Wachttijden in milliseconden tussen de HTTP-pogingen bij een tijdelijke fout.
+     *
+     * @var array<int, int>
+     */
+    private const RETRY_BACKOFF_MS = [1000, 3000];
+
     public function __construct(
         private readonly string $model = 'claude-haiku-4-5-20251001',
         private readonly string $baseUrl = 'https://api.anthropic.com',
@@ -56,12 +67,16 @@ class ShooterCoach
         return $weapon->aiWeaponInsight()->updateOrCreate([], $parsed);
     }
 
+    /**
+     * @throws AiKeyMissingException als er geen Claude API-key is
+     * @throws AiUnavailableException als de provider geen bruikbaar antwoord geeft
+     */
     private function callModel(string $prompt, ?string $apiKey): string
     {
         if (blank($apiKey)) {
             Log::warning('AI: geen Claude API key voor deze gebruiker.');
 
-            return 'AI-configuratie ontbreekt. Voeg je Claude API-key toe bij AI-instellingen om antwoorden te genereren.';
+            throw new AiKeyMissingException;
         }
 
         $payload = [
@@ -85,34 +100,50 @@ class ShooterCoach
                 ])
                 ->connectTimeout(5)
                 ->timeout(20)
-                ->retry(2, 500, throw: false)
+                ->retry(self::RETRY_BACKOFF_MS, when: fn (Throwable $exception): bool => $this->shouldRetry($exception), throw: false)
                 ->post('/v1/messages', $payload);
-
-            if (! $response->successful()) {
-                Log::error('AI: fout bij API-call', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-
-                $this->maybeAlert('API-fout', ['status' => $response->status()]);
-
-                return 'Geen AI-antwoord beschikbaar (API-fout of timeout). Probeer het later opnieuw.';
-            }
-
-            $content = data_get($response->json(), 'content.0.text');
-
-            return is_string($content)
-                ? $content
-                : (json_encode($content) ?: '');
-        } catch (Throwable $exception) {
+        } catch (ConnectionException $exception) {
             Log::error('AI: exception tijdens API-call', [
                 'message' => $exception->getMessage(),
             ]);
 
             $this->maybeAlert('Exception', ['exception' => $exception->getMessage()]);
 
-            return 'Geen AI-antwoord beschikbaar (timeout of netwerkfout). Probeer het opnieuw of controleer de provider.';
+            throw new AiUnavailableException('AI-provider onbereikbaar (timeout of netwerkfout).', previous: $exception);
         }
+
+        if (! $response->successful()) {
+            Log::error('AI: fout bij API-call', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            $this->maybeAlert('API-fout', ['status' => $response->status()]);
+
+            throw new AiUnavailableException("AI-provider gaf status {$response->status()}.", $response->status());
+        }
+
+        $content = data_get($response->json(), 'content.0.text');
+
+        return is_string($content)
+            ? $content
+            : (json_encode($content) ?: '');
+    }
+
+    /**
+     * Alleen tijdelijke fouten opnieuw proberen: netwerkfouten, 429 en 5xx.
+     */
+    private function shouldRetry(Throwable $exception): bool
+    {
+        if ($exception instanceof ConnectionException) {
+            return true;
+        }
+
+        if ($exception instanceof RequestException) {
+            return AiUnavailableException::isRetryableStatus($exception->response->status());
+        }
+
+        return false;
     }
 
     private function buildSessionPrompt(Session $session): string

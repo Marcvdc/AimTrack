@@ -18,11 +18,14 @@ Dit document beschrijft hoe de AI-functionaliteit is ingericht en hoe je deze ve
 ## Prompts & guardrails
 - Prompts zijn Nederlandstalig en leggen uit dat de AI **geen vervanging** is voor veiligheidsregels, wetgeving of instructeurs.
 - Output is kort en puntsgewijs (~150 woorden per sectie), met focus op concrete acties.
-- Fouten/timeouts worden gelogd; jobs schrijven status `failed` + `error` veld bij mislukking.
+- Fouten/timeouts worden gelogd. `ShooterCoach` gooit dan `AiUnavailableException` (geen key: `AiKeyMissingException`) en schrijft niets weg, zodat een bestaande reflectie of een bestaand wapeninzicht blijft staan.
 - Provider/model is configureerbaar zodat self-hosted of cloud LLM’s kunnen worden gebruikt.
 
 ## Limits & performance
-- Queue zorgt dat UI niet blokkeert. Job-retries staan aan via queue-config.
+- Queue zorgt dat UI niet blokkeert.
+- De HTTP-call probeert een netwerkfout, 429 of 5xx nog twee keer (na 1 s en 3 s); een 401/403 of andere 4xx niet.
+- De jobs hebben `$tries = 3`, `$backoff = [60, 300]` en `$timeout = 80` (langste poging is 3 x 20 s HTTP-timeout plus 1 s en 3 s backoff = 64 s; 80 blijft onder `retry_after` van 90 s). Een tijdelijke fout gaat terug de queue in; geen key of een 401/403 faalt de job direct. Een mislukte job komt in `failed_jobs` en loopt via de `Queue::failing`-hook in `AppServiceProvider` (log en Sentry).
+- Rijen waarin vóór #186 een foutstring als samenvatting is opgeslagen, toont de UI als nette melding ("kon niet gemaakt worden").
 - Timeouts/max tokens via `config/ai.php`; in `.env` kunnen strengere waarden worden gezet voor self-hosting.
 - Bij grote datasets kan coach-vraag worden gequeue’d; structureer context (laatste N sessies) om tokens te beperken.
 
