@@ -3,6 +3,7 @@
 use App\Enums\VerenigingRol;
 use App\Models\User;
 use App\Models\Vereniging;
+use Illuminate\Database\QueryException;
 
 it('koppelt een user met een rol aan een vereniging', function (): void {
     $vereniging = Vereniging::factory()->create();
@@ -30,7 +31,7 @@ it('staat een user maar eenmaal in dezelfde vereniging toe', function (): void {
     $vereniging->members()->attach($user, ['role' => VerenigingRol::Member->value]);
 
     expect(fn () => $vereniging->members()->attach($user, ['role' => VerenigingRol::Admin->value]))
-        ->toThrow(Illuminate\Database\QueryException::class);
+        ->toThrow(QueryException::class);
 });
 
 it('coaches() levert alleen coaches en beheerders', function (): void {

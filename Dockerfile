@@ -88,6 +88,9 @@ ENV APP_ENV=production \
     PHP_OPCACHE_VALIDATE_TIMESTAMPS=0 \
     PHP_OPCACHE_MAX_ACCELERATED_FILES=10000
 
+COPY docker/php/hardening.ini $PHP_INI_DIR/conf.d/hardening.ini
+COPY docker/php/fpm-hardening.conf /usr/local/etc/php-fpm.d/zz-hardening.conf
+
 WORKDIR /var/www/html
 
 COPY --from=vendor /var/www/html/vendor ./vendor

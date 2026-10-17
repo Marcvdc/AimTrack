@@ -12,7 +12,7 @@ use App\Services\WeaponInsightsService;
 /**
  * Helper: seed N shots with unique (turn_index, shot_index) for a session.
  */
-function shotsFor(\App\Models\Session $session, int $count, int $ring, int $score): void
+function shotsFor(Session $session, int $count, int $ring, int $score): void
 {
     foreach (range(0, $count - 1) as $i) {
         SessionShot::factory()->for($session)->create([

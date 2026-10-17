@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use App\Filament\Pages\CoachPage;
 use App\Models\Session;
+use App\Models\SessionShot;
 use App\Models\SessionWeapon;
+use App\Models\TrainingGoal;
 use App\Models\User;
 use App\Models\Weapon;
 use App\Support\Features\AimtrackFeatureToggle;
@@ -112,7 +114,7 @@ it('renders open training goals in the doelen rail and completes one', function 
     $user = User::factory()->create();
     unlockCoach($user);
 
-    $goal = \App\Models\TrainingGoal::factory()->ai()->create([
+    $goal = TrainingGoal::factory()->ai()->create([
         'user_id' => $user->id,
         'title' => 'Micro-pauze na schot 30',
     ]);
@@ -132,7 +134,7 @@ it('does not complete a training goal owned by another user', function (): void 
     $user = User::factory()->create();
     unlockCoach($user);
 
-    $foreign = \App\Models\TrainingGoal::factory()->create([
+    $foreign = TrainingGoal::factory()->create([
         'user_id' => User::factory()->create()->id,
     ]);
 
@@ -146,10 +148,10 @@ it('does not complete a training goal owned by another user', function (): void 
 it('renders the score-drift card when the shooter has shot data', function (): void {
     $user = User::factory()->create();
 
-    foreach (range(1, \App\Support\UserOnboardingState::aiCoachThreshold()) as $i) {
+    foreach (range(1, UserOnboardingState::aiCoachThreshold()) as $i) {
         $session = Session::factory()->for($user)->create(['date' => now()->subDays($i), 'range_name' => 'SV Diemen']);
         foreach (range(0, 9) as $s) {
-            \App\Models\SessionShot::factory()->for($session)->create(['turn_index' => 0, 'shot_index' => $s, 'ring' => 9, 'score' => 9]);
+            SessionShot::factory()->for($session)->create(['turn_index' => 0, 'shot_index' => $s, 'ring' => 9, 'score' => 9]);
         }
     }
 

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Filament\Pages\CoachPage;
+use App\Filament\Resources\SessionResource;
 use App\Models\Session;
 use App\Models\User;
 use Laravel\Pennant\Feature;
@@ -57,7 +58,7 @@ test('threshold CTAs are present and link to session-create', function (): void 
     $response = $this->get(CoachPage::getUrl());
 
     $response->assertSee('Log volgende sessie', escape: false);
-    $response->assertSee(\App\Filament\Resources\SessionResource::getUrl('create'), escape: false);
+    $response->assertSee(SessionResource::getUrl('create'), escape: false);
     $response->assertSee('Hoe werkt de AI?', escape: false);
     $response->assertSee('wire:click="explainAiCoach"', escape: false);
 });

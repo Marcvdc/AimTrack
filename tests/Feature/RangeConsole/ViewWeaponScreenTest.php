@@ -106,8 +106,10 @@ it('refuses to render a weapon owned by another user', function (): void {
     $foreign = Weapon::factory()->for($other)->create();
 
     Livewire::actingAs($user)
-        ->test(ViewWeapon::class, ['record' => $foreign->id]);
-})->throws(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        ->test(ViewWeapon::class, ['record' => $foreign->id])
+        ->assertNotFound()
+        ->assertDontSee($foreign->name);
+});
 
 it('renders the AI-wapeninzicht card when an insight exists', function (): void {
     $user = User::factory()->create();

@@ -8,6 +8,8 @@ Beveiligingsrichtlijnen voor AimTrack.
 
 ## Basismaatregelen
 - **Auth**: gebruik standaard Laravel-auth met sterke wachtwoorden en HTTPS.
+- **Registratie**: zelf een account aanmaken staat standaard uit (`AUTH_REGISTRATION_ENABLED=false`). Aan betekent: registratie plus verplichte e-mailverificatie.
+- **PHP**: de FPM-pool van de production-image schakelt shell- en procesfuncties en `allow_url_fopen` uit; de CLI niet. Zie `docs/PROD_HARDENING.md`.
 - **Transport**: forceer HTTPS in productie; stel trusted proxies in.
 - **Secrets**: alleen in `.env` of secretsmanager; nooit committen. Rotatie via CI/secrets store.
 - **Headers**: zorg voor HSTS, X-Frame-Options, X-Content-Type-Options via webserver.
