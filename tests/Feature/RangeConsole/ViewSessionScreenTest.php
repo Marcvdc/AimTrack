@@ -9,7 +9,6 @@ use App\Models\Session;
 use App\Models\SessionShot;
 use App\Models\User;
 use App\Services\SessionStatsService;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Livewire\Livewire;
 
 function seedShots(Session $session, int $count, int $ring = 10, int $score = 10): void
@@ -124,8 +123,9 @@ it('refuses to render sessions owned by another user via the eloquent scope', fu
     $foreignSession = Session::factory()->for($other)->create();
 
     Livewire::actingAs($user)
-        ->test(ViewSession::class, ['record' => $foreignSession->id]);
-})->throws(ModelNotFoundException::class);
+        ->test(ViewSession::class, ['record' => $foreignSession->id])
+        ->assertNotFound();
+});
 
 it('shows AI reflection actions and marks the reflection as read', function (): void {
     $user = User::factory()->create();
