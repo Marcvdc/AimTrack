@@ -89,7 +89,8 @@ it('werkt elk ecosysteem wekelijks bij, gegroepeerd en met een limiet op open PR
         $naam = $update['package-ecosystem'] ?? 'onbekend';
 
         expect($update['schedule']['interval'] ?? null)->toBe('weekly', "{$naam} draait niet wekelijks")
-            ->and($update['open-pull-requests-limit'] ?? null)->toBeInt("{$naam} heeft geen PR-limiet");
+            ->and($update['open-pull-requests-limit'] ?? null)->toBeInt("{$naam} heeft geen PR-limiet")
+            ->and($update['open-pull-requests-limit'] ?? 0)->toBeGreaterThan(0, "{$naam} heeft PR-limiet 0, dan staan de updates uit");
 
         $updateTypes = collect($update['groups'] ?? [])
             ->flatMap(fn (array $groep): array => $groep['update-types'] ?? [])
