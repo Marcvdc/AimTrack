@@ -58,7 +58,7 @@ FROM base AS vendor
 COPY composer.json composer.lock* ./
 RUN composer install --no-dev --prefer-dist --no-progress --optimize-autoloader --no-scripts
 
-FROM node:20-bookworm AS frontend
+FROM node:24-bookworm AS frontend
 WORKDIR /app
 COPY . .
 # De Filament theme (resources/css/filament/admin/theme.css) importeert CSS uit
