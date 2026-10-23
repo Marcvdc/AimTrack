@@ -73,7 +73,7 @@ function MarketingLanding({ palette, fonts }) {
           </h1>
           <p style={{ fontSize: 18, lineHeight: 1.55, color: c.muted, marginTop: 22, maxWidth: 520 }}>
             AimTrack logt je trainingen, herkent patronen in je groepering en
-            geeft per sessie een AI-reflectie. Self-hosted, WM-4 conform,
+            geeft per sessie een AI-reflectie. Self-hosted en open-source,
             zonder gedoe.
           </p>
           <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
@@ -86,7 +86,7 @@ function MarketingLanding({ palette, fonts }) {
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap' }}>
             <span style={featurePill}>● Self-hosted</span>
-            <span style={featurePill}>● WM-4 export</span>
+            <span style={featurePill}>● CSV- en PDF-export</span>
             <span style={featurePill}>● AI-reflectie</span>
             <span style={featurePill}>● Open-source</span>
           </div>
@@ -193,14 +193,14 @@ function MarketingLanding({ palette, fonts }) {
             },
             {
               icon: ICONS.export,
-              kicker: '04 · WM-4',
-              title: 'Wet-conforme administratie',
-              body: 'Genereer een WM-4 register-export voor je vereniging. Compleet, gefilterd, en klaar voor inlevering.',
+              kicker: '04 · EXPORT',
+              title: 'Export voor je verenigingsadministratie',
+              body: 'Genereer een CSV- of PDF-export van je sessies voor je eigen verenigingsadministratie. Compleet en gefilterd; je blijft zelf verantwoordelijk voor de actuele eisen.',
               demo: (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: c.bg, border: `1px solid ${c.line}`, borderRadius: 8 }}>
                   <ATMark size={20} color={c.accent} />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600 }}>WM-4 · mei 2026</div>
+                    <div style={{ fontSize: 12, fontWeight: 600 }}>Sessieregister · mei 2026</div>
                     <div style={{ fontFamily: fonts.mono, fontSize: 10, color: c.muted, letterSpacing: '0.08em' }}>247 SESSIES · GEREED</div>
                   </div>
                   <Icon d={ICONS.export} size={16} stroke={c.accent} />
@@ -210,8 +210,8 @@ function MarketingLanding({ palette, fonts }) {
             {
               icon: ICONS.shield,
               kicker: '05 · PRIVACY',
-              title: 'Self-hosted of bij ons — jij kiest',
-              body: 'Draai AimTrack op je eigen server (Docker, 5 min setup) of gebruik onze NL-cloud. Je data is van jou, altijd.',
+              title: 'Self-hosted, op je eigen server',
+              body: 'Draai AimTrack op je eigen server (Docker, 5 min setup). Je logboek blijft daar staan. De AI-coach stuurt gegevens naar Anthropic en kun je uitzetten; mail, foutrapportage en een offsite backup gaan alleen naar buiten als je ze zelf inricht.',
               demo: (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <div style={{ flex: 1, padding: '10px 12px', background: c.bg, border: `1px solid ${c.accent}40`, borderRadius: 8 }}>
@@ -220,7 +220,7 @@ function MarketingLanding({ palette, fonts }) {
                   </div>
                   <div style={{ flex: 1, padding: '10px 12px', background: c.bg, border: `1px solid ${c.line}`, borderRadius: 8 }}>
                     <div style={{ fontFamily: fonts.mono, fontSize: 9, color: c.muted, letterSpacing: '0.14em' }}>OFF</div>
-                    <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4 }}>NL-cloud</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4 }}>AI-coach</div>
                   </div>
                 </div>
               )
@@ -229,7 +229,7 @@ function MarketingLanding({ palette, fonts }) {
               icon: ICONS.weapon,
               kicker: '06 · WAPENS',
               title: 'Eén overzicht per wapen',
-              body: 'Schotaantal, onderhoud, kalibratie, gem. score. Alles wat je nodig hebt voor de keuringsbrief en je eigen ritueel.',
+              body: 'Schotaantal, onderhoud, kalibratie, gem. score. Alles bij elkaar per wapen, voor je eigen overzicht en je eigen ritueel.',
               demo: (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                   {['Walther LP500', 'CZ Shadow 2', 'Pardini K22'].slice(0, 4).map((n, i) => (
@@ -280,7 +280,7 @@ function MarketingLanding({ palette, fonts }) {
                 'Per-sessie reflectie zonder dat je iets hoeft te typen',
                 'Trainingsdoelen automatisch voorgesteld, jij kiest',
                 'Vergelijk wapens, disciplines, of periodes naast elkaar',
-                'Alles draait lokaal — je data verlaat de server niet',
+                'AI is optioneel: zonder eigen Claude-key geen enkele call, met key gaan je sessie- en wapengegevens naar Anthropic (api.anthropic.com)',
               ].map((t, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                   <div style={{ width: 20, height: 20, borderRadius: '50%', background: `${c.accent}1f`, color: c.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 20px', marginTop: 1 }}>
@@ -359,9 +359,9 @@ function MarketingLanding({ palette, fonts }) {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, maxWidth: 1100, margin: '0 auto' }}>
           {[
-            { name: 'Self-hosted', price: '€ 0', sub: 'voor altijd', features: ['Volledige app', 'Onbeperkt sessies', 'WM-4 export', 'Eigen AI-model (optioneel)'], cta: 'Bekijk op GitHub', primary: false },
-            { name: 'Schutter', price: '€ 4', sub: '/ maand', features: ['Hosted bij AimTrack NL', 'Onbeperkt sessies', 'AI-coach inbegrepen', 'WM-4 export'], cta: 'Probeer 30 dagen', primary: true },
-            { name: 'Vereniging', price: '€ 1', sub: '/ lid / maand', features: ['Beheer voor bestuur', 'WM-4 batch-export', 'SSO via KNSA', 'Prioriteits-support'], cta: 'Vraag offerte', primary: false },
+            { name: 'Self-hosted', price: '€ 0', sub: 'voor altijd', features: ['Volledige app', 'Onbeperkt sessies', 'CSV- en PDF-export', 'Eigen AI-model (optioneel)'], cta: 'Bekijk op GitHub', primary: false },
+            { name: 'Schutter', price: '€ 4', sub: '/ maand', features: ['Hosted bij AimTrack NL', 'Onbeperkt sessies', 'AI-coach inbegrepen', 'CSV- en PDF-export'], cta: 'Probeer 30 dagen', primary: true },
+            { name: 'Vereniging', price: '€ 1', sub: '/ lid / maand', features: ['Beheer voor bestuur', 'Batch-export', 'SSO via KNSA', 'Prioriteits-support'], cta: 'Vraag offerte', primary: false },
           ].map((p, i) => (
             <div key={i} style={{
               padding: 28, borderRadius: 14,

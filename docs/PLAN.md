@@ -89,7 +89,7 @@ AimTrack is een persoonlijke schietlog-app (Laravel 12 + Filament 5) waarmee een
 ## 11) Export-scope (huidige iteratie)
 - **Service:** `App\Services\Export\SessionExportService` met methode `exportSessions(User $user, Carbon $from, Carbon $to, ?array $weaponIds, string $format)` die sessies binnen periode ophaalt (optionele wapenfilter) en een downloadresponse teruggeeft.
 - **CSV-output:** kolommen `datum, baan, locatie, wapen, kaliber, afstand (m), rondes, munitietype, groepering, afwijking, flyers, notities`; per sessiewapen een regel.
-- **PDF-output:** eenvoudige Blade-view (`resources/views/exports/sessions.blade.php`) met periode-overzicht, totalen per wapen/kaliber, lijst van sessies en NL-disclaimer: "Let op: dit document is een hulpmiddel; controleer altijd zelf of dit voldoet aan de actuele eisen van de politie / korpschef voor een WM-4 aanvraag." PDF-rendering via een lichte lib (bijv. Dompdf) zonder zware styling.
+- **PDF-output:** eenvoudige Blade-view (`resources/views/exports/sessions.blade.php`) met periode-overzicht, totalen per wapen/kaliber, lijst van sessies en NL-disclaimer: "Let op: dit is een eigen trainingsoverzicht uit AimTrack. Het is niet afgetekend en niet gevalideerd; controleer zelf of het voldoet aan wat je vereniging of een instantie van je vraagt." PDF-rendering via een lichte lib (bijv. Dompdf) zonder zware styling.
 - **Filament Page:** `App\Filament\Pages\ExportSessionsPage` met formulier (van/tot, multi-select wapens, formaatkeuze CSV/PDF) en actie die service aanroept en download terugstuurt.
 - **Uitbreidbaarheid:** structuur laten voor extra exportprofielen (aparte view/logica), en rekening houden met single-tenant (alle queries gefilterd op ingelogde gebruiker).
 

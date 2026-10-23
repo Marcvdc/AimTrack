@@ -131,7 +131,7 @@
                     <h2 style="font-family: var(--at-font-display); font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin: 6px 0 0; color: var(--at-text);">Stel een vraag aan je coach</h2>
                     <p style="margin: 6px 0 0; font-size: 12px; color: var(--at-muted); line-height: 1.5;">
                         De coach gebruikt automatisch je laatste sessies, wapens en eerdere reflecties.
-                        Antwoorden draaien op je <span style="color: var(--at-accent);">eigen instance</span> — geen data verlaat de server.
+                        {{ \App\Support\Ai\AiPrivacyNotice::intro() }}
                     </p>
                 </div>
 
@@ -246,7 +246,7 @@
 
                 <div class="at-label" style="margin-top: 8px;">PRIVACY</div>
                 <div style="font-size: 11px; color: var(--at-muted); line-height: 1.6;">
-                    Antwoorden gegenereerd op je <span style="color: var(--at-accent);">eigen instance</span>. Geen data verlaat de server.
+                    {{ \App\Support\Ai\AiPrivacyNotice::panel() }}
                 </div>
             </aside>
         </div>
