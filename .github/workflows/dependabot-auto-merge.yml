@@ -1,0 +1,34 @@
+# Merget patch- en minor-updates van Dependabot vanzelf zodra de verplichte checks groen zijn.
+# Majors blijven liggen voor een mens.
+#
+# Werkt alleen met twee instellingen in de repo: "Allow auto-merge" aan, en verplichte
+# status-checks op de hoofdbranch. Zonder verplichte checks merget GitHub meteen, ook op rood.
+#
+# Een merge met GITHUB_TOKEN start geen nieuwe workflows, dus de CI op de hoofdbranch draait
+# na zo'n merge niet. De checks op de PR zelf toetsen al het merge-resultaat.
+name: Dependabot auto-merge
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Dependabot auto-merge
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    steps:
+      - name: Soort update bepalen
+        id: meta
+        uses: dependabot/fetch-metadata@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-merge aanzetten voor patch en minor
+        if: steps.meta.outputs.update-type == 'version-update:semver-patch' || steps.meta.outputs.update-type == 'version-update:semver-minor'
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
