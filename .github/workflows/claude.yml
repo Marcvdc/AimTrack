@@ -20,7 +20,16 @@ jobs:
   claude-agent:
     name: Claude Code Agent
     runs-on: ubuntu-latest
-    if: contains(github.event.comment.body, '@claude') || contains(github.event.issue.body, '@claude') || contains(github.event.pull_request.body, '@claude') || (github.event_name == 'pull_request_review_comment' && contains(github.event.review.body, '@claude'))
+    # Alleen de eigenaar start deze job. De repo is publiek, dus anders start een @claude van
+    # wie dan ook een runner met schrijfrechten. claude-code-action weigert zelf ook iemand
+    # zonder schrijfrechten, maar pas nadat de stappen ervoor al gedraaid hebben.
+    if: >-
+      github.actor == github.repository_owner && (
+        contains(github.event.comment.body, '@claude') ||
+        contains(github.event.issue.body, '@claude') ||
+        contains(github.event.pull_request.body, '@claude') ||
+        (github.event_name == 'pull_request_review_comment' && contains(github.event.review.body, '@claude'))
+      )
     
     steps:
       - name: Checkout
