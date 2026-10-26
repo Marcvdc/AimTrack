@@ -32,6 +32,27 @@ jobs:
           extensions: sqlite, pdo_sqlite, intl, mbstring, bcmath, pcntl, zip
           coverage: none
 
+      # config.platform.php in composer.json bepaalt met welke PHP Composer en Dependabot
+      # rekenen (#212). Die pin moet bij een PHP-upgrade mee: zelfde minor als hier, en
+      # niet hoger dan de PHP die hier draait. Anders blijven updates stil liggen of
+      # kiest Composer pakketten die hier niet starten.
+      - name: Check PHP pin in composer.json
+        run: |
+          # shellcheck disable=SC2016 # de PHP-code staat bewust tussen enkele quotes
+          pin="$(composer config platform.php)"
+          echo "platform.php ${pin}, CI draait PHP $(php -r 'echo PHP_VERSION;')"
+          PIN="${pin}" php -r '
+            $pin = getenv("PIN");
+            [$maj, $min] = array_map("intval", explode(".", $pin));
+            if ($maj !== PHP_MAJOR_VERSION || $min !== PHP_MINOR_VERSION) {
+                fwrite(STDERR, "::error title=PHP-pin::platform.php is {$pin}, maar de CI draait PHP ".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION.". Zet de pin op de laagste PHP waarop AimTrack draait.\n");
+                exit(1);
+            }
+            if (version_compare($pin, PHP_VERSION, ">")) {
+                fwrite(STDERR, "::error title=PHP-pin::platform.php {$pin} is hoger dan de PHP in de CI (".PHP_VERSION.").\n");
+                exit(1);
+            }'
+
       - name: Get Composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
