@@ -102,3 +102,64 @@ it('werkt elk ecosysteem wekelijks bij, gegroepeerd en met een limiet op open PR
             ->toBeFalse("{$naam} groepeert ook major-updates");
     }
 });
+
+/*
+ * Composer en Dependabot rekenen met config.platform.php uit composer.json (#212). Zonder die pin
+ * nam Dependabot de ondergrens van require.php (8.4.0) en loste geen enkele update op, omdat
+ * symfony-pakketten in de lock minstens 8.4.1 vragen.
+ */
+
+function phpPin(): string
+{
+    $composer = json_decode((string) file_get_contents(base_path('composer.json')), true, flags: JSON_THROW_ON_ERROR);
+
+    return (string) ($composer['config']['platform']['php'] ?? '');
+}
+
+function minor(string $versie): string
+{
+    return implode('.', array_slice(explode('.', $versie), 0, 2));
+}
+
+it('pint de PHP-versie voor composer op een volledige patchversie', function () {
+    expect(phpPin())->toMatch('/^\d+\.\d+\.\d+$/');
+});
+
+it('zet geen ext-* in config.platform, zodat composer de extensies echt controleert', function () {
+    $composer = json_decode((string) file_get_contents(base_path('composer.json')), true, flags: JSON_THROW_ON_ERROR);
+
+    $extensies = array_filter(
+        array_keys($composer['config']['platform'] ?? []),
+        fn (string $pakket): bool => str_starts_with($pakket, 'ext-'),
+    );
+
+    expect($extensies)->toBe([]);
+});
+
+it('houdt de PHP-pin op dezelfde minor als de CI en de Dockerfile', function () {
+    $minor = minor(phpPin());
+
+    $ci = (string) file_get_contents(base_path('.github/workflows/ci.yml'));
+    preg_match_all("/php-version: '([^']+)'/", $ci, $setupPhp);
+    preg_match_all('/PHP_VERSION=(\d+\.\d+)/', $ci, $buildArgs);
+    preg_match('/^ARG PHP_VERSION=(\S+)$/m', (string) file_get_contents(base_path('Dockerfile')), $dockerfile);
+
+    $versies = [...$setupPhp[1], ...$buildArgs[1], $dockerfile[1] ?? 'ontbreekt'];
+
+    expect($setupPhp[1])->not->toBeEmpty();
+
+    foreach ($versies as $versie) {
+        expect(minor($versie))->toBe($minor, "PHP {$versie} in CI of Dockerfile past niet bij platform.php ".phpPin());
+    }
+});
+
+it('controleert de PHP-pin in de lint-job, die required is', function () {
+    $workflow = geparsteYaml('.github/workflows/ci.yml');
+
+    $stap = collect($workflow['jobs']['lint']['steps'] ?? [])
+        ->firstWhere('name', 'Check PHP pin in composer.json');
+
+    expect($stap)->not->toBeNull()
+        ->and($stap)->not->toHaveKey('continue-on-error')
+        ->and((string) ($stap['run'] ?? ''))->toContain('composer config platform.php');
+});
