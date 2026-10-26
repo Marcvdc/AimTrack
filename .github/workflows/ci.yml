@@ -38,9 +38,9 @@ jobs:
       # kiest Composer pakketten die hier niet starten.
       - name: Check PHP pin in composer.json
         run: |
-          # shellcheck disable=SC2016 # de PHP-code staat bewust tussen enkele quotes
           pin="$(composer config platform.php)"
           echo "platform.php ${pin}, CI draait PHP $(php -r 'echo PHP_VERSION;')"
+          # shellcheck disable=SC2016 # de PHP-code staat bewust tussen enkele quotes
           PIN="${pin}" php -r '
             $pin = getenv("PIN");
             [$maj, $min] = array_map("intval", explode(".", $pin));
