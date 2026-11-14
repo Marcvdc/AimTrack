@@ -12,7 +12,7 @@ Beveiligingsrichtlijnen voor AimTrack.
 - **PHP**: de FPM-pool van de production-image schakelt shell- en procesfuncties en `allow_url_fopen` uit; de CLI niet. Zie `docs/PROD_HARDENING.md`.
 - **Transport**: forceer HTTPS in productie; stel trusted proxies in.
 - **Secrets**: alleen in `.env` of secretsmanager; nooit committen. Rotatie via CI/secrets store.
-- **Headers**: zorg voor HSTS, X-Frame-Options, X-Content-Type-Options via webserver.
+- **Headers**: `docker/nginx/default.conf` zet op server-niveau, met `always`, `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` (camera, microfoon en geolocatie uit) en een `Content-Security-Policy-Report-Only`, en verbergt de nginx-versie met `server_tokens off`. Zet geen `add_header` in een `location`-blok: nginx laat dan voor die location alle headers van het server-niveau vallen. `tests/Unit/NginxConfigTest.php` bewaakt dit. HSTS hoort bij de TLS-proxy (Caddy), niet op de origin.
 - **Rate limiting**: gebruik Laravel throttle middleware voor login/APIs indien blootgesteld.
 
 ## Data & opslag
