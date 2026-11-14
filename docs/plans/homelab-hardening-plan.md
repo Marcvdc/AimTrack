@@ -101,4 +101,4 @@ Aan het eind van `docker/entrypoint.sh`:
 ## 9. Documentatie
 
 - `docs/PROD_HARDENING.md`: beide punten.
-- Registry in `.ai/guidelines/parallel-worktrees.md`.
+- Geen registry bijwerken (die bestaat niet meer; zie `.ai/guidelines/parallel-worktrees.md`).
