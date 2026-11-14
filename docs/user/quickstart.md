@@ -10,12 +10,13 @@ Korte gids om AimTrack lokaal te starten en de eerste sessie te registreren.
 
 ## Installatie (lokaal)
 1. Clone repo en kopieer `.env.example` naar `.env`. Vul `APP_KEY` later met `php artisan key:generate`.
-   Deze stack zet `SESSION_SECURE_COOKIE` standaard aan, zodat de sessiecookie de `Secure`-vlag krijgt. Op `http://localhost` is dat geen probleem: de browser bewaart een Secure-cookie daar gewoon. Open je de app over plain HTTP via een andere host, zoals een LAN-IP, zet dan in die `.env` `SESSION_SECURE_COOKIE=false` en draai `docker compose up -d` om de nieuwe waarde op te pakken. Lokaal inloggen over `http://` lukt met deze stack nu nog niet, ook niet met die vlag uit: de stack zet ook `APP_FORCE_HTTPS` aan, waardoor Livewire het inlogformulier naar een `https://`-adres stuurt. Zie [#174](https://github.com/Marcvdc/AimTrack/issues/174).
-2. Start containers: `docker compose up -d`.
-3. Installeer dependencies: `docker compose exec app composer install`.
-4. Genereer app key: `docker compose exec app php artisan key:generate`.
-5. Run migraties (en seeders indien aanwezig): `docker compose exec app php artisan migrate --seed`.
-6. Open de app op `http://localhost:8080` en login met het aangemaakte account. Zelf een account aanmaken staat standaard uit (`AUTH_REGISTRATION_ENABLED=false`).
+   Deze stack zet `SESSION_SECURE_COOKIE` standaard aan, zodat de sessiecookie de `Secure`-vlag krijgt. Op `http://localhost` is dat geen probleem: de browser bewaart een Secure-cookie daar gewoon. Open je de app over plain HTTP via een andere host, zoals een LAN-IP, zet dan in die `.env` `SESSION_SECURE_COOKIE=false` en draai `docker compose up -d` om de nieuwe waarde op te pakken.
+2. Zet in de `.env` de regel `STACK_FORCE_HTTPS=false`. De stack forceert https standaard, omdat productie hem draait; zonder die regel stuurt Livewire het inlogformulier naar een `https://`-adres en strandt inloggen over `http://` op een SSL-fout. `APP_FORCE_HTTPS=false` uit `.env.example` helpt hier niet, de stack zet die variabele zelf.
+3. Start containers: `docker compose up -d`.
+4. Installeer dependencies: `docker compose exec app composer install`.
+5. Genereer app key: `docker compose exec app php artisan key:generate`.
+6. Run migraties (en seeders indien aanwezig): `docker compose exec app php artisan migrate --seed`.
+7. Open de app op `http://localhost:18080` en login met het aangemaakte account. Zelf een account aanmaken staat standaard uit (`AUTH_REGISTRATION_ENABLED=false`).
 
 ## Eerste sessie loggen
 1. Ga in Filament naar **Sessies** → **Nieuwe sessie**.
