@@ -145,8 +145,10 @@ test('recentSessions falls back to location, then a dash, for the range label', 
     expect(app(LandingPageData::class)->recentSessions()[0]['range'])->toBe('Amsterdam');
 });
 
-test('club defaults to SSV Scherpschutters and honours config', function (): void {
-    expect(app(LandingPageData::class)->club())->toBe('SSV Scherpschutters');
+test('club defaults to empty and honours config', function (): void {
+    // Een verse installatie heeft geen club die AimTrack gebruikt; dan noemt de
+    // trust-strip er ook geen (#131).
+    expect(app(LandingPageData::class)->club())->toBe('');
 
     config()->set('landing.club', 'PSV De Roos');
     expect(app(LandingPageData::class)->club())->toBe('PSV De Roos');

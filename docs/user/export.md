@@ -3,7 +3,7 @@
 Handleiding voor CSV/PDF-export.
 
 ## Export uitvoeren
-1. Open **Export** in het Filament-menu.
+1. Open **Eigen trainingsoverzicht** in het Filament-menu.
 2. Kies een **periode** (verplicht) en selecteer optioneel specifieke wapens.
 3. Kies een formaat: **CSV** of **PDF**.
 4. Klik **Download**. Het bestand wordt direct gedownload.

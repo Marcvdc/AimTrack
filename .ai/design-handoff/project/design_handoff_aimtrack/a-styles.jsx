@@ -85,7 +85,7 @@ function ASidebar({ palette: c, fonts, active }) {
     { key: 'trends',   icon: ICONS.spark,   label: 'Trends' },
     { key: 'wapen-inz',icon: ICONS.target,  label: 'Wapen-inzicht' },
     { group: 'beheer' },
-    { key: 'export',   icon: ICONS.export,  label: 'Export · WM-4' },
+    { key: 'export',   icon: ICONS.export,  label: 'Export' },
     { key: 'privacy',  icon: ICONS.shield,  label: 'Privacy' },
   ];
   return (

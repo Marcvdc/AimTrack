@@ -8,11 +8,13 @@ return [
     |
     | De publieke landingspagina (route `welcome`) toont instance-brede
     | aggregaten. `club` bepaalt de clubnaam in de trust-strip + footer en is
-    | per-instance overschrijfbaar via de LANDING_CLUB env-variabele.
-    | `partner_clubs` is een optionele lijst van extra clubnamen.
+    | per-instance in te vullen via de LANDING_CLUB env-variabele. De default is
+    | leeg: een verse installatie heeft geen club die AimTrack gebruikt, dus dan
+    | blijft de trust-strip weg in plaats van een naam te noemen die nergens op
+    | slaat. `partner_clubs` is een optionele lijst van extra clubnamen.
     */
 
-    'club' => env('LANDING_CLUB', 'SSV Scherpschutters'),
+    'club' => env('LANDING_CLUB', ''),
 
     'partner_clubs' => [],
 

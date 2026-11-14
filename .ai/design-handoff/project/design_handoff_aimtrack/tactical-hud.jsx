@@ -282,7 +282,7 @@ function TacticalHUD({ palette, fonts }) {
         <div style={styles.sbCell}><span style={{ color: c.accent }}>●</span> SYNC OK</div>
         <div style={styles.sbCell}>SELF-HOSTED · v3.2.1</div>
         <div style={styles.sbCell}>QUEUE 0/3</div>
-        <div style={{ ...styles.sbCell, marginLeft: 'auto', borderRight: 'none', borderLeft: `1px solid ${c.line}` }}>WM-4 EXPORT READY · 247 SESSIES</div>
+        <div style={{ ...styles.sbCell, marginLeft: 'auto', borderRight: 'none', borderLeft: `1px solid ${c.line}` }}>EXPORT GEREED · 247 SESSIES</div>
       </div>
     </div>
   );

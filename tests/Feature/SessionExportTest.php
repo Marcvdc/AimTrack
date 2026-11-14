@@ -122,3 +122,27 @@ it('renders pdf view with paginated session blocks', function (): void {
     $response->assertOk();
     $response->assertHeader('content-type', 'application/pdf');
 });
+
+/**
+ * #131: de export blijft inhoudelijk ongewijzigd, maar positioneert zichzelf niet
+ * langer als WM-4-materiaal. Naamgeving en disclaimer mogen niet terugveren.
+ */
+it('names the export page after what it is, without a compliance claim', function (): void {
+    expect(\App\Filament\Pages\ExportSessionsPage::getNavigationLabel())
+        ->toBe('Eigen trainingsoverzicht');
+
+    $source = file_get_contents(app_path('Filament/Pages/ExportSessionsPage.php'));
+
+    expect($source)
+        ->not->toContain('WM-4')
+        ->not->toContain('Export sessies');
+});
+
+it('carries a pdf disclaimer that makes no WM-4 or validation claim', function (): void {
+    $source = file_get_contents(app_path('Services/Export/SessionExportService.php'));
+
+    expect($source)
+        ->not->toContain('WM-4')
+        ->not->toContain('korpschef')
+        ->toContain('Het is niet afgetekend en niet gevalideerd');
+});

@@ -117,7 +117,7 @@ function FieldJournal({ palette, fonts }) {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button style={{ padding: '10px 14px', borderRadius: 10, border: `1px solid ${c.line}`, background: 'transparent', color: c.text, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
-                <Icon d={ICONS.export} size={14} /> Export WM-4
+                <Icon d={ICONS.export} size={14} /> Export
               </button>
               <button style={{ padding: '10px 16px', borderRadius: 10, border: 'none', background: c.accent, color: c.ctaText, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
                 <Icon d={ICONS.add} size={14} stroke={c.ctaText} /> Nieuwe sessie

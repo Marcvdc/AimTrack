@@ -4,6 +4,24 @@ _Started 2026-05-14 05:04 UTC_
 
 ---
 
+> **Correctie 2026-09-20 (issues #131 en #162): T4 heeft geen WM-4- of validatiebetekenis meer.**
+>
+> Dit transcript legt het monogram-stempel (T4) vast als "trust/verification" en koppelt
+> het aan een WM-4 export-badge en aan "verified session". Die betekenis is vervallen.
+> WM-4 is het verlofdocument dat de korpschef afgeeft, geen rapportagestandaard waaraan
+> software kan voldoen, en AimTrack valideert of tekent niets af. De claim is uit het
+> product, de landingspagina, de documentatie en de ontwerpbestanden gehaald.
+>
+> T4 is vanaf nu een **statusmarkering**, niet meer dan dat: `REFLECTIE OK` als een sessie
+> een AI-reflectie heeft, `EXPORT OK` als een export klaarstaat. Gebruik geen label of
+> tekst die conformiteit, keuring, certificering of verificatie suggereert, en neem de
+> WM-4-formuleringen uit dit transcript niet opnieuw over in copy of ontwerp.
+>
+> Onderstaand gesprek blijft ongewijzigd staan, want het is een verslag van wat er destijds
+> is besloten. Deze noot gaat erboven.
+
+---
+
 ## User
 
 Dit hebben we al gemaakt kunnen we dit afmaken?
