@@ -126,7 +126,7 @@ class SessionExportService
             'from' => $from,
             'to' => $to,
             'totals' => $totals,
-            'disclaimer' => 'Let op: dit document is een hulpmiddel; controleer altijd zelf of dit voldoet aan de actuele eisen van de politie / korpschef voor een WM-4 aanvraag.',
+            'disclaimer' => 'Let op: dit is een eigen trainingsoverzicht uit AimTrack. Het is niet afgetekend en niet gevalideerd; controleer zelf of het voldoet aan wat je vereniging of een instantie van je vraagt.',
         ]);
 
         $filename = sprintf('sessions_%s_%s.pdf', $from->format('Ymd'), $to->format('Ymd'));

@@ -1,5 +1,8 @@
+{{-- T4 is een statusmarkering ('REFLECTIE OK', 'EXPORT OK'), geen validatie- of
+     conformiteitssignaal. Geef 'm dus geen label dat keuring of verificatie
+     suggereert (#131, #162). --}}
 @props([
-    'label' => 'VERIFIED',
+    'label' => 'OK',
     'variant' => 'solid',
     'size' => 'sm',
     'corner' => null,
