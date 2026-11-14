@@ -37,9 +37,16 @@ fi
 # ze onder de chown/chmod onderaan, zodat www-data er altijd in kan schrijven. Lukt zelfs
 # het aanmaken niet (bijvoorbeeld een read-only volume), dan stopt de container bij boot
 # in plaats van stil te falen bij de eerste upload.
-mkdir -p storage/app/private storage/app/public \
+# De melding met het pad komt van dit script zelf: de mkdir van uutils (Ubuntu 26.04)
+# noemt in zijn foutmelding alleen "Permission denied", zonder de map (#223).
+for dir in storage/app/private storage/app/public \
     storage/framework/cache storage/framework/sessions storage/framework/views \
-    bootstrap/cache
+    bootstrap/cache; do
+    if ! mkdir -p "${dir}"; then
+        echo "entrypoint: kan ${APP_ROOT}/${dir} niet aanmaken" >&2
+        exit 1
+    fi
+done
 
 # bootstrap/cache is een eigen volume en blijft dus over van de vorige build.
 # packages.php en services.php noemen de service providers van die build; is een
