@@ -1,6 +1,6 @@
 # Operations
 
-Laatst bijgewerkt: 2026-10-17
+Laatst bijgewerkt: 2026-10-17 (inhoud niet nagelopen in #154)
 
 Runbook voor dagelijks beheer, incidentrespons en onderhoud van AimTrack.
 

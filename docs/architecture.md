@@ -50,7 +50,7 @@ Deze sectie beschrijft hoe AimTrack is opgebouwd (Laravel 12, PHP 8.4/8.5, Filam
 
 ## Veiligheid en toegang tot data
 - Sessies en wapens zijn van de gebruiker zelf: de resources filteren op `user_id` van de ingelogde gebruiker, en `SessionPolicy` en `WeaponPolicy` begrenzen de rest.
-- Verenigingen zijn de enige uitzondering. `SessionPolicy::view` laat een coach of beheerder de sessie van een lid zien als beide dezelfde actieve vereniging hebben (`User::isCoachVan`). Dat is alleen lezen: `CoachSessieResource` staat geen aanmaken, wijzigen of verwijderen toe.
+- Verenigingen zijn de uitzondering. `SessionPolicy::view` en `WeaponPolicy::view` laten een coach of beheerder de sessies en wapens van een lid zien als beide dezelfde actieve vereniging hebben (`User::isCoachVan`); de verenigingsbeheerder ziet bovendien namen en e-mailadressen van de leden (`VerenigingBeheer`). Dat is alleen lezen: `CoachSessieResource` staat geen aanmaken, wijzigen of verwijderen toe.
 - Filters die uit een querystring komen worden door een FormRequest gevalideerd voordat ze de database raken; `ExportSessionsRequest` controleert bovendien dat elk opgegeven wapen van de ingelogde gebruiker is.
 - De AI-service gebruikt de key van de gebruiker of de vereniging en een env-gestuurd model; geen secrets in code. Reflectie en wapeninzicht verlopen via de queue; de coach-chat loopt via het Copilot-pakket.
 - Downloads en uploads gebruiken Laravel storage; file ACL's via storage driver. Disclaimers in exports en AI-uitvoer vermelden dat gebruiker zelf verantwoordelijk blijft.

@@ -1,6 +1,6 @@
 # Infra
 
-Laatst bijgewerkt: 2026-10-23
+Laatst bijgewerkt: 2026-10-23 (inhoud niet nagelopen in #154)
 
 Overzicht van de infrastructuur en lokale ontwikkelsetup.
 

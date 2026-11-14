@@ -7,7 +7,7 @@ Beveiligingsrichtlijnen voor AimTrack.
 ## Threat model
 - Eén applicatie en één database voor alle gebruikers, met een verenigingslaag erbovenop. Risico's: ongeautoriseerde toegang tot de host of database, en een gebruiker die bij data van een ander komt.
 - Gevoelige data: schietsessies, wapeninformatie, AI-output en de Claude API-keys van gebruikers en verenigingen (versleuteld opgeslagen).
-- Delen binnen een vereniging: een coach of beheerder van de actieve vereniging kan de sessies van de leden van die vereniging lezen, niet wijzigen (`SessionPolicy::view`, `User::isCoachVan`, `CoachSessieResource`). Dat is de enige plek waar data van de ene gebruiker voor een andere zichtbaar is. Een fout in rol, lidmaatschap of actieve vereniging geeft dus inzage in andermans sessies; houd dat in het oog bij wijzigingen aan `VerenigingService` en de policies.
+- Delen binnen een vereniging: een coach of beheerder van de actieve vereniging kan de sessies van de leden van die vereniging lezen, niet wijzigen (`SessionPolicy::view`, `User::isCoachVan`, `CoachSessieResource`). `WeaponPolicy::view` geeft via dezelfde `isCoachVan` ook leesrecht op de wapens van leden. Verder ziet een verenigingsbeheerder in "Mijn vereniging" de namen en e-mailadressen van alle leden (`VerenigingBeheer`). Dit zijn de plekken waar data van de ene gebruiker voor een andere zichtbaar is. Een fout in rol, lidmaatschap of actieve vereniging geeft dus inzage in andermans sessies; houd dat in het oog bij wijzigingen aan `VerenigingService` en de policies.
 - Wie `users.is_admin` heeft, ziet het gebruikersbeheer en de mislukte jobs.
 
 ## Basismaatregelen

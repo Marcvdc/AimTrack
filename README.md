@@ -34,7 +34,7 @@ AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer s
 7. Open `http://localhost:8080` vanuit Windows of WSL-browser en log in (standaard Laravel-auth). Gebruik Filament om sessies/wapens te beheren.
 
 ## AI-configuratie
-- De provider is Anthropic (Claude). Elke gebruiker zet de eigen key onder **AI-instellingen** in de app; de key wordt versleuteld opgeslagen. Heeft een gebruiker geen eigen key, dan geldt de gedeelde key van de actieve vereniging. Zonder key blijft AI uit.
+- De provider is Anthropic (Claude). Elke gebruiker zet de eigen key onder **AI-instellingen** in de app; de key wordt versleuteld opgeslagen. Heeft een gebruiker geen eigen key, dan geldt de gedeelde key van de actieve vereniging. Zonder gebruikers- of verenigingskey zijn de AI-functies verborgen; `ANTHROPIC_API_KEY` is alleen een fallback voor de Copilot-chat via `laravel/ai`, niet voor reflecties en wapeninzichten.
 - Env-variabelen (zie `.env.example` en `config/ai.php`): `AI_MODEL`, `ANTHROPIC_BASE_URL` en `AI_MAX_TOKENS`. `OPENAI_API_KEY` en `AI_DRIVER=openai` zijn na de migratie naar Claude vervallen.
 - Of de AI-functies zichtbaar zijn, hangt ook af van de feature flag `aimtrack-ai` (Pennant); de standaardwaarde komt uit `FEATURE_AIMTRACK_AI` en staat alleen in de `local`-omgeving aan.
 - AI-calls verlopen via queue-jobs (`GenerateSessionReflectionJob`, `GenerateWeaponInsightJob`). Zorg dat de `queue` container draait.
