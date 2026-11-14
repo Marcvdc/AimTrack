@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\QueueLivenessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -56,9 +57,9 @@ class HealthController extends Controller
             // Touch the connection to ensure configuration is valid.
             app('queue')->connection($connection);
 
-            $age = $this->oldestRunnableJobAgeInSeconds($connection);
+            $age = app(QueueLivenessService::class)->oldestRunnableJobAgeInSeconds($connection);
 
-            if ($age !== null && $age > (int) config('health.queue_max_age_seconds')) {
+            if ($age !== null && $age > $this->queueMaxAgeSeconds()) {
                 Log::warning('Queue stilgevallen: oudste uitvoerbare job wacht al te lang.', [
                     'age_seconds' => $age,
                 ]);
@@ -80,45 +81,11 @@ class HealthController extends Controller
         }
     }
 
-    /**
-     * Seconden sinds het moment waarop de oudste job uitgevoerd had kunnen worden.
-     * Jobs met een `available_at` in de toekomst (delay) en jobs die een worker net
-     * heeft gereserveerd tellen niet mee. Een reservering ouder dan `retry_after`
-     * telt wel, vanaf het moment dat die verliep: dat is een gecrashte worker.
-     * Alle queue-namen tellen mee, want de worker draait zonder `--queue`.
-     * Alleen voor de database-driver, andere drivers geven hier geen zicht op.
-     */
-    private function oldestRunnableJobAgeInSeconds(string $connection): ?int
+    private function queueMaxAgeSeconds(): int
     {
-        $config = config("queue.connections.{$connection}");
+        $configured = (int) config('health.queue_max_age_seconds');
 
-        if (($config['driver'] ?? null) !== 'database') {
-            return null;
-        }
-
-        $now = now()->getTimestamp();
-        $retryAfter = (int) ($config['retry_after'] ?? 90);
-
-        $jobs = fn () => DB::connection($config['connection'] ?? null)
-            ->table($config['table'] ?? 'jobs');
-
-        $unreservedSince = $jobs()
-            ->whereNull('reserved_at')
-            ->where('available_at', '<=', $now)
-            ->min('available_at');
-
-        $expiredReservation = $jobs()
-            ->whereNotNull('reserved_at')
-            ->where('reserved_at', '<=', $now - $retryAfter)
-            ->where('available_at', '<=', $now)
-            ->min('reserved_at');
-
-        $runnableSince = array_filter([
-            $unreservedSince === null ? null : (int) $unreservedSince,
-            $expiredReservation === null ? null : (int) $expiredReservation + $retryAfter,
-        ], fn (?int $timestamp): bool => $timestamp !== null);
-
-        return $runnableSince === [] ? null : max(0, $now - min($runnableSince));
+        return $configured > 0 ? $configured : 300;
     }
 
     private function checkStorage(): array

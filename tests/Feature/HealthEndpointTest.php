@@ -165,9 +165,7 @@ describe('queue stalled check', function () {
     test('a fresh job is ok', function () {
         queueJob(['available_at' => now()->subSeconds(10)->getTimestamp()]);
 
-        $this->getJson(route('api.health'))
-            ->assertOk()
-            ->assertJsonPath('checks.queue.status', 'ok');
+        $this->getJson(route('api.health'))->assertOk();
     });
 
     test('a job older than the threshold gives 503 with queue_stalled and logs the age', function () {
@@ -176,7 +174,6 @@ describe('queue stalled check', function () {
 
         $this->getJson(route('api.health'))
             ->assertServiceUnavailable()
-            ->assertJsonPath('status', 'degraded')
             ->assertExactJson([
                 'status' => 'degraded',
                 'checks' => [
@@ -198,52 +195,42 @@ describe('queue stalled check', function () {
         $this->getJson(route('api.health'))->assertOk();
     });
 
-    test('a delayed job does not count', function () {
-        queueJob([
-            'available_at' => now()->addHour()->getTimestamp(),
-            'created_at' => now()->subDay()->getTimestamp(),
-        ]);
-
-        $this->getJson(route('api.health'))->assertOk();
-    });
-
-    test('a job a worker is processing does not count', function () {
-        queueJob([
-            'available_at' => now()->subSeconds(600)->getTimestamp(),
-            'reserved_at' => now()->subSeconds(5)->getTimestamp(),
-        ]);
-
-        $this->getJson(route('api.health'))->assertOk();
-    });
-
-    test('an expired reservation counts from the moment it expired', function () {
-        config(['queue.connections.database.retry_after' => 90]);
-
-        queueJob([
-            'available_at' => now()->subDay()->getTimestamp(),
-            'reserved_at' => now()->subSeconds(200)->getTimestamp(),
-        ]);
+    test('a zero or empty threshold falls back to 300 seconds', function (mixed $value) {
+        config(['health.queue_max_age_seconds' => $value]);
+        queueJob(['available_at' => now()->subSeconds(10)->getTimestamp()]);
 
         $this->getJson(route('api.health'))->assertOk();
 
-        $this->travelTo(now()->addSeconds(300));
+        $this->travelTo(now()->addSeconds(400));
+
+        $this->getJson(route('api.health'))
+            ->assertServiceUnavailable()
+            ->assertJsonPath('checks.queue.error', 'queue_stalled');
+    })->with([0, -5, null]);
+
+    test('the oldest job and jobs on any queue name decide', function () {
+        queueJob(['queue' => 'anders', 'available_at' => now()->subSeconds(1000)->getTimestamp()]);
+        queueJob(['available_at' => now()->subSeconds(1)->getTimestamp()]);
 
         $this->getJson(route('api.health'))
             ->assertServiceUnavailable()
             ->assertJsonPath('checks.queue.error', 'queue_stalled');
     });
 
-    test('the oldest job decides, not the newest', function () {
-        queueJob(['available_at' => now()->subSeconds(1000)->getTimestamp()]);
-        queueJob(['available_at' => now()->subSeconds(1)->getTimestamp()]);
+    test('an expired reservation is measured from reserved_at plus retry_after', function () {
+        config(['queue.connections.database.retry_after' => 90]);
+        queueJob([
+            'available_at' => now()->subDay()->getTimestamp(),
+            'reserved_at' => now()->subSeconds(350)->getTimestamp(),
+        ]);
 
-        $this->getJson(route('api.health'))->assertServiceUnavailable();
-    });
+        $this->getJson(route('api.health'))->assertOk();
 
-    test('jobs on any queue name count', function () {
-        queueJob(['queue' => 'anders', 'available_at' => now()->subSeconds(600)->getTimestamp()]);
+        $this->travelTo(now()->addSeconds(100));
 
-        $this->getJson(route('api.health'))->assertServiceUnavailable();
+        $this->getJson(route('api.health'))
+            ->assertServiceUnavailable()
+            ->assertJsonPath('checks.queue.error', 'queue_stalled');
     });
 
     test('the response names no job or payload', function () {

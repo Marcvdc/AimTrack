@@ -16,7 +16,7 @@ Runbook voor dagelijks beheer, incidentrespons en onderhoud van AimTrack.
 
 ### Betekenis van `queue_stalled`
 
-`/health` en `/api/health` geven 503 met `checks.queue.error: queue_stalled` als de oudste job in de `jobs`-tabel die al uitgevoerd had moeten worden langer wacht dan `HEALTH_QUEUE_MAX_AGE_SECONDS` (standaard 300, zie `config/health.php`). Jobs met een delay tellen niet mee, jobs die een worker nu verwerkt ook niet, een reservering ouder dan `retry_after` wel. De leeftijd staat niet in de response (het endpoint is publiek) maar in de applicatielog, als warning `Queue stilgevallen` met `age_seconds`. Alle queue-namen tellen mee. Bijna altijd betekent het dat er geen worker draait of dat die vastzit.
+`/health` en `/api/health` geven 503 met `checks.queue.error: queue_stalled` als de oudste job in de `jobs`-tabel die al uitgevoerd had moeten worden langer wacht dan `HEALTH_QUEUE_MAX_AGE_SECONDS` (standaard 300, zie `config/health.php`). Jobs met een delay tellen niet mee, jobs die een worker nu verwerkt ook niet, een reservering ouder dan `retry_after` wel. De leeftijd staat niet in de response (het endpoint is publiek) maar in de applicatielog, als warning `Queue stilgevallen` met `age_seconds`. Elke aanroep van `/health` schrijft bij stilstand zo'n warning, dus bij een monitor die elke minuut pollt komt er elke minuut een regel bij; dat is bewust, de log blijft zo gelijk aan wat de monitor ziet. Alle queue-namen tellen mee. Bijna altijd betekent het dat er geen worker draait of dat die vastzit.
 
 Wat je doet:
 1. Kijk of de worker draait: `docker compose ps queue` en `docker compose logs --tail=100 queue`.
