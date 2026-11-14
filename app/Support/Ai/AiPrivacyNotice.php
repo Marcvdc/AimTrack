@@ -7,6 +7,7 @@ use App\Filament\Copilot\Tools\ScoreDriftTool;
 use App\Filament\Copilot\Tools\SessionLookupTool;
 use App\Filament\Copilot\Tools\ShooterContextTool;
 use App\Filament\Copilot\Tools\WeaponLookupTool;
+use App\Services\Ai\ShooterCoach;
 
 /**
  * Eén bron voor wat AimTrack over de AI-datastroom beweert.
@@ -16,7 +17,7 @@ use App\Filament\Copilot\Tools\WeaponLookupTool;
  * buiten gaat komt nu hiervandaan, zodat een correctie op één plek volstaat.
  *
  * Er zijn twee routes naar Anthropic: de knoppen voor een reflectie en een
- * wapeninzicht ({@see \App\Services\Ai\ShooterCoach}) en de chat op de
+ * wapeninzicht ({@see ShooterCoach}) en de chat op de
  * coachpagina (Filament Copilot, met de tools in {@see self::CHAT_TOOLS}).
  * {@see self::PATHS} legt per route vast welke velden meegaan; een test wijzigt
  * elk veld afzonderlijk en faalt zodra de werkelijkheid daarvan afwijkt, in
@@ -291,7 +292,7 @@ class AiPrivacyNotice
      */
     public static function landingCheckItem(): string
     {
-        return 'AI is optioneel: zonder eigen Claude-key geen enkele AI-call, met key gaan je vraag en je sessie- en wapengegevens naar '.self::provider();
+        return 'AI is optioneel: zonder Claude-key geen enkele AI-call, met key gaan je vraag en je sessie- en wapengegevens naar '.self::provider();
     }
 
     /**

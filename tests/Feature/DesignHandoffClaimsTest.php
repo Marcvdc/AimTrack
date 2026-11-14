@@ -8,7 +8,8 @@ use Symfony\Component\Finder\Finder;
 // eruit overgenomen, dus komen de onware claims hier terug (bij een nieuwe export
 // of een kopie naar een andere map), dan vallen ze hier op voordat ze opnieuw in
 // het product belanden. De chat-transcripten blijven buiten schot: dat is een
-// verslag van destijds.
+// verslag van destijds, en de README in de root van de handoff ook: die is van
+// ons, niet geexporteerd, en noemt de gecorrigeerde claims juist bij naam.
 
 dataset('onware handoff-claims', [
     'WM-4' => ['/WM-?4/i'],
@@ -27,7 +28,8 @@ test('de handoff-bestanden bevatten de gecorrigeerde claim niet meer', function 
         ->files()
         ->in(base_path('.ai/design-handoff'))
         ->exclude('chats')
-        ->name(['*.jsx', '*.html', '*.js']);
+        ->notPath('/^README\.md$/')
+        ->name(['*.jsx', '*.html', '*.js', '*.md']);
 
     expect(iterator_count($files))->toBeGreaterThan(0);
 

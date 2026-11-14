@@ -26,8 +26,8 @@ draaien op je eigen server, en je logboek blijft daar staan.
 
 ### De AI-coach
 
-Van zichzelf stuurt AimTrack alleen gegevens naar buiten voor de AI-coach. Dat gebeurt
-op twee manieren: als je een reflectie of een wapeninzicht aanvraagt, en als je de chat
+De AI-coach is de plek waar de meeste gegevens uit je logboek naar buiten gaan. Dat
+gebeurt op twee manieren: als je een reflectie of een wapeninzicht aanvraagt, en als je de chat
 op de coachpagina gebruikt. In beide gevallen gaat je vraag naar Anthropic (standaard
 `api.anthropic.com`; een beheerder kan dat adres wijzigen met `ANTHROPIC_BASE_URL` en
 `ANTHROPIC_URL`). De chat haalt zelf op wat hij nodig heeft, dus welke gegevens
@@ -57,10 +57,22 @@ onthoudt per gebruiker of de AI aan stond. Voor nieuwe gebruikers geldt het uitz
 direct, maar wie de AI al gebruikte houdt hem tot de beheerder
 `php artisan pennant:purge aimtrack-ai` draait.
 
+### Wat je browser bij derden ophaalt
+
+Ook zonder AI-coach laadt je browser een paar dingen van externe diensten. Die zien
+daardoor je IP-adres:
+
+- **Lettertypes** van Google Fonts (`fonts.googleapis.com` en `fonts.gstatic.com`) op
+  de landingspagina, de contactpagina en in de app, en van Bunny Fonts
+  (`fonts.bunny.net`) in de app.
+- **Je avatar** in de app komt van `ui-avatars.com`. Daarvoor gaan je initialen mee.
+
+Dit staat op de lijst om lokaal te maken ([#128](https://github.com/Marcvdc/AimTrack/issues/128)).
+
 ### Wat een beheerder verder kan inrichten
 
-Buiten de AI-coach gaat er alleen iets naar buiten als de beheerder van je installatie
-dat inricht. De repository kent drie van zulke routes:
+Daarnaast kan de beheerder van je installatie routes aanzetten waarlangs gegevens naar
+buiten gaan, onder meer:
 
 - **Mail** via een SMTP-server (`MAIL_MAILER`), voor onder meer het contactformulier en
   meldingen. Storingsmeldingen van de AI-coach gaan standaard naar

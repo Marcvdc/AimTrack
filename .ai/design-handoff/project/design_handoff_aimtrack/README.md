@@ -417,7 +417,7 @@ Open `AimTrack Designs.html` in a browser to see the full design canvas. The sup
 
 - **Filament version**: 3.x is assumed. If you upgrade to 4.x, verify the panel theming API hasn't changed.
 - **AI backend**: the prototype assumes a streaming chat endpoint that returns conversational text + structured "attachments" (chart data, CTA buttons). The exact API contract is not in scope of this design — coordinate with backend engineering.
-- **Export**: there is no prescribed format. WM-4 is the permit document the chief of police issues, not a reporting standard, so AimTrack must not claim to comply with it. The export is a plain CSV or PDF overview of the user's own sessions for their association records; the UI just kicks off the job.
+- **Export**: there is no prescribed format. The permit paperwork from the police is not a reporting standard, so AimTrack must not claim that its export complies with one. The export is a plain CSV or PDF overview of the user's own sessions for their association records; the UI just kicks off the job.
 - **Mobile**: not implemented in Filament. Recommend a PWA (Capacitor + Vue or Inertia) if a native app is out of scope.
 
 Good luck. 🎯 — Marc & the AimTrack design pass, mei 2026.

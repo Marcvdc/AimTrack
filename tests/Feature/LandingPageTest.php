@@ -161,7 +161,7 @@ test('landing page names Anthropic as the destination of AI data', function (): 
     $this->get('/')
         ->assertOk()
         ->assertSee('api.anthropic.com', escape: false)
-        ->assertSee('zonder eigen Claude-key geen enkele AI-call', escape: false)
+        ->assertSee('zonder Claude-key geen enkele AI-call', escape: false)
         ->assertSee('als je ze zelf inricht', escape: false);
 });
 

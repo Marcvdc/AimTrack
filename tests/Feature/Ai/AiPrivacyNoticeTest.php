@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Exceptions\Ai\AiKeyMissingException;
 use App\Models\User;
 use App\Models\Weapon;
 use App\Services\Ai\ShooterCoach;
 use App\Support\Ai\AiPrivacyNotice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Laravel\Pennant\Feature;
@@ -85,7 +87,7 @@ test('de wapenprompt stuurt het serienummer en de opslaglocatie echt mee', funct
 
     // Dit toetst de echte HTTP-body. Welke velden per pad meegaan, in beide
     // richtingen, toetst AiDataFlowTest.
-    Http::assertSent(function (\Illuminate\Http\Client\Request $r): bool {
+    Http::assertSent(function (Request $r): bool {
         $prompt = $r['messages'][0]['content'];
 
         return str_contains($prompt, 'SN-TEST-4711')
@@ -103,10 +105,10 @@ test('zonder API-key gaat er geen enkele call naar buiten', function (): void {
     $user = User::factory()->create(['anthropic_api_key' => null]);
     $weapon = Weapon::factory()->create(['user_id' => $user->id]);
 
-    (new ShooterCoach(
+    expect(fn () => (new ShooterCoach(
         model: 'claude-haiku-4-5-20251001',
         baseUrl: 'https://api.anthropic.com',
-    ))->generateWeaponInsight($weapon);
+    ))->generateWeaponInsight($weapon))->toThrow(AiKeyMissingException::class);
 
     Http::assertNothingSent();
 });
@@ -158,15 +160,61 @@ test('uitzetten met de omgevingsvlag geldt pas na een purge voor wie de AI al ge
     expect(AiPrivacyNotice::panel())->toContain(AiPrivacyNotice::PURGE_COMMAND);
 });
 
+/**
+ * De vlag staat in beide tests aan voor de ingelogde gebruiker zelf. Zo komt de 403
+ * van de ontbrekende key en niet van de vlag, en wordt de eerste test rood als de
+ * key-check uit AimtrackFeatureToggle::aiEnabled() verdwijnt. Dat de chat dan ook de
+ * key van de gebruiker meestuurt en niet de serverkey, toetst
+ * InjectUserAnthropicKeyTest door de volledige stack.
+ */
 test('zonder API-key weigert de chat en gaat er niets naar buiten', function (): void {
     Http::fake();
-    Feature::activate('aimtrack-ai');
+    config(['ai.providers.anthropic.key' => null]);
 
     $user = User::factory()->create(['anthropic_api_key' => null]);
+    Feature::for($user)->activate('aimtrack-ai');
 
     $this->actingAs($user)
         ->postJson('/copilot/stream', ['message' => 'Hoe was mijn laatste sessie?', 'panel_id' => 'admin'])
         ->assertForbidden();
 
     Http::assertNothingSent();
+});
+
+test('met een API-key en de vlag aan laat de chat de vraag wel door', function (): void {
+    Http::fake();
+
+    $user = User::factory()->create(['anthropic_api_key' => 'sk-ant-heeft-wel-een-key']);
+    Feature::for($user)->activate('aimtrack-ai');
+
+    $this->actingAs($user)
+        ->postJson('/copilot/stream', ['message' => 'Hoe was mijn laatste sessie?', 'panel_id' => 'admin'])
+        ->assertOk();
+});
+
+test('de gebruikersdocumentatie noemt de externe bronnen die de browser laadt', function (): void {
+    $docs = file_get_contents(base_path('docs/user/README.md'));
+
+    $panel = $this->actingAs(User::factory()->create())->get('/admin')->assertOk()->getContent();
+    $landing = $this->get('/')->assertOk()->getContent();
+
+    // Alleen wat de browser zelf laadt: stylesheets, preconnects, scripts en
+    // afbeeldingen. Gewone links naar buiten (GitHub, de KNSA) volgt de browser pas
+    // als je erop klikt.
+    preg_match_all('#<(?:link|script|img)\b[^>]*\b(?:href|src)="https?://([a-z0-9.-]+)#i', $panel.$landing, $matches);
+    $appHost = parse_url(config('app.url'), PHP_URL_HOST);
+    $hosts = collect($matches[1])
+        ->reject(fn (string $host): bool => $host === $appHost)
+        ->unique()
+        ->values();
+
+    expect($hosts->all())->toContain('fonts.googleapis.com', 'ui-avatars.com');
+
+    foreach ($hosts as $host) {
+        expect($docs)->toContain($host);
+    }
+
+    expect($docs)
+        ->not->toContain('Van zichzelf stuurt AimTrack alleen')
+        ->not->toContain('gaat er alleen iets naar buiten als');
 });
