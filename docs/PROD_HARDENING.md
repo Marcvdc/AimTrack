@@ -70,6 +70,7 @@ opzet; ze blokkeren de merge van PR #157 niet, maar wel de eerste deploy erna.
 - [ ] Uploads op juiste disk (bij voorkeur S3/secure bucket) of lokale opslag afgeschermd via webserver.
 - [ ] `AUTH_REGISTRATION_ENABLED` staat uit (default). Dan bestaat `/admin/register` niet (404). Zet je hem aan, dan is e-mailverificatie verplicht en moet de mailconfig werken. Accounts van vóór migratie `2026_10_17_083301_mark_existing_users_as_verified` zijn als geverifieerd gemarkeerd. Let op: met registratie uit wordt bij een verse install niemand vanzelf beheerder; zet `is_admin` dan zelf voor het eerste account.
 - [ ] PHP-hardening op de FPM-pool (`docker/php/fpm-hardening.conf`): `exec`, `passthru`, `shell_exec`, `system`, `proc_open`, `popen` en `pcntl_exec` uit, `allow_url_fopen` uit. Alleen voor webrequests; de CLI (`queue:work`, `artisan`, de entrypoint) houdt ze, want Symfony Process heeft `proc_open` nodig. `expose_php = Off` via `docker/php/hardening.ini`.
+- [ ] `memory_limit` staat in de production-image op de 128M van `php.ini-production`. De ruimere 512M uit `docker/php/dev-memory.ini` geldt alleen voor het dev-target (#167); controle: `docker run --rm --entrypoint php <prod-image> -r 'echo ini_get("memory_limit");'` geeft `128M`.
 
 ### Controle van de PHP-hardening op een gebouwde image
 
