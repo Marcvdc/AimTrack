@@ -88,14 +88,15 @@ test('head-assets inlines the design tokens stylesheet', function (): void {
         ->toContain('#64f4b3');
 });
 
-test('head-assets links the Inter and JetBrains Mono webfonts with preconnect', function (): void {
+test('head-assets links the self-hosted Inter and JetBrains Mono webfonts', function (): void {
     $html = Blade::render('<x-aimtrack.head-assets />');
 
     expect($html)
-        ->toContain('<link rel="preconnect" href="https://fonts.googleapis.com">')
-        ->toContain('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')
-        ->toContain('family=Inter:wght@400;500;600;700')
-        ->toContain('family=JetBrains+Mono:wght@400;500;600;700');
+        ->toContain('<link rel="stylesheet" href="'.asset('webfonts/aimtrack-fonts.css').'">')
+        ->toContain('<link rel="preload" href="'.asset('webfonts/inter/inter-latin-wght-normal.woff2').'" as="font" type="font/woff2" crossorigin>')
+        ->not->toContain('preconnect')
+        ->not->toContain('fonts.googleapis.com')
+        ->not->toContain('fonts.gstatic.com');
 });
 
 test('head-assets emits the full token stylesheet verbatim', function (): void {

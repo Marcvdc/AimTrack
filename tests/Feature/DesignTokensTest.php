@@ -9,13 +9,12 @@ test('admin login page injects aimtrack design tokens', function (): void {
     $response->assertSee('--at-accent:    #64f4b3;', escape: false);
 });
 
-test('admin login page links the inter and jetbrains mono webfonts', function (): void {
+test('admin login page links the self-hosted inter and jetbrains mono webfonts', function (): void {
     $response = $this->get('/admin/login');
 
     $response->assertOk();
-    $response->assertSee('fonts.googleapis.com', escape: false);
-    $response->assertSee('family=Inter', escape: false);
-    $response->assertSee('JetBrains+Mono', escape: false);
+    $response->assertSee(asset('webfonts/aimtrack-fonts.css'), escape: false);
+    $response->assertSee("--font-family: 'Inter'", escape: false);
 });
 
 test('aimtrack tokens stylesheet defines all ten color tokens', function (): void {
