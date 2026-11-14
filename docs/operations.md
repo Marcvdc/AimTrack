@@ -142,6 +142,7 @@ Alles tussen het moment van de dump en het herstel is weg. Bij een dagelijkse du
 
 ## Monitoring & logging
 - Logs gaan naar het daily-bestand en stdout/stderr (`LOG_STACK`). Configureer alerts op 5xx rate, queue-failures en AI-error spikes.
+- Overweeg database monitoring (pg_stat_activity) en storage usage alerts.
 
 ### Sentry
 
@@ -159,8 +160,15 @@ Env-variabelen voor productie:
 | `SENTRY_TRACES_SAMPLE_RATE` | nee | `0.0` (geen performance-tracing) |
 | `SENTRY_PROFILES_SAMPLE_RATE` | nee | `0.0` |
 
-Zonder `SENTRY_LARAVEL_DSN` verandert er niets: de client heeft geen adres en slaat elk event over. Tests zetten de DSN in `phpunit.xml` geforceerd op leeg. `send_default_pii` staat vast op `false` in `config/sentry.php`, dus e-mailadressen, IP's en request-bodies gaan niet mee.
-- Overweeg database monitoring (pg_stat_activity) en storage usage alerts.
+Zonder `SENTRY_LARAVEL_DSN` verandert er niets: de client heeft geen adres en slaat elk event over. Tests zetten de DSN in `phpunit.xml` geforceerd op leeg.
+
+Wat `config/sentry.php` tegenhoudt:
+
+- `send_default_pii` staat op `false`: geen IP-adres, geen cookies, en de headers `Authorization`, `Cookie`, `X-Forwarded-For` en `X-Real-IP` worden gefilterd.
+- `max_request_body_size` staat op `never`: de request-body (formuliervelden, JSON) gaat niet mee. Dat staat los van `send_default_pii`.
+- `before_send` wijst naar `App\Support\Sentry\ScrubRequestData`: die haalt de query string uit `request.query_string`, `request.url` en de `Referer`-header, en gooit een eventuele body weg. sentry-php neemt de query string anders altijd mee, ook met `send_default_pii` uit, en een resetlink met `?email=` zou dan een e-mailadres sturen.
+
+Wat wel meegaat: de exception-klasse en -boodschap, de stacktrace met broncoderegels, het URL-pad, de methode, de overige headers (zoals `User-Agent`) en de logregels van vóór de fout als breadcrumbs. Zet dus geen e-mailadressen of andere persoonsgegevens in exception-boodschappen of logregels.
 
 ## Beveiliging & compliance
 - Patch base images regelmatig en rebuild. Houd PHP/Laravel security releases bij.

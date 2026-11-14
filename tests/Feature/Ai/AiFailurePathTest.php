@@ -226,7 +226,9 @@ it('faalt de job direct zonder retry bij een ontbrekende key en raakt de failing
 it('faalt de job direct bij een 401 zonder hem opnieuw in te plannen', function (): void {
     config(['queue.default' => 'database']);
     Http::fake(['api.anthropic.com/*' => Http::response(['error' => 'invalid x-api-key'], 401)]);
-    fakeSentryHub();
+    fakeSentryHub()->shouldReceive('captureException')
+        ->once()
+        ->with(Mockery::type(AiUnavailableException::class), Mockery::any());
 
     GenerateSessionReflectionJob::dispatch(Session::factory()->for(failurePathUser())->create());
 
@@ -316,7 +318,9 @@ it('toont op de wapenpagina de nette melding en niet de foutstring', function ()
 it('laat met de sync-queue een tijdelijke fout door naar wie de job dispatcht', function (): void {
     config(['queue.default' => 'sync']);
     Http::fake(['api.anthropic.com/*' => Http::response(['error' => 'kapot'], 503)]);
-    fakeSentryHub();
+    fakeSentryHub()->shouldReceive('captureException')
+        ->once()
+        ->with(Mockery::type(AiUnavailableException::class), Mockery::any());
 
     $session = Session::factory()->for(failurePathUser())->create();
     $reflection = AiReflection::factory()->for($session)->create(goodReflectionContent());
