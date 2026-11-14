@@ -167,6 +167,24 @@ test('entrypoint faalt bij boot als storage/app niet schrijfbaar is', function (
     removeEntrypointSandbox($root);
 });
 
+test('entrypoint noemt de map zelf als mkdir faalt zonder pad in zijn melding (uutils)', function () {
+    ['root' => $root, 'app' => $app, 'env' => $env] = entrypointSandbox();
+    writeEntrypointStub($root.'/bin/mkdir', [
+        'echo "mkdir: Permission denied" >&2',
+        'exit 1',
+    ]);
+
+    $result = Process::env($env)
+        ->run(['bash', base_path('docker/entrypoint.sh'), 'touch', $root.'/exec-ran']);
+
+    expect($result->exitCode())->not->toBe(0)
+        ->and($result->errorOutput())->toContain('[entrypoint] kan '.$app.'/storage/app/private niet aanmaken')
+        ->and(file_exists($root.'/exec-ran'))->toBeFalse()
+        ->and(file_exists($root.'/chown.log'))->toBeFalse();
+
+    removeEntrypointSandbox($root);
+});
+
 test('entrypoint start php-fpm als root, zonder setpriv', function () {
     ['root' => $root, 'env' => $env] = entrypointSandbox();
     writeEntrypointStub($root.'/bin/php-fpm', ['touch "'.$root.'/fpm-ran"']);
