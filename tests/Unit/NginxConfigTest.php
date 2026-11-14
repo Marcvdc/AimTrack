@@ -13,23 +13,28 @@ it('verbergt de nginx-versie in headers en foutpagina\'s', function () {
 });
 
 /**
- * Deelt de add_header-regels van default.conf in naar het blok waarin ze
- * staan. Een add_header in een location schakelt in nginx alle headers van
- * het server-niveau uit voor die location (#130), dus dat onderscheid telt.
- * Puntkomma's binnen een waarde tussen dubbele quotes (de CSP) breken een
- * statement niet af.
+ * Deelt de add_header-regels van een nginx-config in naar het blok waarin ze
+ * staan. Een add_header in een location of if schakelt in nginx alle headers
+ * van het server-niveau uit voor dat blok (#130), dus alles wat niet direct in
+ * server staat telt als genest. Commentaar wordt overal buiten quotes
+ * gestript, en puntkomma's binnen een waarde tussen dubbele quotes (de CSP)
+ * breken een statement niet af.
  *
- * @return array{server: array<string, string>, location: list<string>}
+ * @return array{server: array<string, string>, genest: list<string>}
  */
-function nginxAddHeaders(): array
+function nginxAddHeaders(?string $config = null): array
 {
-    $config = (string) file_get_contents(base_path('docker/nginx/default.conf'));
-    $config = (string) preg_replace('/^\s*#[^\n]*/m', '', $config);
+    $config ??= (string) file_get_contents(base_path('docker/nginx/default.conf'));
+    $config = (string) preg_replace_callback(
+        '/"[^"]*"|#[^\n]*/',
+        fn (array $match): string => str_starts_with($match[0], '"') ? $match[0] : '',
+        $config,
+    );
 
     preg_match_all('/(?:"[^"]*"|[^;{}"])*[;{}]/s', $config, $matches);
 
     $server = [];
-    $location = [];
+    $genest = [];
     $stack = [];
 
     foreach ($matches[0] as $statement) {
@@ -51,18 +56,16 @@ function nginxAddHeaders(): array
             continue;
         }
 
-        if (in_array('location', $stack, true)) {
-            $location[] = $match[1];
+        if ($stack === ['server']) {
+            $server[strtolower($match[1])] = trim((string) preg_replace('/\s+/', ' ', $match[2]));
 
             continue;
         }
 
-        if (end($stack) === 'server') {
-            $server[strtolower($match[1])] = trim((string) preg_replace('/\s+/', ' ', $match[2]));
-        }
+        $genest[] = $match[1];
     }
 
-    return ['server' => $server, 'location' => $location];
+    return ['server' => $server, 'genest' => $genest];
 }
 
 it('zet de security headers op server-niveau met always', function (string $header, string $expected) {
@@ -88,7 +91,7 @@ it('rolt de CSP alleen als report-only uit, met een startpolicy die Filament en 
     expect($headers)->not->toHaveKey('content-security-policy');
 
     expect($headers['content-security-policy-report-only'] ?? '')
-        ->toContain("img-src 'self' data: blob:")
+        ->toContain("img-src 'self' data: blob: https://ui-avatars.com")
         ->toContain("style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net")
         ->toContain("font-src 'self' data: https://fonts.gstatic.com https://fonts.bunny.net")
         ->toContain("script-src 'self' 'unsafe-inline' 'unsafe-eval'")
@@ -97,8 +100,30 @@ it('rolt de CSP alleen als report-only uit, met een startpolicy die Filament en 
         ->not->toContain('report-uri');
 });
 
-it('laat geen location-blok een eigen add_header zetten', function () {
-    expect(nginxAddHeaders()['location'])->toBe([]);
+it('laat geen location- of if-blok een eigen add_header zetten', function () {
+    expect(nginxAddHeaders()['genest'])->toBe([]);
+});
+
+it('ziet add_header in geneste blokken en negeert commentaar achter een regel', function () {
+    $config = <<<'NGINX'
+        server {
+            listen 80; # oud; add_header X-Commentaar "weg" always;
+            server_name _; # was eerder: location /oud {
+            add_header X-Server "a; b" always; # zie ook; add_header X-Ook-Weg "x";
+            if ($request_method = POST) {
+                add_header X-In-If "1";
+            }
+            location / {
+                if ($arg_x) { add_header X-In-Location-If "1"; }
+                add_header X-In-Location "1";
+            }
+        }
+        NGINX;
+
+    $headers = nginxAddHeaders($config);
+
+    expect($headers['server'])->toBe(['x-server' => '"a; b" always'])
+        ->and($headers['genest'])->toBe(['X-In-If', 'X-In-Location-If', 'X-In-Location']);
 });
 
 it('zet geen HSTS op de origin, die hoort bij de TLS-proxy', function () {
