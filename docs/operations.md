@@ -16,12 +16,14 @@ Runbook voor dagelijks beheer, incidentrespons en onderhoud van AimTrack.
 
 ### Betekenis van `queue_stalled`
 
-`/health` en `/api/health` geven 503 met `checks.queue.error: queue_stalled` (en `age_seconds`) als de oudste job in de `jobs`-tabel die al uitgevoerd had moeten worden langer wacht dan `HEALTH_QUEUE_MAX_AGE_SECONDS` (standaard 300, zie `config/health.php`). Jobs met een delay tellen niet mee, jobs die een worker nu verwerkt ook niet, een reservering ouder dan `retry_after` wel. Bijna altijd betekent het dat er geen worker draait of dat die vastzit.
+`/health` en `/api/health` geven 503 met `checks.queue.error: queue_stalled` als de oudste job in de `jobs`-tabel die al uitgevoerd had moeten worden langer wacht dan `HEALTH_QUEUE_MAX_AGE_SECONDS` (standaard 300, zie `config/health.php`). Jobs met een delay tellen niet mee, jobs die een worker nu verwerkt ook niet, een reservering ouder dan `retry_after` wel. De leeftijd staat niet in de response (het endpoint is publiek) maar in de applicatielog, als warning `Queue stilgevallen` met `age_seconds`. Alle queue-namen tellen mee. Bijna altijd betekent het dat er geen worker draait of dat die vastzit.
 
 Wat je doet:
 1. Kijk of de worker draait: `docker compose ps queue` en `docker compose logs --tail=100 queue`.
 2. Herstart hem: `docker compose restart queue`. De wachtende jobs blijven in de tabel staan en worden daarna alsnog verwerkt.
 3. Blijft de melding staan, kijk dan naar `php artisan queue:failed` en naar een enkele langlopende job die de worker blokkeert. Verhoog de drempel alleen als er legitiem lange jobs zijn.
+
+De drempel staat standaard op 300 seconden. Een grote burst AI-jobs kan de wachttijd tijdelijk boven die grens brengen en dan vals alarm geven bij externe monitoring; zet de drempel in dat geval hoger. De config wordt bij het opstarten van de container gecachet (`config:cache` in `docker/entrypoint.sh`), dus een gewijzigde `HEALTH_QUEUE_MAX_AGE_SECONDS` werkt pas na een herstart van de container.
 
 `queue_unavailable` is iets anders: de queue-configuratie of de `jobs`-tabel is niet bereikbaar.
 

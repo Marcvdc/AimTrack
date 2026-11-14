@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -47,9 +48,6 @@ class HealthController extends Controller
         }
     }
 
-    /**
-     * @return array{status: string, error?: string, age_seconds?: int}
-     */
     private function checkQueue(): array
     {
         try {
@@ -58,13 +56,16 @@ class HealthController extends Controller
             // Touch the connection to ensure configuration is valid.
             app('queue')->connection($connection);
 
-            $age = $this->oldestAvailableJobAgeInSeconds($connection);
+            $age = $this->oldestRunnableJobAgeInSeconds($connection);
 
             if ($age !== null && $age > (int) config('health.queue_max_age_seconds')) {
+                Log::warning('Queue stilgevallen: oudste uitvoerbare job wacht al te lang.', [
+                    'age_seconds' => $age,
+                ]);
+
                 return [
                     'status' => 'failed',
                     'error' => 'queue_stalled',
-                    'age_seconds' => $age,
                 ];
             }
 
@@ -80,13 +81,14 @@ class HealthController extends Controller
     }
 
     /**
-     * Leeftijd van de oudste job die nu uitgevoerd had kunnen worden. Jobs met een
-     * `available_at` in de toekomst (delay) en jobs die een worker net heeft
-     * gereserveerd tellen niet mee; een reservering ouder dan `retry_after` wel,
-     * want die wordt pas weer opgepakt als er een worker draait. Alleen voor de
-     * database-driver, andere drivers hebben hier geen zicht op.
+     * Seconden sinds het moment waarop de oudste job uitgevoerd had kunnen worden.
+     * Jobs met een `available_at` in de toekomst (delay) en jobs die een worker net
+     * heeft gereserveerd tellen niet mee. Een reservering ouder dan `retry_after`
+     * telt wel, vanaf het moment dat die verliep: dat is een gecrashte worker.
+     * Alle queue-namen tellen mee, want de worker draait zonder `--queue`.
+     * Alleen voor de database-driver, andere drivers geven hier geen zicht op.
      */
-    private function oldestAvailableJobAgeInSeconds(string $connection): ?int
+    private function oldestRunnableJobAgeInSeconds(string $connection): ?int
     {
         $config = config("queue.connections.{$connection}");
 
@@ -97,17 +99,26 @@ class HealthController extends Controller
         $now = now()->getTimestamp();
         $retryAfter = (int) ($config['retry_after'] ?? 90);
 
-        $oldest = DB::connection($config['connection'] ?? null)
-            ->table($config['table'] ?? 'jobs')
-            ->where('queue', $config['queue'] ?? 'default')
+        $jobs = fn () => DB::connection($config['connection'] ?? null)
+            ->table($config['table'] ?? 'jobs');
+
+        $unreservedSince = $jobs()
+            ->whereNull('reserved_at')
             ->where('available_at', '<=', $now)
-            ->where(function ($query) use ($now, $retryAfter): void {
-                $query->whereNull('reserved_at')
-                    ->orWhere('reserved_at', '<=', $now - $retryAfter);
-            })
             ->min('available_at');
 
-        return $oldest === null ? null : max(0, $now - (int) $oldest);
+        $expiredReservation = $jobs()
+            ->whereNotNull('reserved_at')
+            ->where('reserved_at', '<=', $now - $retryAfter)
+            ->where('available_at', '<=', $now)
+            ->min('reserved_at');
+
+        $runnableSince = array_filter([
+            $unreservedSince === null ? null : (int) $unreservedSince,
+            $expiredReservation === null ? null : (int) $expiredReservation + $retryAfter,
+        ], fn (?int $timestamp): bool => $timestamp !== null);
+
+        return $runnableSince === [] ? null : max(0, $now - min($runnableSince));
     }
 
     private function checkStorage(): array

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
@@ -148,6 +149,7 @@ function queueJob(array $attributes = []): void
 describe('queue stalled check', function () {
     beforeEach(function () {
         Storage::fake(config('filesystems.default'));
+        $this->travelTo(now()->startOfSecond());
         config([
             'queue.default' => 'database',
             'health.queue_max_age_seconds' => 300,
@@ -168,15 +170,25 @@ describe('queue stalled check', function () {
             ->assertJsonPath('checks.queue.status', 'ok');
     });
 
-    test('a job older than the threshold gives 503 with queue_stalled', function () {
+    test('a job older than the threshold gives 503 with queue_stalled and logs the age', function () {
+        Log::spy();
         queueJob(['available_at' => now()->subSeconds(600)->getTimestamp()]);
 
         $this->getJson(route('api.health'))
             ->assertServiceUnavailable()
             ->assertJsonPath('status', 'degraded')
-            ->assertJsonPath('checks.queue.status', 'failed')
-            ->assertJsonPath('checks.queue.error', 'queue_stalled')
-            ->assertJsonPath('checks.queue.age_seconds', 600);
+            ->assertExactJson([
+                'status' => 'degraded',
+                'checks' => [
+                    'database' => ['status' => 'ok'],
+                    'queue' => ['status' => 'failed', 'error' => 'queue_stalled'],
+                    'storage' => ['status' => 'ok'],
+                ],
+            ]);
+
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn (string $message, array $context): bool => $context === ['age_seconds' => 600])
+            ->once();
     });
 
     test('the threshold comes from config', function () {
@@ -195,18 +207,26 @@ describe('queue stalled check', function () {
         $this->getJson(route('api.health'))->assertOk();
     });
 
-    test('a job a worker is processing does not count, an expired reservation does', function () {
+    test('a job a worker is processing does not count', function () {
         queueJob([
             'available_at' => now()->subSeconds(600)->getTimestamp(),
             'reserved_at' => now()->subSeconds(5)->getTimestamp(),
         ]);
 
         $this->getJson(route('api.health'))->assertOk();
+    });
+
+    test('an expired reservation counts from the moment it expired', function () {
+        config(['queue.connections.database.retry_after' => 90]);
 
         queueJob([
-            'available_at' => now()->subSeconds(600)->getTimestamp(),
-            'reserved_at' => now()->subSeconds(400)->getTimestamp(),
+            'available_at' => now()->subDay()->getTimestamp(),
+            'reserved_at' => now()->subSeconds(200)->getTimestamp(),
         ]);
+
+        $this->getJson(route('api.health'))->assertOk();
+
+        $this->travelTo(now()->addSeconds(300));
 
         $this->getJson(route('api.health'))
             ->assertServiceUnavailable()
@@ -217,15 +237,13 @@ describe('queue stalled check', function () {
         queueJob(['available_at' => now()->subSeconds(1000)->getTimestamp()]);
         queueJob(['available_at' => now()->subSeconds(1)->getTimestamp()]);
 
-        $this->getJson(route('api.health'))
-            ->assertServiceUnavailable()
-            ->assertJsonPath('checks.queue.age_seconds', 1000);
+        $this->getJson(route('api.health'))->assertServiceUnavailable();
     });
 
-    test('jobs on another queue do not count', function () {
+    test('jobs on any queue name count', function () {
         queueJob(['queue' => 'anders', 'available_at' => now()->subSeconds(600)->getTimestamp()]);
 
-        $this->getJson(route('api.health'))->assertOk();
+        $this->getJson(route('api.health'))->assertServiceUnavailable();
     });
 
     test('the response names no job or payload', function () {
@@ -233,12 +251,15 @@ describe('queue stalled check', function () {
 
         $response = $this->getJson(route('api.health'))->assertServiceUnavailable();
 
-        expect($response->json('checks.queue'))->toBe([
-            'status' => 'failed',
-            'error' => 'queue_stalled',
-            'age_seconds' => 600,
-        ]);
         expect($response->getContent())->not->toContain('GeheimeJob')->not->toContain('geheim');
+    });
+
+    test('the sync driver stays ok', function () {
+        config(['queue.default' => 'sync']);
+
+        $this->getJson(route('api.health'))
+            ->assertOk()
+            ->assertJsonPath('checks.queue.status', 'ok');
     });
 
     test('a missing jobs table reports queue_unavailable', function () {
