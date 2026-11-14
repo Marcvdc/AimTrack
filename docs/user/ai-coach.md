@@ -16,7 +16,7 @@ Hoe je vragen stelt aan de AI-coach en wat je kunt verwachten.
 - Een disclaimer herinnert je eraan dat AI geen vervanging is voor instructeurs of veiligheidsregels.
 
 ## Fouten of timeouts
-- Controleer of de AI-providerkey in `.env` staat en dat de queue (indien gebruikt) draait.
+- Controleer of je een Claude API-key hebt ingevuld onder **AI-instellingen** (of dat je vereniging een gedeelde key heeft).
 - Bij mislukking verschijnt een foutmelding; probeer het opnieuw of verkort de vraag/periode.
 
 ## Privacy & veiligheid
