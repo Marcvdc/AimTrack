@@ -168,7 +168,7 @@ test('entrypoint faalt bij boot als storage/app niet schrijfbaar is', function (
 });
 
 test('entrypoint noemt de map zelf als mkdir faalt zonder pad in zijn melding (uutils)', function () {
-    ['root' => $root, 'env' => $env] = entrypointSandbox();
+    ['root' => $root, 'app' => $app, 'env' => $env] = entrypointSandbox();
     writeEntrypointStub($root.'/bin/mkdir', [
         'echo "mkdir: Permission denied" >&2',
         'exit 1',
@@ -178,7 +178,7 @@ test('entrypoint noemt de map zelf als mkdir faalt zonder pad in zijn melding (u
         ->run(['bash', base_path('docker/entrypoint.sh'), 'touch', $root.'/exec-ran']);
 
     expect($result->exitCode())->not->toBe(0)
-        ->and($result->errorOutput())->toContain('storage/app/private')
+        ->and($result->errorOutput())->toContain('[entrypoint] kan '.$app.'/storage/app/private niet aanmaken')
         ->and(file_exists($root.'/exec-ran'))->toBeFalse()
         ->and(file_exists($root.'/chown.log'))->toBeFalse();
 

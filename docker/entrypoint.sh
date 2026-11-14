@@ -43,7 +43,7 @@ for dir in storage/app/private storage/app/public \
     storage/framework/cache storage/framework/sessions storage/framework/views \
     bootstrap/cache; do
     if ! mkdir -p "${dir}"; then
-        echo "entrypoint: kan ${APP_ROOT}/${dir} niet aanmaken" >&2
+        echo "[entrypoint] kan ${APP_ROOT}/${dir} niet aanmaken" >&2
         exit 1
     fi
 done
