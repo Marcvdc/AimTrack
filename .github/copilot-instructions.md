@@ -259,8 +259,9 @@ providers, routing, middleware en exception-handling bedraad worden, via `Applic
   `config/trustedproxy.php` en `Illuminate\Http\Middleware\TrustProxies`.
 - **Service providers**: `app/Providers/`, geregistreerd in `withProviders()` in `bootstrap/app.php`.
   Dit project heeft geen `bootstrap/providers.php`.
-- **Routes**: `withRouting()` wijst de web- en console-routes aan. Daarnaast bestaat
-  `app/Providers/RouteServiceProvider.php` nog; die laadt `routes/web.php` en `routes/api.php`.
+- **Routes**: `withRouting()` is de enige plek die routebestanden laadt: `routes/web.php`,
+  `routes/api.php` (prefix `/api`, groep `api`) en `routes/console.php`. Er is geen
+  `app/Providers/RouteServiceProvider.php` meer; die laadde `routes/web.php` een tweede keer (#160).
 - **Console-commando's en schedule**: `routes/console.php`. Er is geen `app/Console/Kernel.php`.
 - **Exception-handling**: de `withExceptions()`-callback. `app/Exceptions/Handler.php` staat er nog,
   maar de container bindt `Illuminate\Foundation\Exceptions\Handler`, dus die klasse doet niets.
@@ -275,6 +276,10 @@ negen nooit-geregistreerde middleware-subklassen die alleen door die Kernel geno
 
 `tests/Feature/Http/MiddlewareRegistrationTest.php` faalt zodra een van die bestanden terugkomt.
 Moet er middleware bij, dan gaat dat via `bootstrap/app.php`.
+
+Hetzelfde geldt voor `app/Providers/RouteServiceProvider.php`: naast `withRouting()` registreerde
+die alle webroutes nog een keer. `tests/Feature/Http/RouteRegistrationTest.php` faalt zodra er weer
+een tweede route-provider bij komt. Een nieuw routebestand hoort in `withRouting()`.
 
 === foundation rules ===
 
