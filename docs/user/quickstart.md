@@ -1,10 +1,12 @@
 # Quickstart
 
+Laatst bijgewerkt: 2026-11-14
+
 Korte gids om AimTrack lokaal te starten en de eerste sessie te registreren.
 
 ## Vereisten
 - Docker + Docker Compose
-- (Optioneel) AI-provider key in `.env` (`OPENAI_API_KEY` of ander driver-specific secret)
+- (Optioneel) Een eigen Claude API-key (Anthropic) voor de AI-functies. Die vul je in de app in onder **AI-instellingen**, niet in `.env`.
 
 ## Installatie (lokaal)
 1. Clone repo en kopieer `.env.example` naar `.env`. Vul `APP_KEY` later met `php artisan key:generate`.
@@ -13,7 +15,7 @@ Korte gids om AimTrack lokaal te starten en de eerste sessie te registreren.
 3. Installeer dependencies: `docker compose exec app composer install`.
 4. Genereer app key: `docker compose exec app php artisan key:generate`.
 5. Run migraties (en seeders indien aanwezig): `docker compose exec app php artisan migrate --seed`.
-6. Open de app op `http://localhost:8080` en login met het aangemaakte account (of registreer via standaard Laravel-auth).
+6. Open de app op `http://localhost:8080` en login met het aangemaakte account. Zelf een account aanmaken staat standaard uit (`AUTH_REGISTRATION_ENABLED=false`).
 
 ## Eerste sessie loggen
 1. Ga in Filament naar **Sessies** → **Nieuwe sessie**.
@@ -31,4 +33,4 @@ Korte gids om AimTrack lokaal te starten en de eerste sessie te registreren.
 ## Problemen oplossen
 - Controleer `docker compose logs app` bij errors.
 - Queue niet actief? Start `docker compose exec queue php artisan queue:work`.
-- Geen AI-output? Check `.env` voor AI-key/base URL en bekijk `ai_reflections` statusvelden.
+- Geen AI-output? Controleer of je een Claude API-key hebt ingevuld onder **AI-instellingen** (of dat je vereniging er een heeft), of `AI_MODEL` en `ANTHROPIC_BASE_URL` kloppen, en bekijk de `ai_reflections` statusvelden.

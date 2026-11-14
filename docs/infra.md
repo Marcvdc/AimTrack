@@ -1,5 +1,7 @@
 # Infra
 
+Laatst bijgewerkt: 2026-10-23
+
 Overzicht van de infrastructuur en lokale ontwikkelsetup.
 
 ## Containers (Docker Compose)

@@ -1,5 +1,7 @@
 # Operations
 
+Laatst bijgewerkt: 2026-10-17
+
 Runbook voor dagelijks beheer, incidentrespons en onderhoud van AimTrack.
 
 ## Dagelijkse checks
