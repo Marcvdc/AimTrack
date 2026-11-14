@@ -1,6 +1,7 @@
 <?php
 
 use App\Providers\AppServiceProvider;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Symfony\Component\Yaml\Yaml;
 
@@ -40,6 +41,10 @@ afterEach(function () {
  * config/app.php opnieuw en boot de AppServiceProvider. Zo loopt de test door de
  * echte keten van container-environment naar het schema van gegenereerde URL's,
  * waaronder het update-endpoint van Livewire.
+ *
+ * De URL-generator krijgt een request over plain HTTP, zoals de browser op
+ * http://localhost:18080 dat stuurt. Anders volgt het schema APP_URL uit de
+ * omgeving (in CI https, via de gekopieerde .env.example) en zegt de test niets.
  */
 function bootWithForceHttpsEnv(string $value): void
 {
@@ -49,6 +54,7 @@ function bootWithForceHttpsEnv(string $value): void
 
     config()->set('app.force_https', (require config_path('app.php'))['force_https']);
     URL::forceScheme(null);
+    app('url')->setRequest(Request::create('http://localhost:18080/admin/login'));
 
     (new AppServiceProvider(app()))->boot();
 }
@@ -68,7 +74,7 @@ test('root docker-compose.yml forceert https standaard voor app en queue', funct
 
 test('env-voorbeeld zet de stack-schakelaar niet, zodat een gekopieerde .env https niet uitzet', function () {
     expect(file_get_contents(base_path('.env.example')))
-        ->not->toContain('STACK_FORCE_HTTPS');
+        ->not->toMatch('/^\s*STACK_FORCE_HTTPS\s*=/m');
 });
 
 test('APP_FORCE_HTTPS uit de container-environment bepaalt het schema van gegenereerde URLs', function (string $value, string $scheme) {
