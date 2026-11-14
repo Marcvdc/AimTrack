@@ -1,7 +1,7 @@
 # WSL Local Development Guide
 
 Status: Reference  
-Laatst bijgewerkt: 2026-01-05
+Laatst bijgewerkt: 2026-11-14
 
 Deze gids beschrijft de aanbevolen manier om AimTrack lokaal te draaien binnen Windows Subsystem for Linux (WSL2) met Docker. Volg de stappen in volgorde zodat nieuwe developers binnen ±15 minuten een werkende stack hebben.
 
@@ -83,13 +83,52 @@ Documenteer eventuele afwijkingen in `docs/infra.md` wanneer je nieuwe tools toe
 | Poorten bezet | `Bind for 0.0.0.0:8080 failed` | Kies andere `WEB_PORT` / `DB_FORWARD_PORT` / `MAILPIT_*` in `.env.local` en start stack opnieuw. |
 | Trage bestands-I/O | Code staat op Windows-bestandssysteem | Clone repo in de WSL-ext4 filesystem (`/home/<user>/AimTrack`). |
 | Database corrupt | `pg_isready` healthcheck faalt | `docker compose ... down -v && docker volume rm aimtrack_dev_db_data_dev` (let op: data kwijt). |
+| Geheugen op bij tests | `Allowed memory size of 134217728 bytes exhausted` tijdens Pest | Je image is gebouwd vóór #167. Bouw het dev-image opnieuw (`docker compose ... build app`); zie hieronder. |
+| Alle tests als *warning* | `file_get_contents(/var/www/html/.env): Failed to open stream` | Er staat geen `.env` in de werkmap. `cp .env.example .env` en daarna `php artisan key:generate` in de container. |
 
 Zie ook de Troubleshooting-sectie in `README.md` voor aanvullende tips.
+
+### Geheugenlimiet van PHP
+
+Het dev-target van de `Dockerfile` zet `memory_limit = 512M` via `docker/php/dev-memory.ini`
+(in de container `/usr/local/etc/php/conf.d/zz-dev-memory.ini`). De PHP-standaard van 128M is
+te krap voor de testsuite zodra die Filament- en Livewire-componenten rendert. Een
+`php -d memory_limit=...` op de commandoregel helpt niet bij `php artisan test`, omdat dat een
+subproces start dat php.ini opnieuw leest; daarom staat de limiet in conf.d.
+
+De waarde is bewust eindig en niet `-1`, zodat een echt geheugenlek nog vastloopt. De testjob
+in de CI zet dezelfde waarde (`ini-values` in `.github/workflows/ci.yml`), zodat lokaal en CI
+hetzelfde meten. Een unittest (`tests/Unit/PhpGeheugenlimietTest.php`) bewaakt dat beide gelijk
+blijven.
+
+De production-image erft niet van het dev-target en houdt de 128M van `php.ini-production`.
+Een webrequest dat daar overheen gaat is een bug die we willen zien, geen reden om de grens op
+te rekken. Dezelfde unittest faalt als de dev-limiet in de production-stage terechtkomt.
+
+### Controles draaien zonder compose-stack
+
+Zonder draaiende stack kun je het dev-image los gebruiken. Draai dit als je eigen gebruiker en
+niet als root, anders blijven er root-bestanden achter in `vendor/` en `storage/`:
+
+```bash
+docker build --target dev -t aimtrack-dev:local .
+docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD":/var/www/html -w /var/www/html \
+    --entrypoint composer aimtrack-dev:local install --no-interaction   # alleen als vendor/ ontbreekt
+docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD":/var/www/html -w /var/www/html \
+    --entrypoint php aimtrack-dev:local vendor/bin/pest --compact
+docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD":/var/www/html -w /var/www/html \
+    --entrypoint php aimtrack-dev:local vendor/bin/pint --test
+docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD":/var/www/html -w /var/www/html \
+    --entrypoint composer aimtrack-dev:local audit
+```
+
+Zorg vooraf voor een `.env` in de werkmap (zie de troubleshooting-tabel).
 
 ## 6. Handige commands
 
 - Lint: `docker compose ... exec app composer lint`
 - Tests: `docker compose ... exec app composer test`
+- Dependency-audit: `docker compose ... exec app composer audit`
 - Vite build (optioneel): `docker compose ... exec app npm install && npm run build`
 - Artisan vanuit host: `docker compose ... exec app php artisan <command>`
 - Backup dev database:

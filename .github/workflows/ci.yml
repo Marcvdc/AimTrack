@@ -130,6 +130,9 @@ jobs:
           php-version: '8.4'
           extensions: sqlite, pdo_sqlite, intl, mbstring, bcmath, pcntl, zip
           coverage: none
+          # Dezelfde grens als het dev-image (docker/php/dev-memory.ini, #167), zodat de
+          # suite hier en lokaal hetzelfde meet, in plaats van op de standaard van de action te leunen.
+          ini-values: memory_limit=512M
 
       - name: Get Composer cache directory
         id: composer-cache
