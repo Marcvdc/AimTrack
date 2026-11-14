@@ -49,6 +49,10 @@ opzet; ze blokkeren de merge van PR #157 niet, maar wel de eerste deploy erna.
 ## Veiligheid & netwerk
 - [ ] TLS beëindigd op load balancer/reverse proxy; `X-Forwarded-*` headers doorgeven en proxies vertrouwd.
 - [ ] `AppServiceProvider` forceert HTTPS in productie; 4xx/5xx logging naar centraal logkanaal.
+      De root `docker-compose.yml` zet `APP_FORCE_HTTPS` standaard op `true`, tenzij de `.env`
+      naast dat bestand `STACK_FORCE_HTTPS=false` zegt. Die regel hoort alleen lokaal; op de
+      productiehost mag hij niet in de `.env` staan. Toets met
+      `docker compose exec app printenv APP_FORCE_HTTPS`, dat moet `true` geven.
 - [ ] Sessiecookie draagt `Secure`. `docker/compose.prod.yml` zet `SESSION_SECURE_COOKIE=true`
       in één gedeelde `environment` voor `app` en `queue`, en die wint van de `.env` uit
       `ENV_FILE_B64`. Beide containers draaien `config:cache` op hetzelfde volume
