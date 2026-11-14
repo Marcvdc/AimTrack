@@ -38,15 +38,15 @@
     --at-font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
     /* Display sizes (uit design-tokens.jsx TYPE rules) */
-    --at-display-xl: 64px;
-    --at-display-lg: 44px;
-    --at-display-md: 28px;
+    --at-display-xl: 4rem;
+    --at-display-lg: 2.75rem;
+    --at-display-md: 1.75rem;
 
-    --at-text-heading:    22px;
-    --at-text-subheading: 17px;
-    --at-text-body:       13px;
-    --at-text-small:      12px;
-    --at-text-micro:      11px;
+    --at-text-heading:    1.5rem;
+    --at-text-subheading: 1.125rem;
+    --at-text-body:       1rem;
+    --at-text-small:      0.875rem;
+    --at-text-micro:      0.75rem;
 
     /*
      * Numerieke data-sizes zijn fluid (clamp): op smalle viewports krimpen de
@@ -57,7 +57,7 @@
     --at-data-xl: clamp(30px, 8vw, 44px);
     --at-data-lg: clamp(18px, 5vw, 26px);
     --at-data-md: clamp(14px, 3.5vw, 18px);
-    --at-label:   10px;
+    --at-label:   0.75rem;
 
     /* Display-sizes als fluid varianten (#104) — voor koppen die op mobiel
        anders te groot worden (first-run-welcome, empty-states). */
@@ -93,7 +93,7 @@
 .at-label {
     font-family: var(--at-font-mono);
     font-size: var(--at-label);
-    letter-spacing: 0.18em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--at-muted);
 }

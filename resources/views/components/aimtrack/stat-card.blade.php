@@ -30,6 +30,6 @@
     <div class="at-label">{{ $label }}</div>
     <div style="font-family: var(--at-font-mono); font-size: var(--at-data-lg); font-weight: 600; margin-top: 6px; color: {{ $valueColor }}; letter-spacing: -0.01em; line-height: 1.1;">{{ $value }}</div>
     @if ($sub !== null)
-        <div style="font-size: 11px; color: {{ $subColor }}; margin-top: 4px; display: flex; align-items: center; gap: 4px;">{{ $sub }}</div>
+        <div style="font-size: var(--at-text-micro); color: {{ $subColor }}; margin-top: 4px; display: flex; align-items: center; gap: 4px;">{{ $sub }}</div>
     @endif
 </div>

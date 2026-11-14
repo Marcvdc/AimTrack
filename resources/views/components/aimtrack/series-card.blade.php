@@ -29,7 +29,7 @@
     ]) }}
 >
     <div style="padding: 14px 16px; border-bottom: 1px solid var(--at-line); display: flex; align-items: center; gap: 10px;">
-        <div style="font-size: 13px; font-weight: 600; color: var(--at-text); margin: 0;">{{ $title }} · {{ count($series) }} × {{ $shotsPerSerie }} schoten</div>
+        <div style="font-size: var(--at-text-body); font-weight: 600; color: var(--at-text); margin: 0;">{{ $title }} · {{ count($series) }} × {{ $shotsPerSerie }} schoten</div>
         <div class="at-label" style="margin-left: auto;">{{ $sub }}</div>
     </div>
 
@@ -52,6 +52,6 @@
             @endforeach
         </div>
     @else
-        <div style="padding: 24px 16px; color: var(--at-muted); font-size: 12px; text-align: center;">—</div>
+        <div style="padding: 24px 16px; color: var(--at-muted); font-size: var(--at-text-small); text-align: center;">—</div>
     @endif
 </div>
