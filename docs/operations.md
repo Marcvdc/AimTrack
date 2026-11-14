@@ -141,7 +141,25 @@ Alles tussen het moment van de dump en het herstel is weg. Bij een dagelijkse du
 - De offsite-kopie van de VM en de hersteltest daarvan staan in het runbook `docs/runbooks/aimtrack.md` in `Marcvdc/homelab`.
 
 ## Monitoring & logging
-- Stuur logs naar stdout/Sentry. Configureer alerts op 5xx rate, queue-failures en AI-error spikes.
+- Logs gaan naar het daily-bestand en stdout/stderr (`LOG_STACK`). Configureer alerts op 5xx rate, queue-failures en AI-error spikes.
+
+### Sentry
+
+Elke gerapporteerde exception gaat via `Integration::handles()` in `withExceptions()` van `bootstrap/app.php` naar Sentry: onbehandelde fouten uit web-requests en commands, elke mislukte poging van een queue-job, en `report()`-aanroepen in de code. Een job die met `$this->fail()` stopt komt binnen via de `Queue::failing`-hook in `AppServiceProvider`, die `report()` aanroept. `dontReportDuplicates()` in dezelfde callback zorgt dat een job die op zijn laatste poging gooit maar één keer binnenkomt. Een job met drie pogingen die drie keer faalt geeft dus drie events in hetzelfde Sentry-issue.
+
+Het logkanaal `sentry` hoort niet in `LOG_STACK`: dan kwam elke exception twee keer binnen, en gewone foutlogs (ook die van de feature flags) zouden in Sentry belanden. `config/logging.php` haalt het kanaal er daarom uit, ook als het in de `.env` staat.
+
+Env-variabelen voor productie:
+
+| Variabele | Nodig | Waarde |
+|---|---|---|
+| `SENTRY_LARAVEL_DSN` | ja, anders gaat er niets naar Sentry | DSN uit het Sentry-project; alleen in de `.env` op de host, nooit in de repo |
+| `SENTRY_ENVIRONMENT` | nee | standaard `APP_ENV`, dus `production` |
+| `SENTRY_RELEASE` | nee | de deploy-tag, zodat fouten aan een release hangen |
+| `SENTRY_TRACES_SAMPLE_RATE` | nee | `0.0` (geen performance-tracing) |
+| `SENTRY_PROFILES_SAMPLE_RATE` | nee | `0.0` |
+
+Zonder `SENTRY_LARAVEL_DSN` verandert er niets: de client heeft geen adres en slaat elk event over. Tests zetten de DSN in `phpunit.xml` geforceerd op leeg. `send_default_pii` staat vast op `false` in `config/sentry.php`, dus e-mailadressen, IP's en request-bodies gaan niet mee.
 - Overweeg database monitoring (pg_stat_activity) en storage usage alerts.
 
 ## Beveiliging & compliance
