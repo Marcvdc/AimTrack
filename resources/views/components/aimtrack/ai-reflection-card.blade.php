@@ -29,7 +29,7 @@
     :padding="16"
     {{ $attributes->merge(['class' => 'aimtrack-ai-reflection-card', 'style' => 'display: flex; flex-direction: column; gap: 12px;']) }}
 >
-    <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; font-family: var(--at-font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-accent);">
+    <div style="display: flex; align-items: center; gap: 8px; font-size: var(--at-text-micro); font-family: var(--at-font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-accent);">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--at-accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="presentation">
             <path d="M12 3l2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1z" />
         </svg>
@@ -39,14 +39,14 @@
         @endif
     </div>
 
-    <div style="font-size: 13px; line-height: 1.55; color: var(--at-text);">
+    <div style="font-size: var(--at-text-body); line-height: 1.55; color: var(--at-text);">
         {{ filled($summary) ? $summary : '—' }}
     </div>
 
     @unless ($compact)
         <div style="height: 1px; background: var(--at-line);"></div>
 
-        <div class="at-grid-label-value" style="font-size: 12px;">
+        <div class="at-grid-label-value" style="font-size: var(--at-text-small);">
             <div class="at-label" style="color: var(--at-accent);">STERK</div>
             <div style="color: var(--at-text);">{{ $listOrDash($positives) }}</div>
             <div class="at-label">VERBETER</div>

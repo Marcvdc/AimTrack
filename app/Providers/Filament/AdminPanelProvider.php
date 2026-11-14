@@ -73,7 +73,7 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::SIDEBAR_LOGO_AFTER,
                 fn (): string => <<<'HTML'
-                    <div style="margin-top: 0.375rem; font-family: var(--at-font-mono); font-size: 0.625rem; letter-spacing: 0.12em; color: var(--at-muted);">
+                    <div style="margin-top: 0.375rem; font-family: var(--at-font-mono); font-size: var(--at-text-micro); letter-spacing: 0.12em; color: var(--at-muted);">
                         self-hosted
                     </div>
                 HTML,

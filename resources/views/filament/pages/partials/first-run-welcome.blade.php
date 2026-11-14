@@ -54,7 +54,7 @@
         </div>
 
         <div
-            style="font-family: var(--at-font-mono); font-size: 10px; letter-spacing: 0.22em; color: var(--at-accent); margin-top: 18px; text-transform: uppercase;"
+            style="font-family: var(--at-font-mono); font-size: var(--at-text-micro); letter-spacing: 0.22em; color: var(--at-accent); margin-top: 18px; text-transform: uppercase;"
         >
             ● WELKOM
         </div>
@@ -66,7 +66,7 @@
         </h1>
 
         <p
-            style="font-size: 15px; color: var(--at-muted); line-height: 1.6; max-width: min(100%, 420px); margin: 0 auto;"
+            style="font-size: var(--at-text-body); color: var(--at-muted); line-height: 1.6; max-width: min(100%, 420px); margin: 0 auto;"
         >
             Drie korte stappen — wapen toevoegen, profiel afmaken, je eerste sessie loggen. Daarna kijkt AimTrack mee.
         </p>
@@ -96,7 +96,7 @@
                     style="padding: 12px 14px; border-radius: 10px; background: {{ $bg }}; border: {{ $border }}; display: flex; align-items: center; gap: 12px; text-align: left;"
                 >
                     <div
-                        style="width: 24px; height: 24px; border-radius: 50%; background: {{ $circleBg }}; border: 1.5px solid {{ $circleBorder }}; color: {{ $circleColor }}; display: flex; align-items: center; justify-content: center; font-family: var(--at-font-mono); font-size: 11px; font-weight: 700; flex: 0 0 24px;"
+                        style="width: 24px; height: 24px; border-radius: 50%; background: {{ $circleBg }}; border: 1.5px solid {{ $circleBorder }}; color: {{ $circleColor }}; display: flex; align-items: center; justify-content: center; font-family: var(--at-font-mono); font-size: var(--at-text-micro); font-weight: 700; flex: 0 0 24px;"
                     >
                         @if ($step['done'])
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -104,7 +104,7 @@
                             {{ $step['n'] }}
                         @endif
                     </div>
-                    <div style="flex: 1; font-size: 13px; color: var(--at-text); font-weight: {{ $textWeight }};">
+                    <div style="flex: 1; font-size: var(--at-text-body); color: var(--at-text); font-weight: {{ $textWeight }};">
                         {{ $step['label'] }}
                     </div>
                     @if ($isCurrent)
@@ -122,7 +122,7 @@
             <a
                 href="{{ $continueUrl }}"
                 data-testid="first-run-continue"
-                style="padding: 12px 22px; border-radius: 10px; background: var(--at-accent); color: var(--at-cta-text); font-weight: 600; font-size: 14px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"
+                style="padding: 12px 22px; border-radius: 10px; background: var(--at-accent); color: var(--at-cta-text); font-weight: 600; font-size: var(--at-text-body); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"
             >
                 Verder waar ik was
             </a>

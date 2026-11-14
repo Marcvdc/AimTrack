@@ -48,7 +48,7 @@
     /* Nav-groeplabels: mono, uppercase, wijd gespatieerd (LOG / INZICHT / BEHEER) */
     .fi-sidebar-group-label {
         font-family: var(--at-font-mono);
-        font-size: 0.625rem;
+        font-size: var(--at-text-micro);
         letter-spacing: 0.18em;
         text-transform: uppercase;
         color: var(--at-muted);
@@ -135,7 +135,7 @@
     /* Tabel-kolomkoppen in mono-uppercase (design: dense tactical grid) */
     .fi-ta-header-cell-label {
         font-family: var(--at-font-mono);
-        font-size: 0.625rem;
+        font-size: var(--at-text-micro);
         letter-spacing: 0.12em;
         text-transform: uppercase;
         color: var(--at-muted);
