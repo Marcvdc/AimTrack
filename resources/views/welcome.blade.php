@@ -778,7 +778,7 @@
             <h2 class="mk-h2">Eén command, eigen instance.</h2>
             <p class="mk-selfhost-lead">
                 Docker compose up. Klaar. AimTrack is open-source onder MIT-licentie,
-                werkt op een Raspberry Pi, en synchroniseert nergens heen. Gratis,
+                werkt op een Raspberry Pi, en je logboek staat op je eigen machine. Gratis,
                 voor altijd — geen abonnement, geen addertjes.
             </p>
             <div class="mk-selfhost-pills">

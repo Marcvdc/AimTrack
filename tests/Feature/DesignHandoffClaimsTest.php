@@ -20,6 +20,8 @@ dataset('onware handoff-claims', [
     'alles draait lokaal' => ['/alles draait lokaal/i'],
     'alleen de AI-coach' => ['/alleen de AI-coach stuurt/i'],
     'NL-cloud' => ['/NL-cloud/i'],
+    'alleen een eigen key telt' => ['/zonder eigen Claude-key/i'],
+    'synchroniseert nergens heen' => ['/synchroniseert nergens/i'],
     'keuringsbrief' => ['/keuringsbrief/i'],
 ]);
 

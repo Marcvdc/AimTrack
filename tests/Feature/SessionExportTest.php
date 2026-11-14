@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Deviation;
+use App\Filament\Pages\ExportSessionsPage;
 use App\Models\Session;
 use App\Models\SessionShot;
 use App\Models\SessionWeapon;
@@ -128,7 +129,7 @@ it('renders pdf view with paginated session blocks', function (): void {
  * langer als WM-4-materiaal. Naamgeving en disclaimer mogen niet terugveren.
  */
 it('names the export page after what it is, without a compliance claim', function (): void {
-    expect(\App\Filament\Pages\ExportSessionsPage::getNavigationLabel())
+    expect(ExportSessionsPage::getNavigationLabel())
         ->toBe('Eigen trainingsoverzicht');
 
     $source = file_get_contents(app_path('Filament/Pages/ExportSessionsPage.php'));

@@ -27,7 +27,7 @@ The design medium is **HTML/CSS/JS** — these are prototypes, not production co
 ## Correctie op dit bundel (2026-09-20, issues #131, #132 en #162)
 
 Dit bundel is het bronmateriaal waar de marketing- en app-copy uit is overgenomen, dus
-onjuiste beweringen hierin komen via een volgende ronde zo weer terug. Twee daarvan zijn
+onjuiste beweringen hierin komen via een volgende ronde zo weer terug. Drie daarvan zijn
 gecorrigeerd in `project/` en in de beide afgeleide kopieën:
 
 - **Geen WM-4-conformiteit.** WM-4 is het verlofdocument dat de korpschef afgeeft, geen
@@ -56,7 +56,7 @@ Design. Alle correcties hierboven staan alleen in de geëxporteerde bestanden; h
 in Claude Design zelf is niet aangepast, want daar kan de agent niet bij. Een volgende
 export zet de claims dus terug, tenzij iemand ze eerst in Claude Design weghaalt. Als
 vangnet faalt `tests/Feature/DesignHandoffClaimsTest.php` zodra een van de bekende claims
-weer in de `.jsx`- of `.html`-bestanden van dit bundel staat.
+weer in de `.jsx`-, `.html`-, `.js`- of `.md`-bestanden van dit bundel staat (behalve deze README en `chats/`).
 
 **Nog open, bewust niet door de agent beslist:**
 

@@ -29,8 +29,11 @@ test('de privacytekst noemt de ontvanger, de uitschakelroute en de gedeelde veld
         ->toContain('serienummer')
         ->toContain('opslaglocatie')
         ->toContain('vereniging')
+        ->toContain('eerdere AI-uitkomsten')
         ->and(AiPrivacyNotice::intro())->toContain('api.anthropic.com')
-        ->and(AiPrivacyNotice::landingCheckItem())->toContain('api.anthropic.com');
+        ->and(AiPrivacyNotice::intro())->toContain(AiPrivacyNotice::FEATURE_FLAG)
+        ->and(AiPrivacyNotice::landingCheckItem())->toContain('api.anthropic.com')
+        ->and(AiPrivacyNotice::landingCheckItem())->toContain(AiPrivacyNotice::FEATURE_FLAG);
 });
 
 test('de ontvanger volgt de geconfigureerde endpoints', function (): void {
@@ -217,4 +220,24 @@ test('de gebruikersdocumentatie noemt de externe bronnen die de browser laadt', 
     expect($docs)
         ->not->toContain('Van zichzelf stuurt AimTrack alleen')
         ->not->toContain('gaat er alleen iets naar buiten als');
+});
+
+test('elke omgevingsvariabele die de gebruikersdocs noemen bestaat ook in de repo', function (): void {
+    $docs = file_get_contents(base_path('docs/user/README.md'));
+
+    preg_match_all('/`([A-Z][A-Z0-9]*_[A-Z0-9_]+)`/', $docs, $matches);
+    $variabelen = array_unique($matches[1]);
+
+    expect($variabelen)->not->toBeEmpty();
+
+    // ANTHROPIC_URL komt uit de config van laravel/ai zelf, die Laravel samenvoegt.
+    $bronnen = collect([base_path('.env.example'), base_path('docker/compose.prod.yml'), base_path('vendor/laravel/ai/config/ai.php')])
+        ->merge(glob(base_path('config/*.php')))
+        ->merge(glob(base_path('app/Providers/*.php')))
+        ->map(fn (string $pad): string => (string) file_get_contents($pad))
+        ->implode("\n");
+
+    foreach ($variabelen as $variabele) {
+        expect($bronnen)->toContain($variabele);
+    }
 });

@@ -2,10 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Enums\Deviation;
+use App\Enums\WeaponType;
 use App\Filament\Copilot\Tools\ScoreDriftTool;
 use App\Filament\Copilot\Tools\SessionLookupTool;
 use App\Filament\Copilot\Tools\ShooterContextTool;
 use App\Filament\Copilot\Tools\WeaponLookupTool;
+use App\Filament\Pages\CoachPage;
+use App\Filament\Resources\SessionResource;
+use App\Filament\Resources\WeaponResource;
 use App\Models\AiReflection;
 use App\Models\AiWeaponInsight;
 use App\Models\AmmoType;
@@ -52,7 +57,7 @@ function aiDataFlowFixture(): array
     $weapon = Weapon::factory()->create([
         'user_id' => $user->id,
         'name' => 'Probe Pistool',
-        'weapon_type' => \App\Enums\WeaponType::PISTOL,
+        'weapon_type' => WeaponType::PISTOL,
         'caliber' => '9mm Probe',
         'korrel_correction' => 'korrel-probe',
         'vizier_correction' => 'vizier-probe',
@@ -89,7 +94,7 @@ function aiDataFlowFixture(): array
         'ammo_type' => 'Munitie probe',
         'ammo_type_id' => $ammo->id,
         'group_quality_text' => 'Groepering probe',
-        'deviation' => \App\Enums\Deviation::LEFT,
+        'deviation' => Deviation::LEFT,
         'flyers_count' => 2,
     ]);
 
@@ -239,19 +244,37 @@ dataset('ai-paden', [
 
 test('elk AI-pad stuurt precies de velden die AiPrivacyNotice voor dat pad opgeeft', function (string $path, Closure $renderer): void {
     $fixture = aiDataFlowFixture();
+    $render = $renderer($fixture);
 
-    $detected = aiDataFlowDetect($fixture['models'], $renderer($fixture));
+    $detected = aiDataFlowDetect($fixture['models'], $render);
+
+    /**
+     * Sommige tools vallen terug op een tweede veld als het eerste leeg is: de
+     * locatie als de baannaam ontbreekt, de vrije munitietekst zonder gekoppelde
+     * munitiesoort. Met beide eerste velden gevuld blijft dat onzichtbaar, dus
+     * draait de detectie nog een keer met die velden leeg.
+     */
+    $fixture['session']->forceFill(['range_name' => ''])->saveQuietly();
+    $fixture['models'][3]->forceFill(['ammo_type_id' => null])->saveQuietly();
+
+    $detected = collect($detected)
+        ->merge(aiDataFlowDetect($fixture['models'], $render))
+        ->unique()
+        ->sort()
+        ->values()
+        ->all();
+
     $declared = AiPrivacyNotice::sentAttributes($path);
     sort($declared);
 
-    expect($detected)->toBe($declared);
+    expect($detected)->toBe(array_values($declared));
 })->with('ai-paden');
 
 test('elke tool die de chat kan aanroepen staat in AiPrivacyNotice', function (): void {
     $registered = collect([
-        \App\Filament\Pages\CoachPage::copilotTools(),
-        \App\Filament\Resources\SessionResource::copilotTools(),
-        \App\Filament\Resources\WeaponResource::copilotTools(),
+        CoachPage::copilotTools(),
+        SessionResource::copilotTools(),
+        WeaponResource::copilotTools(),
     ])
         ->flatten()
         ->map(fn (object $tool): string => $tool::class)

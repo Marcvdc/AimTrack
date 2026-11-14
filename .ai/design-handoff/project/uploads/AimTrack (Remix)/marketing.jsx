@@ -280,7 +280,7 @@ function MarketingLanding({ palette, fonts }) {
                 'Per-sessie reflectie zonder dat je iets hoeft te typen',
                 'Trainingsdoelen automatisch voorgesteld, jij kiest',
                 'Vergelijk wapens, disciplines, of periodes naast elkaar',
-                'AI is optioneel: zonder eigen Claude-key geen enkele call, met key gaan je sessie- en wapengegevens naar Anthropic (api.anthropic.com)',
+                'AI is optioneel: zonder Claude-key geen enkele call, met key gaan je sessie- en wapengegevens naar Anthropic (api.anthropic.com)',
               ].map((t, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                   <div style={{ width: 20, height: 20, borderRadius: '50%', background: `${c.accent}1f`, color: c.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 20px', marginTop: 1 }}>
@@ -328,7 +328,7 @@ function MarketingLanding({ palette, fonts }) {
           </h2>
           <p style={{ fontSize: 15, color: c.muted, lineHeight: 1.6, maxWidth: 480 }}>
             Docker compose up. Klaar. AimTrack is open-source onder MIT-licentie,
-            werkt op een Raspberry Pi, en synchroniseert nergens heen.
+            werkt op een Raspberry Pi, en je logboek staat op je eigen machine.
           </p>
         </div>
         <div style={{ padding: 20, background: c.panel, border: `1px solid ${c.line}`, borderRadius: 12, fontFamily: fonts.mono, fontSize: 13, color: c.text }}>

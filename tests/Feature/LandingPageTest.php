@@ -162,7 +162,8 @@ test('landing page names Anthropic as the destination of AI data', function (): 
         ->assertOk()
         ->assertSee('api.anthropic.com', escape: false)
         ->assertSee('zonder Claude-key geen enkele AI-call', escape: false)
-        ->assertSee('als je ze zelf inricht', escape: false);
+        ->assertSee('als je ze zelf inricht', escape: false)
+        ->assertDontSee('synchroniseert nergens heen');
 });
 
 test('landing page carries no WM-4 or compliance claim', function (): void {

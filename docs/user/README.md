@@ -78,7 +78,8 @@ buiten gaan, onder meer:
   meldingen. Storingsmeldingen van de AI-coach gaan standaard naar
   support@aimtrack.nl (`AI_ALERT_EMAIL`).
 - **Foutrapportage** naar Sentry, zodra `SENTRY_LARAVEL_DSN` is gezet.
-- **Offsite backup** van de database via `rclone`, zodra `RCLONE_REMOTE` is gezet (zie
-  [BACKUPS.md](../BACKUPS.md)).
+- **Backups**: AimTrack maakt de nachtelijke databasedump op je eigen server. Of en
+  hoe die buiten de server wordt bewaard, regelt de beheerder zelf, buiten AimTrack
+  (zie [BACKUPS.md](../BACKUPS.md)).
 
 Of die aan staan, weet de beheerder van je installatie.

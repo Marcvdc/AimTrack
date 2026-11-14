@@ -74,6 +74,7 @@ class AiPrivacyNotice
         'chat_schietcontext' => [
             'sessions.date',
             'sessions.range_name',
+            'sessions.location',
             'session_weapons.distance_m',
             'session_weapons.rounds_fired',
             'session_weapons.deviation',
@@ -97,6 +98,7 @@ class AiPrivacyNotice
             'session_weapons.deviation',
             'session_weapons.group_quality_text',
             'ammo_types.name',
+            'session_weapons.ammo_type',
             'weapons.name',
             'ai_reflections.summary',
             'ai_reflections.next_focus',
@@ -276,7 +278,7 @@ class AiPrivacyNotice
      */
     public static function intro(): string
     {
-        return 'De app en je database draaien op je eigen server. Voor een antwoord gaan je vraag, het gesprek tot nu toe en de sessie- en wapengegevens die de coach erbij haalt naar '.self::provider().'. Zonder API-key doet AimTrack geen enkele AI-call.';
+        return 'De app en je database draaien op je eigen server. Voor een antwoord gaan je vraag, het gesprek tot nu toe en de sessie- en wapengegevens die de coach erbij haalt naar '.self::provider().'. Zonder API-key doet AimTrack geen enkele AI-call, en een beheerder zet de AI-functie uit met '.self::FEATURE_FLAG.'=false.';
     }
 
     /**
@@ -292,7 +294,7 @@ class AiPrivacyNotice
      */
     public static function landingCheckItem(): string
     {
-        return 'AI is optioneel: zonder Claude-key geen enkele AI-call, met key gaan je vraag en je sessie- en wapengegevens naar '.self::provider();
+        return 'AI is optioneel en uit te zetten met '.self::FEATURE_FLAG.': zonder Claude-key geen enkele AI-call, met key gaan je vraag en je sessie- en wapengegevens naar '.self::provider();
     }
 
     /**
@@ -301,7 +303,7 @@ class AiPrivacyNotice
     public static function sharedDataSentence(): string
     {
         $parts = collect(self::sharedFields())
-            ->map(fn (array $labels, string $group): string => mb_strtolower(self::GROUPS[$group]).': '.implode(', ', $labels))
+            ->map(fn (array $labels, string $group): string => lcfirst(self::GROUPS[$group]).': '.implode(', ', $labels))
             ->implode('; ');
 
         return 'wat daarvoor nodig is uit je logboek. Dat kan zijn, per onderdeel: '.$parts.'.';
