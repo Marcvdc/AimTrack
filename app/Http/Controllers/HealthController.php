@@ -47,11 +47,26 @@ class HealthController extends Controller
         }
     }
 
+    /**
+     * @return array{status: string, error?: string, age_seconds?: int}
+     */
     private function checkQueue(): array
     {
         try {
+            $connection = config('queue.default');
+
             // Touch the connection to ensure configuration is valid.
-            app('queue')->connection(config('queue.default'));
+            app('queue')->connection($connection);
+
+            $age = $this->oldestAvailableJobAgeInSeconds($connection);
+
+            if ($age !== null && $age > (int) config('health.queue_max_age_seconds')) {
+                return [
+                    'status' => 'failed',
+                    'error' => 'queue_stalled',
+                    'age_seconds' => $age,
+                ];
+            }
 
             return [
                 'status' => 'ok',
@@ -62,6 +77,37 @@ class HealthController extends Controller
                 'error' => 'queue_unavailable',
             ];
         }
+    }
+
+    /**
+     * Leeftijd van de oudste job die nu uitgevoerd had kunnen worden. Jobs met een
+     * `available_at` in de toekomst (delay) en jobs die een worker net heeft
+     * gereserveerd tellen niet mee; een reservering ouder dan `retry_after` wel,
+     * want die wordt pas weer opgepakt als er een worker draait. Alleen voor de
+     * database-driver, andere drivers hebben hier geen zicht op.
+     */
+    private function oldestAvailableJobAgeInSeconds(string $connection): ?int
+    {
+        $config = config("queue.connections.{$connection}");
+
+        if (($config['driver'] ?? null) !== 'database') {
+            return null;
+        }
+
+        $now = now()->getTimestamp();
+        $retryAfter = (int) ($config['retry_after'] ?? 90);
+
+        $oldest = DB::connection($config['connection'] ?? null)
+            ->table($config['table'] ?? 'jobs')
+            ->where('queue', $config['queue'] ?? 'default')
+            ->where('available_at', '<=', $now)
+            ->where(function ($query) use ($now, $retryAfter): void {
+                $query->whereNull('reserved_at')
+                    ->orWhere('reserved_at', '<=', $now - $retryAfter);
+            })
+            ->min('available_at');
+
+        return $oldest === null ? null : max(0, $now - (int) $oldest);
     }
 
     private function checkStorage(): array

@@ -10,9 +10,20 @@ Runbook voor dagelijks beheer, incidentrespons en onderhoud van AimTrack.
 ## Incidentrespons
 1. **App down**: controleer containers (`docker compose ps`), bekijk logs van `web` en `app`. Herstart met `docker compose restart app web`.
 2. **DB issues**: check `db` logs. Indien migrations ontbreken (bijv. Pennant `features`-tabel mist en logs tonen `Pennant features table ontbreekt; val terug op env default.`), voer de migraties uit binnen de containerstack: `docker compose -p aimtrack_dev exec app php artisan migrate --force` (met backup!).
-3. **Queue stilgevallen**: herstart `queue` service; inspecteer `queue:failed` en gebruik `queue:retry` na het oplossen van de oorzaak.
+3. **Queue stilgevallen** (`/health` meldt `queue_stalled`, zie hieronder): herstart `queue` service; inspecteer `queue:failed` en gebruik `queue:retry` na het oplossen van de oorzaak.
 4. **AI-fouten**: controleer `.env` voor API-key/base_url, timeouts in `config/ai.php`, en foutmeldingen in `ai_reflections`/`ai_weapon_insights`.
 5. **Exports mislukken**: controleer bestandssysteem en permissies; valideer dat filters geldige data leveren.
+
+### Betekenis van `queue_stalled`
+
+`/health` en `/api/health` geven 503 met `checks.queue.error: queue_stalled` (en `age_seconds`) als de oudste job in de `jobs`-tabel die al uitgevoerd had moeten worden langer wacht dan `HEALTH_QUEUE_MAX_AGE_SECONDS` (standaard 300, zie `config/health.php`). Jobs met een delay tellen niet mee, jobs die een worker nu verwerkt ook niet, een reservering ouder dan `retry_after` wel. Bijna altijd betekent het dat er geen worker draait of dat die vastzit.
+
+Wat je doet:
+1. Kijk of de worker draait: `docker compose ps queue` en `docker compose logs --tail=100 queue`.
+2. Herstart hem: `docker compose restart queue`. De wachtende jobs blijven in de tabel staan en worden daarna alsnog verwerkt.
+3. Blijft de melding staan, kijk dan naar `php artisan queue:failed` en naar een enkele langlopende job die de worker blokkeert. Verhoog de drempel alleen als er legitiem lange jobs zijn.
+
+`queue_unavailable` is iets anders: de queue-configuratie of de `jobs`-tabel is niet bereikbaar.
 
 ## Deploy flow (productie)
 1. Bouw productie-image (multi-stage) met Composer install zonder dev.
