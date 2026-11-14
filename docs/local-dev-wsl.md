@@ -83,7 +83,6 @@ Documenteer eventuele afwijkingen in `docs/infra.md` wanneer je nieuwe tools toe
 | Poorten bezet | `Bind for 0.0.0.0:8080 failed` | Kies andere `WEB_PORT` / `DB_FORWARD_PORT` / `MAILPIT_*` in `.env.local` en start stack opnieuw. |
 | Trage bestands-I/O | Code staat op Windows-bestandssysteem | Clone repo in de WSL-ext4 filesystem (`/home/<user>/AimTrack`). |
 | Database corrupt | `pg_isready` healthcheck faalt | `docker compose ... down -v && docker volume rm aimtrack_dev_db_data_dev` (let op: data kwijt). |
-
 | Geheugen op bij tests | `Allowed memory size of 134217728 bytes exhausted` tijdens Pest | Je image is gebouwd vóór #167. Bouw het dev-image opnieuw (`docker compose ... build app`); zie hieronder. |
 | Alle tests als *warning* | `file_get_contents(/var/www/html/.env): Failed to open stream` | Er staat geen `.env` in de werkmap. `cp .env.example .env` en daarna `php artisan key:generate` in de container. |
 

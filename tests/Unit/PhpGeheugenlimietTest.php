@@ -59,8 +59,16 @@ test('het dev-ini-bestand zet een expliciete ruime limiet en geen onbeperkte', f
 test('alleen het dev-target kopieert het geheugen-ini-bestand', function () {
     $stages = dockerfileStagesVoorGeheugen();
 
+    $actieveDevRegels = array_map(
+        'trim',
+        array_filter(
+            explode("\n", $stages['dev'] ?? ''),
+            fn (string $regel): bool => ! str_starts_with(ltrim($regel), '#'),
+        ),
+    );
+
     expect($stages)->toHaveKeys(['base', 'dev', 'production'])
-        ->and($stages['dev'])->toContain('docker/php/dev-memory.ini')
+        ->and($actieveDevRegels)->toContain('COPY docker/php/dev-memory.ini $PHP_INI_DIR/conf.d/zz-dev-memory.ini')
         ->and($stages['base'])->not->toContain('dev-memory.ini')
         ->and($stages['production'])->not->toContain('dev-memory.ini')
         ->and($stages['production'])->not->toContain('memory_limit');
