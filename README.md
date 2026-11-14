@@ -4,10 +4,16 @@ AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer s
 
 ## Kernfeatures
 - **Sessies**: datum, baan/vereniging, locatie, tijden, notities, attachments en meerdere wapen × afstand entries.
-- **Reflectie**: handmatige reflectie + AI-reflectie (samenvatting, went_well, needs_improvement, next_focus).
+- **Schotenbord**: per sessie schoten vastleggen en laten scoren (`SessionShotBoard`, `ShotScoringService`), met statistieken per sessie.
+- **Range Console**: overzicht van je sessies met kerncijfers, laatste sessie, laatste reflectie en trend (`RangeConsoleSummaryService`).
+- **Reflectie**: handmatige reflectie + AI-reflectie (samenvatting, went_well, needs_improvement, next_focus) en AI-inzichten per wapen.
 - **Wapenbeheer**: wapens met type/kaliber/serienummer/opslag; inzicht in gebruik per sessie.
-- **AI-coach**: vrije vragen op basis van eigen sessies/wapens.
+- **AI-coach**: chat met een Copilot (`eslam-reda-div/filament-copilot`) die je eigen sessies, wapens en scoredrift kan opzoeken.
+- **Trainingsdoelen**: doelen per gebruiker (`TrainingGoal`); de coach kan er een voorstellen en vastleggen.
+- **AI-instellingen**: AI draait op je eigen Claude API-key (BYO), per gebruiker in te stellen.
+- **Verenigingen**: een gebruiker kan lid, coach of beheerder zijn van een vereniging. Coaches en beheerders zien de sessies van de leden van hun actieve vereniging, alleen-lezen. Een vereniging kan een gedeelde Claude-key hebben.
 - **Export**: CSV/PDF per periode + wapenselectie met NL-disclaimer.
+- **Foutrapportage**: Sentry (`sentry/sentry-laravel`) als log-kanaal (`LOG_STACK` in `.env.example`) en voor mislukte queue-jobs, zodra `SENTRY_LARAVEL_DSN` gevuld is.
 - **Infra**: Docker Compose (nginx, php-fpm, db, queue) en queue-jobs voor AI-taken.
 
 ## Stack
@@ -28,7 +34,9 @@ AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer s
 7. Open `http://localhost:8080` vanuit Windows of WSL-browser en log in (standaard Laravel-auth). Gebruik Filament om sessies/wapens te beheren.
 
 ## AI-configuratie
-- Zet `AI_DRIVER`, `AI_MODEL`, `OPENAI_API_KEY` en `OPENAI_BASE_URL` (of andere provider variabelen) in `.env`.
+- De provider is Anthropic (Claude). Elke gebruiker zet de eigen key onder **AI-instellingen** in de app; de key wordt versleuteld opgeslagen. Heeft een gebruiker geen eigen key, dan geldt de gedeelde key van de actieve vereniging. Zonder gebruikers- of verenigingskey zijn de AI-functies verborgen; `ANTHROPIC_API_KEY` is alleen een fallback voor de Copilot-chat via `laravel/ai`, niet voor reflecties en wapeninzichten.
+- Env-variabelen (zie `.env.example` en `config/ai.php`): `AI_MODEL`, `ANTHROPIC_BASE_URL` en `AI_MAX_TOKENS`. `OPENAI_API_KEY` en `AI_DRIVER=openai` zijn na de migratie naar Claude vervallen.
+- Of de AI-functies zichtbaar zijn, hangt ook af van de feature flag `aimtrack-ai` (Pennant); de standaardwaarde komt uit `FEATURE_AIMTRACK_AI` en staat alleen in de `local`-omgeving aan.
 - AI-calls verlopen via queue-jobs (`GenerateSessionReflectionJob`, `GenerateWeaponInsightJob`). Zorg dat de `queue` container draait.
 - Prompts bevatten NL-disclaimers; AI-output is adviserend en vervangt geen veiligheidsregels of instructeurs.
 
@@ -36,10 +44,12 @@ AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer s
 Gebruik de Filament **Export**-pagina om CSV of PDF te downloaden. Periode is verplicht; wapenselectie optioneel. Download bevat een disclaimer dat de gebruiker zelf verantwoordelijk blijft voor de actuele eisen.
 
 ## Documentatie
-- Techniek: `docs/architecture.md`, `docs/ai.md`, `docs/export.md`, `docs/infra.md`, `docs/operations.md`, `docs/security.md`
+- Techniek: `docs/architecture.md`, `docs/ai.md`, `docs/export.md`, `docs/infra.md`, `docs/operations.md`, `docs/security.md`, `docs/CI-CD-PLAN.md`, `docs/local-dev-wsl.md`
 - Gebruiker: `docs/user/quickstart.md`, `docs/user/sessions.md`, `docs/user/weapons.md`, `docs/user/export.md`, `docs/user/ai-coach.md`
 - AI Agents: `docs/ai-agents.md` - Automated development with AI agents
 - Overige plannen: `docs/PLAN.md`, `docs/BACKUPS.md`, `docs/PROD_HARDENING.md`
+- Kwaliteit: `docs/QA_PLAN.md` en `docs/QA_FINDINGS.md` (historisch)
+- Bovenaan de kerndocumenten staat een regel "Laatst bijgewerkt"; ontbreekt die, kijk dan met `git log -1 -- <bestand>`.
 
 ## Security & Responsible Disclosure
 - Meld kwetsbaarheden via **security@aimtrack.nl** met impact, reproduceerbare stappen en relevante logs.

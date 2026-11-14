@@ -128,7 +128,7 @@ maatregel; de wijziging in de repo zorgt dat `main` en de documentatie kloppen.
 ## 9. Documentatie
 
 `README.md`, `docs/CI-CD-PLAN.md`, `docs/operations.md`, `docs/PROD_HARDENING.md` volgens 3.
-Registry in `.ai/guidelines/parallel-worktrees.md` bij setup en cleanup.
+Geen registry meer bijwerken; `git worktree list` is de bron.
 
 ## Open vragen voor Marc
 

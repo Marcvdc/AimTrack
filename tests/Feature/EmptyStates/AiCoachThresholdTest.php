@@ -29,7 +29,7 @@ test('threshold empty state renders progress card with 0/3 when no sessions logg
     $response = $this->get(CoachPage::getUrl());
 
     $response->assertSee('data-testid="ai-coach-progress"', escape: false);
-    $response->assertSee('0<span style="color: var(--at-muted); font-size: 14px;">/3</span>', escape: false);
+    $response->assertSee('0<span style="color: var(--at-muted); font-size: var(--at-text-body);">/3</span>', escape: false);
     $response->assertSee('Nog 3 sessies te gaan', escape: false);
     $response->assertSee('width: 0%', escape: false);
 });
@@ -39,7 +39,7 @@ test('threshold progress shows 1/3 with one session and plural copy at two remai
 
     $response = $this->get(CoachPage::getUrl());
 
-    $response->assertSee('1<span style="color: var(--at-muted); font-size: 14px;">/3</span>', escape: false);
+    $response->assertSee('1<span style="color: var(--at-muted); font-size: var(--at-text-body);">/3</span>', escape: false);
     $response->assertSee('Nog 2 sessies te gaan', escape: false);
     $response->assertSee('width: 33%', escape: false);
 });
@@ -49,7 +49,7 @@ test('threshold progress shows 2/3 with two sessions and singular fallback at on
 
     $response = $this->get(CoachPage::getUrl());
 
-    $response->assertSee('2<span style="color: var(--at-muted); font-size: 14px;">/3</span>', escape: false);
+    $response->assertSee('2<span style="color: var(--at-muted); font-size: var(--at-text-body);">/3</span>', escape: false);
     $response->assertSee('Nog 1 sessie te gaan', escape: false);
     $response->assertSee('width: 67%', escape: false);
 });

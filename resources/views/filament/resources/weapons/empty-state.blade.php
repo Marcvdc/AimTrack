@@ -36,17 +36,17 @@
                         data-testid="weapons-template-{{ $template['key'] }}"
                         style="padding: 14px; border-radius: 10px; background: {{ $cardBg }}; border: {{ $cardBorder }}; text-align: left; cursor: pointer; text-decoration: none; display: block;"
                     >
-                        <div style="font-family: var(--at-font-mono); font-size: 9px; color: var(--at-muted); letter-spacing: 0.14em; text-transform: uppercase;">
+                        <div style="font-family: var(--at-font-mono); font-size: var(--at-text-micro); color: var(--at-muted); letter-spacing: 0.14em; text-transform: uppercase;">
                             SJABLOON
                         </div>
-                        <div style="font-size: 13px; font-weight: 600; color: var(--at-text); margin-top: 4px;">
+                        <div style="font-size: var(--at-text-body); font-weight: 600; color: var(--at-text); margin-top: 4px;">
                             {{ $template['label'] }}
                         </div>
-                        <div style="font-family: var(--at-font-mono); font-size: 11px; color: var(--at-muted); margin-top: 2px;">
+                        <div style="font-family: var(--at-font-mono); font-size: var(--at-text-micro); color: var(--at-muted); margin-top: 2px;">
                             {{ $template['caliber'] }}
                         </div>
                         @if ($template['popular'])
-                            <div style="font-family: var(--at-font-mono); font-size: 9px; color: var(--at-accent); letter-spacing: 0.14em; margin-top: 6px;">
+                            <div style="font-family: var(--at-font-mono); font-size: var(--at-text-micro); color: var(--at-accent); letter-spacing: 0.14em; margin-top: 6px;">
                                 ● MEEST GEBRUIKT
                             </div>
                         @endif
@@ -59,7 +59,7 @@
             <a
                 href="{{ $createUrl }}"
                 data-testid="weapons-empty-create"
-                style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 8px; background: var(--at-accent); color: var(--at-cta-text); font-weight: 600; font-size: 13px; text-decoration: none;"
+                style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 8px; background: var(--at-accent); color: var(--at-cta-text); font-weight: 600; font-size: var(--at-text-body); text-decoration: none;"
             >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>

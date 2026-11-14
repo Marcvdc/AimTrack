@@ -15,7 +15,7 @@
     $background = $isSolid ? $color : 'transparent';
     $border = $isSolid ? 'none' : "1px solid color-mix(in srgb, {$color} 40%, transparent)";
     $textColor = $isSolid ? 'var(--at-cta-text)' : $color;
-    $fontSize = $isSmall ? '9px' : '10px';
+    $fontSize = $isSmall ? 'min(var(--at-text-micro), 12px)' : 'min(var(--at-text-micro), 14px)';
     $iconSize = $isSmall ? 12 : 16;
 
     $cornerStyles = match ($corner) {

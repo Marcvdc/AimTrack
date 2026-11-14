@@ -11,6 +11,11 @@ if (! in_array('daily', $stackChannels, true)) {
     array_unshift($stackChannels, 'daily');
 }
 
+// Exceptions gaan via Integration::handles() in bootstrap/app.php naar Sentry.
+// Het sentry-logkanaal in de stack zou elke exception een tweede keer sturen,
+// en ook gewone foutlogs (zoals die van de feature flags) naar Sentry duwen.
+$stackChannels = array_values(array_diff($stackChannels, ['sentry']));
+
 return [
 
     /*

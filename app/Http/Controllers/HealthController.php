@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\QueueLivenessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -50,8 +52,23 @@ class HealthController extends Controller
     private function checkQueue(): array
     {
         try {
+            $connection = config('queue.default');
+
             // Touch the connection to ensure configuration is valid.
-            app('queue')->connection(config('queue.default'));
+            app('queue')->connection($connection);
+
+            $age = app(QueueLivenessService::class)->oldestRunnableJobAgeInSeconds($connection);
+
+            if ($age !== null && $age > $this->queueMaxAgeSeconds()) {
+                Log::warning('Queue stilgevallen: oudste uitvoerbare job wacht al te lang.', [
+                    'age_seconds' => $age,
+                ]);
+
+                return [
+                    'status' => 'failed',
+                    'error' => 'queue_stalled',
+                ];
+            }
 
             return [
                 'status' => 'ok',
@@ -62,6 +79,13 @@ class HealthController extends Controller
                 'error' => 'queue_unavailable',
             ];
         }
+    }
+
+    private function queueMaxAgeSeconds(): int
+    {
+        $configured = (int) config('health.queue_max_age_seconds');
+
+        return $configured > 0 ? $configured : 300;
     }
 
     private function checkStorage(): array
