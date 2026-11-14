@@ -3,6 +3,8 @@
 use App\Providers\AppServiceProvider;
 use App\Support\StoragePathInitializer;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Issue #159: StoragePathInitializer maakte alleen de framework-mappen aan. De
@@ -18,6 +20,10 @@ beforeEach(function () {
 });
 
 afterEach(function () {
+    if (is_dir($this->sandbox)) {
+        chmod($this->sandbox, 0755);
+    }
+
     (new Filesystem)->deleteDirectory($this->sandbox);
 });
 
@@ -70,7 +76,7 @@ test('een bestaande disk-root blijft met inhoud en al staan', function () {
     expect(file_get_contents($this->sandbox.'/app/private/bijlagen/schietkaart.jpg'))->toBe('bestaand');
 });
 
-test('na de boot van de applicatie bestaan de disk-roots, zonder Docker-entrypoint', function () {
+test('AppServiceProvider::boot() maakt de disk-roots aan, zonder Docker-entrypoint', function () {
     config()->set('filesystems.default', 'local');
     config()->set('filesystems.disks.local.root', $this->sandbox.'/app/private');
     config()->set('filesystems.disks.public.root', $this->sandbox.'/app/public');
@@ -80,3 +86,45 @@ test('na de boot van de applicatie bestaan de disk-roots, zonder Docker-entrypoi
     expect(is_dir($this->sandbox.'/app/private'))->toBeTrue()
         ->and(is_dir($this->sandbox.'/app/public'))->toBeTrue();
 });
+
+/*
+ * ensure() draait bij elke boot. Een exception bij een niet-schrijfbare disk-root
+ * zou elke request een 500 geven, ook /health, dat juist storage_unwritable met
+ * een 503 moet melden. De fout wordt dus gelogd en de boot gaat door.
+ */
+test('een niet-schrijfbare disk-root geeft geen exception maar een waarschuwing', function () {
+    if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+        test()->markTestSkipped('Als root negeert het bestandssysteem de schrijfrechten.');
+    }
+
+    mkdir($this->sandbox, 0755);
+    chmod($this->sandbox, 0555);
+    config()->set('filesystems.default', 'local');
+    config()->set('filesystems.disks.local.root', $this->sandbox.'/private');
+    Log::spy();
+
+    app()->getProvider(AppServiceProvider::class)->boot();
+
+    expect(is_dir($this->sandbox.'/private'))->toBeFalse();
+    Log::shouldHaveReceived('warning')
+        ->with('Storage-map kon niet worden aangemaakt', ['path' => $this->sandbox.'/private'])
+        ->once();
+});
+
+test('met een niet-schrijfbare disk-root meldt /health storage_unwritable in plaats van een 500', function (string $route) {
+    if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+        test()->markTestSkipped('Als root negeert het bestandssysteem de schrijfrechten.');
+    }
+
+    mkdir($this->sandbox, 0755);
+    chmod($this->sandbox, 0555);
+    config()->set('filesystems.default', 'local');
+    config()->set('filesystems.disks.local.root', $this->sandbox.'/private');
+    Storage::forgetDisk('local');
+
+    StoragePathInitializer::ensure();
+
+    $this->getJson(route($route))
+        ->assertServiceUnavailable()
+        ->assertJsonPath('checks.storage.error', 'storage_unwritable');
+})->with(['health', 'api.health']);

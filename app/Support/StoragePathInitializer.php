@@ -3,12 +3,19 @@
 namespace App\Support;
 
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class StoragePathInitializer
 {
     /**
      * Ensure required storage subdirectories exist: the framework caches and the
      * roots of the local filesystem disks (#159).
+     *
+     * A directory that cannot be created is logged, not thrown. This runs on every
+     * boot, so an exception here would turn every request into a 500, including
+     * /health, which is exactly where storage_unwritable should be reported. The
+     * Docker entrypoint already fails hard at boot for the production stack.
      */
     public static function ensure(): void
     {
@@ -20,7 +27,15 @@ class StoragePathInitializer
                 continue;
             }
 
-            $filesystem->makeDirectory($directory, 0775, true);
+            try {
+                $created = $filesystem->makeDirectory($directory, 0775, true);
+            } catch (Throwable) {
+                $created = false;
+            }
+
+            if (! $created && ! $filesystem->isDirectory($directory)) {
+                Log::warning('Storage-map kon niet worden aangemaakt', ['path' => $directory]);
+            }
         }
     }
 
