@@ -7,7 +7,8 @@ use Illuminate\Filesystem\Filesystem;
 class StoragePathInitializer
 {
     /**
-     * Ensure required storage subdirectories exist for framework caches.
+     * Ensure required storage subdirectories exist: the framework caches and the
+     * roots of the local filesystem disks (#159).
      */
     public static function ensure(): void
     {
@@ -28,11 +29,28 @@ class StoragePathInitializer
      */
     private static function directories(): array
     {
-        return [
+        return array_values(array_filter([
             storage_path('framework/cache'),
             storage_path('framework/cache/data'),
             storage_path('framework/views'),
             storage_path('framework/sessions'),
-        ];
+            self::localDiskRoot((string) config('filesystems.default')),
+            self::localDiskRoot('public'),
+        ]));
+    }
+
+    /**
+     * The root of a disk that lives on the local filesystem, or null for a
+     * disk on another driver (such as s3) or a disk that is not configured.
+     */
+    private static function localDiskRoot(string $disk): ?string
+    {
+        $config = config("filesystems.disks.{$disk}");
+
+        if (! is_array($config) || ($config['driver'] ?? null) !== 'local' || blank($config['root'] ?? null)) {
+            return null;
+        }
+
+        return (string) $config['root'];
     }
 }
