@@ -10,6 +10,7 @@ use App\Providers\Filament\AdminPanelProvider;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Sentry\Laravel\Integration;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withProviders([
@@ -48,6 +49,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // Customize exception handling here.
+        // Elke gerapporteerde exception (web, console, queue) gaat via deze
+        // ene route naar Sentry. Zonder SENTRY_LARAVEL_DSN heeft de hub geen
+        // DSN en gebeurt er niets. dontReportDuplicates() voorkomt dat een
+        // mislukte job twee keer binnenkomt: de Queue::failing-hook en de
+        // worker melden dan hetzelfde exception-object.
+        Integration::handles($exceptions);
+        $exceptions->dontReportDuplicates();
     })
     ->create();
