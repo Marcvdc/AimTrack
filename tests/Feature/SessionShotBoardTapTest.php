@@ -5,7 +5,7 @@ use App\Models\Session;
 use App\Models\User;
 use Livewire\Livewire;
 
-test('twee taps vlak naast elkaar leveren twee schoten op', function () {
+test('de server weigert geen schoten die dicht bij elkaar liggen', function () {
     $user = User::factory()->create();
     $session = Session::factory()->create(['user_id' => $user->id]);
 
@@ -19,7 +19,7 @@ test('twee taps vlak naast elkaar leveren twee schoten op', function () {
     expect($session->shots()->count())->toBe(3);
 });
 
-test('het bord heeft een tik-handler en geen lang-indrukken-timer meer', function () {
+test('markup: tik-handler aanwezig en lang-indrukken-timer weg', function () {
     $view = file_get_contents(resource_path('views/livewire/session-shot-board.blade.php'));
 
     expect($view)
@@ -43,4 +43,12 @@ test('de verwijdermodal krijgt zijn tekst via een event naar de buitenste scope'
     expect($view)
         ->toContain('x-on:shot-delete-requested="deleteConfirmationMessage = $event.detail.message"')
         ->toContain("this.\$dispatch('shot-delete-requested'");
+});
+
+test('markup: het contextmenu opent de modal alleen voor de rechtermuisknop', function () {
+    $view = file_get_contents(resource_path('views/livewire/session-shot-board.blade.php'));
+
+    expect($view)
+        ->toContain("(event.pointerType ?? 'mouse') === 'mouse' && event.button === 2")
+        ->toContain("handleCanvasRightClick(event) {\n                    this.pointerStart = null;");
 });

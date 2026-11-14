@@ -81,7 +81,7 @@
             })"
             class="w-full flex flex-col lg:flex-row gap-6"
         >
-            <!-- Interactieve Roos — tik=schot, rechtsklik=verwijderen -->
+            <!-- Interactieve Roos: tik=schot, rechtsklik=verwijderen -->
             <div class="w-full max-w-xl space-y-3">
                 <div
                     class="relative w-full aspect-square overflow-hidden"
@@ -362,7 +362,11 @@
                     return nearest;
                 },
                 handleCanvasRightClick(event) {
-                    if (! this.canEdit) {
+                    this.pointerStart = null;
+
+                    const isMouseRightButton = (event.pointerType ?? 'mouse') === 'mouse' && event.button === 2;
+
+                    if (! this.canEdit || ! isMouseRightButton) {
                         return;
                     }
 
