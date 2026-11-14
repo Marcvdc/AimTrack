@@ -9,25 +9,28 @@ use Symfony\Component\Finder\Finder;
  */
 function tekstgrootteBronnen(): array
 {
-    $finder = (new Finder)
-        ->files()
-        ->in([resource_path('views'), resource_path('css'), app_path()])
-        ->name(['*.php', '*.css']);
-
     $bronnen = [];
-    foreach ($finder as $bestand) {
-        $bronnen[] = [str_replace(base_path().'/', '', $bestand->getRealPath()), $bestand->getContents()];
+    foreach (['resources/views' => resource_path('views'), 'resources/css' => resource_path('css'), 'app' => app_path()] as $voorvoegsel => $map) {
+        $finder = (new Finder)->files()->in($map)->name(['*.php', '*.css']);
+        foreach ($finder as $bestand) {
+            $bronnen[] = [$voorvoegsel.'/'.$bestand->getRelativePathname(), $bestand->getContents()];
+        }
     }
 
     return $bronnen;
 }
 
 /**
- * Bestanden die nog px gebruiken en in een vervolg omgezet worden (conflict met lopend werk aan het schotenbord).
+ * Bestanden die bewust px houden.
+ * - session-shot-board: wordt in een vervolg omgezet (conflict met lopend werk aan het schotenbord).
+ * - exports/sessions: Dompdf-document zonder tokens-css; de browserinstelling speelt in een PDF geen rol.
  *
  * @var list<string>
  */
-const TEKSTGROOTTE_UITZONDERINGEN = ['resources/views/livewire/session-shot-board.blade.php'];
+const TEKSTGROOTTE_UITZONDERINGEN = [
+    'resources/views/livewire/session-shot-board.blade.php',
+    'resources/views/exports/sessions.blade.php',
+];
 
 it('gebruikt geen font-size in px, zodat de browserinstelling meeschaalt', function (): void {
     $overtredingen = [];
@@ -36,7 +39,7 @@ it('gebruikt geen font-size in px, zodat de browserinstelling meeschaalt', funct
         if (in_array($pad, TEKSTGROOTTE_UITZONDERINGEN, true)) {
             continue;
         }
-        if (preg_match_all('/font-size:\s*(?!clamp\()[0-9.]+px/', $inhoud, $treffers)) {
+        if (preg_match_all('/font-size:\s*[0-9.]+px/', $inhoud, $treffers)) {
             $overtredingen[] = $pad.': '.implode(', ', $treffers[0]);
         }
     }

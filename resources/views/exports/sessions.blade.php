@@ -5,10 +5,10 @@
     <title>Schietsessies export</title>
     <style>
         * { box-sizing: border-box; }
-        body { font-family: DejaVu Sans, sans-serif; font-size: var(--at-text-small); color: #111; margin: 24px; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #111; margin: 24px; }
         h1 { margin-bottom: 4px; }
         h2 { margin-top: 24px; margin-bottom: 4px; }
-        .small { font-size: var(--at-text-micro); color: #444; }
+        .small { font-size: 11px; color: #444; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; }
         th, td { border: 1px solid #d6d6d6; padding: 6px 8px; text-align: left; vertical-align: top; }
         th { background: #f4f6fb; font-weight: 600; }
@@ -20,11 +20,11 @@
         .muted { color: #555; }
         .disclaimer { border: 1px dashed #999; padding: 10px; margin-top: 24px; background: #f9fafb; }
         .session-block { margin-top: 18px; padding: 16px; border: 1px solid #ececec; border-radius: 4px; break-inside: avoid; page-break-inside: avoid; }
-        .session-header { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; font-size: var(--at-text-micro); }
-        .session-header strong { display: block; font-size: var(--at-text-small); margin-bottom: 2px; }
-        .session-notes { margin-top: 8px; font-size: var(--at-text-micro); }
-        .session-shots { margin-top: 6px; font-size: var(--at-text-micro); font-style: italic; color: #1f2937; }
-        .session-table { margin-top: 12px; font-size: var(--at-text-micro); }
+        .session-header { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; font-size: 11px; }
+        .session-header strong { display: block; font-size: 12px; margin-bottom: 2px; }
+        .session-notes { margin-top: 8px; font-size: 11px; }
+        .session-shots { margin-top: 6px; font-size: 11px; font-style: italic; color: #1f2937; }
+        .session-table { margin-top: 12px; font-size: 11px; }
         .page-break { page-break-before: always; }
         .wrap { word-break: break-word; }
     </style>
