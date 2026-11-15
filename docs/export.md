@@ -1,17 +1,19 @@
 # Export
 
+Laatst bijgewerkt: 2026-11-14
+
 AimTrack kan sessies exporteren naar CSV of PDF voor de eigen verenigingsadministratie. De export is een hulpmiddel; de gebruiker blijft zelf verantwoordelijk voor de actuele eisen.
 
 ## Flow
 1. Gebruiker opent Filament **Export**-pagina.
 2. Formulier valideert periode (van/tot), optionele wapenselectie en formaat (CSV of PDF).
-3. `App\Services\Export\SessionExportService` haalt sessies + `session_weapon_entries` van de ingelogde gebruiker op.
+3. `App\Services\Export\SessionExportService` haalt sessies + `session_weapons` van de ingelogde gebruiker op.
 4. Service bouwt records per sessie × wapen (datum, baan, locatie, wapen, kaliber, afstand, schoten, munitietype, groepering/score, notities).
 5. Service streamt CSV of rendert een Blade-PDF met overzicht + NL-disclaimer.
 
 ## CSV
 - Kolommen: `datum, baan, locatie, wapen, kaliber, afstand_m, aantal_schoten, munitie, score/groepering, notities`.
-- Eén regel per `SessionWeaponEntry`.
+- Eén regel per `SessionWeapon`.
 - UTF-8 + komma-gescheiden (RFC4180). Decimalen met punt.
 
 ## PDF

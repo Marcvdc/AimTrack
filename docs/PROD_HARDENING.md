@@ -49,6 +49,10 @@ opzet; ze blokkeren de merge van PR #157 niet, maar wel de eerste deploy erna.
 ## Veiligheid & netwerk
 - [ ] TLS beëindigd op load balancer/reverse proxy; `X-Forwarded-*` headers doorgeven en proxies vertrouwd.
 - [ ] `AppServiceProvider` forceert HTTPS in productie; 4xx/5xx logging naar centraal logkanaal.
+      De root `docker-compose.yml` zet `APP_FORCE_HTTPS` standaard op `true`, tenzij de `.env`
+      naast dat bestand `STACK_FORCE_HTTPS=false` zegt. Die regel hoort alleen lokaal; op de
+      productiehost mag hij niet in de `.env` staan. Toets met
+      `docker compose exec app printenv APP_FORCE_HTTPS`, dat moet `true` geven.
 - [ ] Sessiecookie draagt `Secure`. `docker/compose.prod.yml` zet `SESSION_SECURE_COOKIE=true`
       in één gedeelde `environment` voor `app` en `queue`, en die wint van de `.env` uit
       `ENV_FILE_B64`. Beide containers draaien `config:cache` op hetzelfde volume
@@ -70,6 +74,7 @@ opzet; ze blokkeren de merge van PR #157 niet, maar wel de eerste deploy erna.
 - [ ] Uploads op juiste disk (bij voorkeur S3/secure bucket) of lokale opslag afgeschermd via webserver.
 - [ ] `AUTH_REGISTRATION_ENABLED` staat uit (default). Dan bestaat `/admin/register` niet (404). Zet je hem aan, dan is e-mailverificatie verplicht en moet de mailconfig werken. Accounts van vóór migratie `2026_10_17_083301_mark_existing_users_as_verified` zijn als geverifieerd gemarkeerd. Let op: met registratie uit wordt bij een verse install niemand vanzelf beheerder; zet `is_admin` dan zelf voor het eerste account.
 - [ ] PHP-hardening op de FPM-pool (`docker/php/fpm-hardening.conf`): `exec`, `passthru`, `shell_exec`, `system`, `proc_open`, `popen` en `pcntl_exec` uit, `allow_url_fopen` uit. Alleen voor webrequests; de CLI (`queue:work`, `artisan`, de entrypoint) houdt ze, want Symfony Process heeft `proc_open` nodig. `expose_php = Off` via `docker/php/hardening.ini`.
+- [ ] `memory_limit` staat in de production-image op de 128M van `php.ini-production`. De ruimere 512M uit `docker/php/dev-memory.ini` geldt alleen voor het dev-target (#167); controle: `docker run --rm --entrypoint php <prod-image> -r 'echo ini_get("memory_limit");'` geeft `128M`. Of de app het met 128M haalt, is nog niet gemeten: zie #235.
 
 ### Controle van de PHP-hardening op een gebouwde image
 

@@ -1,26 +1,19 @@
-# QA Smoke Findings (lokaal)
+# QA Smoke Findings (historisch)
 
-## Context
-- Doel: smoke-test van core flows (user → wapen → sessie → AI → export → bijlagen → queue).
-- Status: geblokkeerd vóór UI-tests door dependency issues tijdens setup.
+Status: historisch, niet de huidige kwaliteitsstatus. Dit document is opgesteld op 2025-11-23 en is op 2026-11-14 gemarkeerd als historisch. Het is sindsdien niet opnieuw uitgevoerd.
 
-## Bevindingen
-1. **Composer install faalt tegen Laravel 12**  
-   - `pestphp/pest-plugin-laravel` vereist Laravel ^10/^11 en blokkeert install.  
-   - `barryvdh/laravel-dompdf` locked tot Laravel ^11.  
-   - Gevolg: geen vendor map, artisan/Filament niet uitvoerbaar → alle handmatige flows geblokkeerd.  
-   - Log: zie composer update foutmelding (dependency conflict).  
-   - Impact: Blocker voor alle smoke-tests; moet eerst dependency matrix naar Laravel 12 geüpdatet worden (wachten op compat releases of alternatieve pakketten kiezen).
+## Wat hier stond
 
-2. **Geen composer.lock aanwezig**  
-   - Install draait als `composer update` en haalt laatste versies; zonder lock is CI niet deterministisch.  
-   - Bij huidige conflicts bemoeilijkt dit debugging; lockfile moet toegevoegd zodra dependency-issues zijn opgelost.
+Op 2025-11-23 meldde de eerste smoke-run een blocker bij het installeren van de dependencies tegen Laravel 12: `pestphp/pest-plugin-laravel` en `barryvdh/laravel-dompdf` ondersteunden toen alleen Laravel ^10/^11, en er was nog geen `composer.lock`. Daardoor zijn de smoke-scenario's uit `docs/QA_PLAN.md` toen niet uitgevoerd.
 
-3. **Smoke-scenario's niet uitgevoerd**  
-   - Door bovenstaande install-blocker zijn de gevraagde handmatige testen (user/wapen/sessie/AI/export/bijlagen/queue) niet uitvoerbaar in deze run.  
-   - Zodra dependencies gefikst zijn: QA-plan in `docs/QA_PLAN.md` kan direct gevolgd worden voor een volledige smoke-pass.
+## Wat daarvan nog geldt
 
-## Aanpak na fix
-- Dependencies alignen met Laravel 12 (check beschikbaarheid van Pest Laravel plugin en Dompdf voor 12.x of pin tijdelijk naar Laravel 11 als tussenstap).  
-- Lockfile genereren, `.env` opzetten (SQLite/Pg), `php artisan migrate --seed`, queue worker starten.  
-- Daarna QA-plan uitvoeren en resultaten loggen (verwacht binnen 1 run mogelijk als dependencies staan).
+Niets. Alle drie de punten zijn opgelost, te controleren in de repo zelf:
+
+- `composer.lock` staat in de repo.
+- `composer.lock` bevat `laravel/framework` v12, `pestphp/pest-plugin-laravel` v4 en `barryvdh/laravel-dompdf` v3, dus de install slaagt tegen Laravel 12.
+- De CI-workflow (`.github/workflows/ci.yml`) draait lint, audit, test en een build van de productie-image zonder push.
+
+## Wat er niet is gedaan
+
+De handmatige smoke-test uit `docs/QA_PLAN.md` (gebruiker, wapen, sessie, AI, export, bijlagen, queue) is niet opnieuw doorlopen. Er is dus geen vastgelegde uitkomst van een handmatige run na 2025-11-23. Wil je er een, voer het plan dan uit en leg het resultaat met datum vast in een nieuw document of in dit bestand.

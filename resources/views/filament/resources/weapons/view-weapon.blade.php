@@ -45,19 +45,19 @@
                         <circle cx="55" cy="68" r="3" fill="var(--at-accent)" />
                         <line x1="40" y1="60" x2="40" y2="75" stroke="var(--at-accent)" stroke-width="1" />
                     </svg>
-                    <div style="position: absolute; top: 8px; left: 8px; font-family: var(--at-font-mono); font-size: 9px; color: var(--at-muted); letter-spacing: 0.18em;">FOTO</div>
+                    <div style="position: absolute; top: 8px; left: 8px; font-family: var(--at-font-mono); font-size: var(--at-text-micro); color: var(--at-muted); letter-spacing: 0.18em;">FOTO</div>
                 </div>
 
                 <div style="margin-top: 14px;">
                     <div class="at-label">{{ strtoupper($typeLabel) }} · {{ $caliberLabel }}</div>
-                    <h1 style="font-family: var(--at-font-display); font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin: 4px 0 0; color: var(--at-text);">{{ $weapon->name }}</h1>
-                    <div style="font-family: var(--at-font-mono); font-size: 11px; color: var(--at-muted); margin-top: 6px;">SERIAL · {{ $weapon->serial_number ?? $idCode }}</div>
+                    <h1 style="font-family: var(--at-font-display); font-size: 1.375rem; font-weight: 600; letter-spacing: -0.01em; margin: 4px 0 0; color: var(--at-text);">{{ $weapon->name }}</h1>
+                    <div style="font-family: var(--at-font-mono); font-size: var(--at-text-micro); color: var(--at-muted); margin-top: 6px;">SERIAL · {{ $weapon->serial_number ?? $idCode }}</div>
                 </div>
 
                 <div style="height: 1px; background: var(--at-line); margin: 14px 0;"></div>
 
                 @foreach ($statusRows as [$key, $value, $kind])
-                    <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 12px;">
+                    <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: var(--at-text-small);">
                         <div style="color: var(--at-muted);">{{ $key }}</div>
                         <div style="color: var(--at-text);">
                             @if (($kind ?? null) === 'ok')
@@ -74,8 +74,8 @@
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
                     @foreach ($kalibratieRows as [$key, $value])
                         <div>
-                            <div style="font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.12em;">{{ strtoupper($key) }}</div>
-                            <div style="font-family: var(--at-font-mono); font-size: 16px; color: var(--at-text);">{{ $value }}</div>
+                            <div style="font-family: var(--at-font-mono); font-size: var(--at-text-micro); color: var(--at-muted); letter-spacing: 0.12em;">{{ strtoupper($key) }}</div>
+                            <div style="font-family: var(--at-font-mono); font-size: 1.0625rem; color: var(--at-text);">{{ $value }}</div>
                         </div>
                     @endforeach
                 </div>
@@ -100,18 +100,18 @@
 
             <div style="background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-lg); overflow: hidden;">
                 <div style="padding: 14px 16px; border-bottom: 1px solid var(--at-line); display: flex; align-items: center; gap: 10px;">
-                    <div style="font-size: 13px; font-weight: 600; color: var(--at-text);">Score-trend · alle sessies</div>
+                    <div style="font-size: var(--at-text-body); font-weight: 600; color: var(--at-text);">Score-trend · alle sessies</div>
                     <div class="at-label" style="margin-left: auto;">{{ count($trendData) }} sessies</div>
                 </div>
                 <div style="padding: 18px;">
                     <x-aimtrack.sparkline :data="array_values($trendData)" :width="760" :height="140" :stroke-width="2" :fill="true" fluid />
                     @if (count($trendData) >= 2)
-                        <div style="display: flex; justify-content: space-between; margin-top: 10px; font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.12em;">
+                        <div style="display: flex; justify-content: space-between; margin-top: 10px; font-family: var(--at-font-mono); font-size: var(--at-text-micro); color: var(--at-muted); letter-spacing: 0.12em;">
                             <span>{{ Carbon::parse(array_key_first($trendData))->translatedFormat('M Y') }}</span>
                             <span>{{ Carbon::parse(array_key_last($trendData))->translatedFormat('M Y') }}</span>
                         </div>
                     @else
-                        <div style="margin-top: 10px; font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.12em; text-align: center;">Onvoldoende data voor trend</div>
+                        <div style="margin-top: 10px; font-family: var(--at-font-mono); font-size: var(--at-text-micro); color: var(--at-muted); letter-spacing: 0.12em; text-align: center;">Onvoldoende data voor trend</div>
                     @endif
                 </div>
             </div>
@@ -122,7 +122,7 @@
                     $insightSuggestions = collect($weaponInsight->suggestions ?? [])->filter()->values();
                 @endphp
                 <x-aimtrack.bracket-frame :rounded="8" :padding="16" style="display: flex; flex-direction: column; gap: 12px;">
-                    <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; font-family: var(--at-font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-accent);">
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: var(--at-text-micro); font-family: var(--at-font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-accent);">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--at-accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="presentation"><path d="M12 3l2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1z" /></svg>
                         <span>AI-wapeninzicht</span>
                         @if ($weaponInsight->updated_at)
@@ -130,11 +130,11 @@
                         @endif
                     </div>
                     @if (filled($weaponInsight->summary))
-                        <div style="font-size: 13px; line-height: 1.55; color: var(--at-text);">{{ $weaponInsight->summary }}</div>
+                        <div style="font-size: var(--at-text-body); line-height: 1.55; color: var(--at-text);">{{ $weaponInsight->summary }}</div>
                     @endif
                     @if ($insightPatterns->isNotEmpty() || $insightSuggestions->isNotEmpty())
                         <div style="height: 1px; background: var(--at-line);"></div>
-                        <div class="at-grid-label-value" style="font-size: 12px;">
+                        <div class="at-grid-label-value" style="font-size: var(--at-text-small);">
                             @if ($insightPatterns->isNotEmpty())
                                 <div class="at-label" style="color: var(--at-accent);">PATRONEN</div>
                                 <div style="color: var(--at-text);">{{ $insightPatterns->implode(' · ') }}</div>
@@ -150,14 +150,14 @@
 
             <div style="background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-lg); overflow: hidden;">
                 <div style="padding: 14px 16px; border-bottom: 1px solid var(--at-line); display: flex; align-items: center; gap: 10px;">
-                    <div style="font-size: 13px; font-weight: 600; color: var(--at-text);">Sessies met dit wapen</div>
+                    <div style="font-size: var(--at-text-body); font-weight: 600; color: var(--at-text);">Sessies met dit wapen</div>
                     <div class="at-label" style="margin-left: auto;">{{ $recentSessions->count() }} recent · {{ $sessionCount }} totaal</div>
                 </div>
                 @if ($recentSessions->isEmpty())
-                    <div style="padding: 32px 16px; color: var(--at-muted); font-size: 12px; text-align: center;">Nog geen sessies met dit wapen.</div>
+                    <div style="padding: 32px 16px; color: var(--at-muted); font-size: var(--at-text-small); text-align: center;">Nog geen sessies met dit wapen.</div>
                 @else
                     <div style="overflow-x: auto;">
-                    <div style="display: grid; grid-template-columns: 100px minmax(160px, 1fr) 90px 80px 80px; min-width: 510px; padding: 8px 16px; font-family: var(--at-font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-muted); border-bottom: 1px solid var(--at-line);">
+                    <div style="display: grid; grid-template-columns: 100px minmax(160px, 1fr) 90px 80px 80px; min-width: 510px; padding: 8px 16px; font-family: var(--at-font-mono); font-size: var(--at-text-micro); letter-spacing: 0.12em; text-transform: uppercase; color: var(--at-muted); border-bottom: 1px solid var(--at-line);">
                         <div>Datum</div><div>Locatie</div><div>Schoten</div><div>Score</div><div>Status</div>
                     </div>
                     @foreach ($recentSessions as $session)
@@ -166,19 +166,19 @@
                             $sessionScore = (int) ($session->score_total ?? 0);
                             $sessionShots = (int) ($session->rounds_total ?? 0);
                         @endphp
-                        <div style="display: grid; grid-template-columns: 100px minmax(160px, 1fr) 90px 80px 80px; min-width: 510px; padding: 12px 16px; border-bottom: 1px solid var(--at-line); align-items: center; font-size: 12px;">
-                            <div style="font-family: var(--at-font-mono); color: var(--at-muted); font-size: 11px;">
+                        <div style="display: grid; grid-template-columns: 100px minmax(160px, 1fr) 90px 80px 80px; min-width: 510px; padding: 12px 16px; border-bottom: 1px solid var(--at-line); align-items: center; font-size: var(--at-text-small);">
+                            <div style="font-family: var(--at-font-mono); color: var(--at-muted); font-size: var(--at-text-micro);">
                                 {{ $session->date?->translatedFormat('d M') ?? '—' }}
-                                <div style="font-size: 9px; opacity: 0.7;">{{ $sessionLabel }}</div>
+                                <div style="font-size: var(--at-text-micro); opacity: 0.7;">{{ $sessionLabel }}</div>
                             </div>
                             <div style="color: var(--at-text);">{{ $session->range_name ?? '—' }}</div>
                             <div style="font-family: var(--at-font-mono); color: var(--at-text);">{{ $sessionShots }}</div>
                             <div style="font-family: var(--at-font-mono); color: var(--at-accent); font-weight: 600;">{{ $sessionScore }}</div>
                             <div>
                                 @if ($session->ai_reflection_exists)
-                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 4px; background: var(--at-accent-12); color: var(--at-accent); border: 1px solid var(--at-accent-25); font-family: var(--at-font-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;">AI</span>
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 4px; background: var(--at-accent-12); color: var(--at-accent); border: 1px solid var(--at-accent-25); font-family: var(--at-font-mono); font-size: var(--at-text-micro); letter-spacing: 0.08em; text-transform: uppercase;">AI</span>
                                 @else
-                                    <span style="font-family: var(--at-font-mono); font-size: 9px; color: var(--at-muted); letter-spacing: 0.08em; text-transform: uppercase;">open</span>
+                                    <span style="font-family: var(--at-font-mono); font-size: var(--at-text-micro); color: var(--at-muted); letter-spacing: 0.08em; text-transform: uppercase;">open</span>
                                 @endif
                             </div>
                         </div>

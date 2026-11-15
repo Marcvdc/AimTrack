@@ -1,5 +1,7 @@
 # Operations
 
+Laatst bijgewerkt: 2026-10-17 (inhoud niet nagelopen in #154)
+
 Runbook voor dagelijks beheer, incidentrespons en onderhoud van AimTrack.
 
 ## Dagelijkse checks
@@ -10,9 +12,22 @@ Runbook voor dagelijks beheer, incidentrespons en onderhoud van AimTrack.
 ## Incidentrespons
 1. **App down**: controleer containers (`docker compose ps`), bekijk logs van `web` en `app`. Herstart met `docker compose restart app web`.
 2. **DB issues**: check `db` logs. Indien migrations ontbreken (bijv. Pennant `features`-tabel mist en logs tonen `Pennant features table ontbreekt; val terug op env default.`), voer de migraties uit binnen de containerstack: `docker compose -p aimtrack_dev exec app php artisan migrate --force` (met backup!).
-3. **Queue stilgevallen**: herstart `queue` service; inspecteer `queue:failed` en gebruik `queue:retry` na het oplossen van de oorzaak.
+3. **Queue stilgevallen** (`/health` meldt `queue_stalled`, zie hieronder): herstart `queue` service; inspecteer `queue:failed` en gebruik `queue:retry` na het oplossen van de oorzaak.
 4. **AI-fouten**: controleer `.env` voor API-key/base_url, timeouts in `config/ai.php`, en foutmeldingen in `ai_reflections`/`ai_weapon_insights`.
 5. **Exports mislukken**: controleer bestandssysteem en permissies; valideer dat filters geldige data leveren.
+
+### Betekenis van `queue_stalled`
+
+`/health` en `/api/health` geven 503 met `checks.queue.error: queue_stalled` als de oudste job in de `jobs`-tabel die al uitgevoerd had moeten worden langer wacht dan `HEALTH_QUEUE_MAX_AGE_SECONDS` (standaard 300, zie `config/health.php`). Jobs met een delay tellen niet mee, jobs die een worker nu verwerkt ook niet, een reservering ouder dan `retry_after` wel. De leeftijd staat niet in de response (het endpoint is publiek) maar in de applicatielog, als warning `Queue stilgevallen` met `age_seconds`. Elke aanroep van `/health` schrijft bij stilstand zo'n warning, dus bij een monitor die elke minuut pollt komt er elke minuut een regel bij; dat is bewust, de log blijft zo gelijk aan wat de monitor ziet. Alle queue-namen tellen mee. Bijna altijd betekent het dat er geen worker draait of dat die vastzit.
+
+Wat je doet:
+1. Kijk of de worker draait: `docker compose ps queue` en `docker compose logs --tail=100 queue`.
+2. Herstart hem: `docker compose restart queue`. De wachtende jobs blijven in de tabel staan en worden daarna alsnog verwerkt.
+3. Blijft de melding staan, kijk dan naar `php artisan queue:failed` en naar een enkele langlopende job die de worker blokkeert. Verhoog de drempel alleen als er legitiem lange jobs zijn.
+
+De drempel staat standaard op 300 seconden. Een grote burst AI-jobs kan de wachttijd tijdelijk boven die grens brengen en dan vals alarm geven bij externe monitoring; zet de drempel in dat geval hoger. De config wordt bij het opstarten van de container gecachet (`config:cache` in `docker/entrypoint.sh`), dus een gewijzigde `HEALTH_QUEUE_MAX_AGE_SECONDS` werkt pas na een herstart van de container.
+
+`queue_unavailable` is iets anders: de queue-configuratie of de `jobs`-tabel is niet bereikbaar.
 
 ## Deploy flow (productie)
 1. Bouw productie-image (multi-stage) met Composer install zonder dev.
@@ -141,8 +156,34 @@ Alles tussen het moment van de dump en het herstel is weg. Bij een dagelijkse du
 - De offsite-kopie van de VM en de hersteltest daarvan staan in het runbook `docs/runbooks/aimtrack.md` in `Marcvdc/homelab`.
 
 ## Monitoring & logging
-- Stuur logs naar stdout/Sentry. Configureer alerts op 5xx rate, queue-failures en AI-error spikes.
+- Logs gaan naar het daily-bestand en stdout/stderr (`LOG_STACK`). Configureer alerts op 5xx rate, queue-failures en AI-error spikes.
 - Overweeg database monitoring (pg_stat_activity) en storage usage alerts.
+
+### Sentry
+
+Elke gerapporteerde exception gaat via `Integration::handles()` in `withExceptions()` van `bootstrap/app.php` naar Sentry: onbehandelde fouten uit web-requests en commands, elke mislukte poging van een queue-job, en `report()`-aanroepen in de code. Een job die met `$this->fail()` stopt komt binnen via de `Queue::failing`-hook in `AppServiceProvider`, die `report()` aanroept. `dontReportDuplicates()` in dezelfde callback zorgt dat een job die op zijn laatste poging gooit maar één keer binnenkomt. Een job met drie pogingen die drie keer faalt geeft dus drie events in hetzelfde Sentry-issue.
+
+Het logkanaal `sentry` hoort niet in `LOG_STACK`: dan kwam elke exception twee keer binnen, en gewone foutlogs (ook die van de feature flags) zouden in Sentry belanden. `config/logging.php` haalt het kanaal er daarom uit, ook als het in de `.env` staat.
+
+Env-variabelen voor productie:
+
+| Variabele | Nodig | Waarde |
+|---|---|---|
+| `SENTRY_LARAVEL_DSN` | ja, anders gaat er niets naar Sentry | DSN uit het Sentry-project; alleen in de `.env` op de host, nooit in de repo |
+| `SENTRY_ENVIRONMENT` | nee | standaard `APP_ENV`, dus `production` |
+| `SENTRY_RELEASE` | nee | de deploy-tag, zodat fouten aan een release hangen |
+| `SENTRY_TRACES_SAMPLE_RATE` | nee | `0.0` (geen performance-tracing) |
+| `SENTRY_PROFILES_SAMPLE_RATE` | nee | `0.0` |
+
+Zonder `SENTRY_LARAVEL_DSN` verandert er niets: de client heeft geen adres en slaat elk event over. Tests zetten de DSN in `phpunit.xml` geforceerd op leeg.
+
+Wat `config/sentry.php` tegenhoudt:
+
+- `send_default_pii` staat op `false`: geen IP-adres, geen cookies, en de headers `Authorization`, `Cookie`, `X-Forwarded-For` en `X-Real-IP` worden gefilterd.
+- `max_request_body_size` staat op `never`: de request-body (formuliervelden, JSON) gaat niet mee. Dat staat los van `send_default_pii`.
+- `before_send` wijst naar `App\Support\Sentry\ScrubRequestData`: die haalt de query string uit `request.query_string`, `request.url` en de `Referer`-header, en gooit een eventuele body weg. sentry-php neemt de query string anders altijd mee, ook met `send_default_pii` uit, en een resetlink met `?email=` zou dan een e-mailadres sturen.
+
+Wat wel meegaat: de exception-klasse en -boodschap, de stacktrace met broncoderegels, het URL-pad, de methode, de overige headers (zoals `User-Agent`) en de logregels van vóór de fout als breadcrumbs. Zet dus geen e-mailadressen of andere persoonsgegevens in exception-boodschappen of logregels.
 
 ## Beveiliging & compliance
 - Patch base images regelmatig en rebuild. Houd PHP/Laravel security releases bij.

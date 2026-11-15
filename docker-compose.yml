@@ -11,13 +11,18 @@ services:
     volumes:
       - ./:/var/www/html
     environment:
-      APP_FORCE_HTTPS: "true"
+      # Productie draait deze stack (#120), dus https standaard geforceerd. Lokaal
+      # over http://localhost:18080 zet je het uit met STACK_FORCE_HTTPS=false in
+      # de .env naast dit bestand (#174). Bewust een eigen naam en niet
+      # APP_FORCE_HTTPS: .env.example zet die op false, en een .env die daarvan
+      # gekopieerd is zou https in productie dan stil uitzetten.
+      APP_FORCE_HTTPS: "${STACK_FORCE_HTTPS:-true}"
       TRUSTED_PROXIES: 172.16.0.0/12,127.0.0.1/32
       # Productie draait op dit moment deze stack vanaf een git-checkout (#120),
       # dus standaard aan. Uitzetten (alleen nodig over plain HTTP op een andere
       # host dan localhost) met SESSION_SECURE_COOKIE=false in de .env naast dit
       # bestand of in de shell; een waarde in .env.local wint hier niet van.
-      # Zie docs/user/quickstart.md en #174.
+      # Zie docs/user/quickstart.md.
       SESSION_SECURE_COOKIE: "${SESSION_SECURE_COOKIE:-true}"
       MAIL_MAILER: smtp
       MAIL_HOST: mailpit
@@ -75,7 +80,7 @@ services:
     volumes:
       - ./:/var/www/html
     environment:
-      APP_FORCE_HTTPS: "true"
+      APP_FORCE_HTTPS: "${STACK_FORCE_HTTPS:-true}"
       TRUSTED_PROXIES: 172.16.0.0/12,127.0.0.1/32
       SESSION_SECURE_COOKIE: "${SESSION_SECURE_COOKIE:-true}"
       MAIL_MAILER: smtp

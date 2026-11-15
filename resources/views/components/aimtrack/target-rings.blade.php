@@ -83,7 +83,7 @@
                     y="{{ $fmt($cy - $r + 10) }}"
                     fill="{{ $dim }}"
                     fill-opacity="0.45"
-                    style="font-family: var(--at-font-mono); font-size: 9px; letter-spacing: 0.04em;"
+                    style="font-family: var(--at-font-mono); font-size: min(var(--at-text-micro), 13px); letter-spacing: 0.04em;"
                 >{{ $n }}</text>
             @endif
         @endfor

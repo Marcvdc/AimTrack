@@ -91,7 +91,7 @@ test('landing page inlines the AimTrack design tokens and webfonts', function ()
         ->assertSee('<style id="aimtrack-tokens">', escape: false)
         ->assertSee('--at-accent', escape: false)
         ->assertSee('#64f4b3', escape: false)
-        ->assertSee('JetBrains+Mono', escape: false);
+        ->assertSee(asset('webfonts/aimtrack-fonts.css'), escape: false);
 });
 
 test('landing page no longer shows the pre-handoff live-stats content', function (): void {

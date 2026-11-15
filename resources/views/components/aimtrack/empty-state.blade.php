@@ -50,7 +50,7 @@
 
         @isset($description)
             <p
-                style="font-family: var(--at-font-body); font-size: 14px; line-height: 1.5; color: var(--at-muted); margin: 10px auto 0; max-width: min(100%, 360px);"
+                style="font-family: var(--at-font-body); font-size: var(--at-text-body); line-height: 1.5; color: var(--at-muted); margin: 10px auto 0; max-width: min(100%, 360px);"
             >
                 {{ $description }}
             </p>

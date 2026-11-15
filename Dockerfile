@@ -78,6 +78,9 @@ RUN mkdir -p /opt/artifacts/public-build \
        fi
 
 FROM base AS dev
+# Alleen in dev: de testsuite heeft meer dan de 128M van php.ini-production nodig
+# (#167). Production erft van base en houdt die standaard.
+COPY docker/php/dev-memory.ini $PHP_INI_DIR/conf.d/zz-dev-memory.ini
 # pestphp/pest-plugin-browser (require-dev) eist ext-sockets, anders weigert
 # composer install. Alleen hier, niet in de basis- of productie-image.
 RUN docker-php-ext-install -j"$(nproc)" sockets
