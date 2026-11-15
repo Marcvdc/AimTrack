@@ -7,6 +7,10 @@
  * omgevingsvariabelen klaar en winnen van een <env> in phpunit.xml zonder force. Zo
  * draaide de suite in de container met APP_ENV=local, een lege APP_KEY en file-cache,
  * en kreeg een nieuwe worktree een lege VIEW_COMPILED_PATH waarmee artisan niet opstart.
+ *
+ * De structuurtest kijkt naar .env.local.example, niet naar de echte .env.local van een
+ * ontwikkelaar. Zet iemand daar een extra variabele die phpunit.xml ook kent, dan ziet
+ * deze test dat niet; de gedragstest in de container dan wel.
  */
 
 /**
@@ -18,7 +22,7 @@ function envVoorbeeldWaarden(): array
 
     foreach (file(base_path('.env.local.example'), FILE_IGNORE_NEW_LINES) as $regel) {
         if (preg_match('/^([A-Z0-9_]+)=(.*)$/', $regel, $match) === 1) {
-            $waarden[$match[1]] = trim($match[2]);
+            $waarden[$match[1]] = trim(trim($match[2]), '"\'');
         }
     }
 
@@ -70,9 +74,12 @@ it('draait de tests in de testing-omgeving met array-drivers', function () {
 });
 
 it('forceert elke testwaarde die de dev-container via .env.local ook zet', function (string $soort) {
+    $voorbeeld = envVoorbeeldWaarden();
+    $geforceerd = phpunitGeforceerd($soort);
+
     $nietGeforceerd = collect(phpunitTestwaarden())
-        ->filter(fn (string $naam): bool => array_key_exists($naam, envVoorbeeldWaarden()))
-        ->reject(fn (string $naam): bool => in_array($naam, phpunitGeforceerd($soort), true))
+        ->filter(fn (string $naam): bool => array_key_exists($naam, $voorbeeld))
+        ->reject(fn (string $naam): bool => in_array($naam, $geforceerd, true))
         ->values()
         ->all();
 
@@ -86,4 +93,21 @@ it('zet in .env.local.example geen lege pad-variabele', function () {
         ->all();
 
     expect($legePaden)->toBe([]);
+});
+
+it('valt bij een lege VIEW_COMPILED_PATH terug op de standaard view-cache', function () {
+    $oud = $_SERVER['VIEW_COMPILED_PATH'] ?? null;
+    $_SERVER['VIEW_COMPILED_PATH'] = '';
+
+    try {
+        $config = require config_path('view.php');
+    } finally {
+        if ($oud === null) {
+            unset($_SERVER['VIEW_COMPILED_PATH']);
+        } else {
+            $_SERVER['VIEW_COMPILED_PATH'] = $oud;
+        }
+    }
+
+    expect($config['compiled'])->toBe(storage_path('framework/views'));
 });
