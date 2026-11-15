@@ -63,7 +63,7 @@ it('levert de OFL-licentie mee bij beide fonts', function (string $font) {
         ->toContain('SIL Open Font License, Version 1.1');
 })->with(['inter', 'jetbrains-mono']);
 
-it('bevat in de views en de gebuilde bronnen geen verwijzing naar een externe font-host', function (string $host) {
+it('bevat in de views, de CSS-bronnen, app en de font-stylesheet geen verwijzing naar een externe font-host', function (string $host) {
     $files = collect([
         ...File::allFiles(resource_path('views')),
         ...File::allFiles(resource_path('css')),
