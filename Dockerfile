@@ -6,7 +6,27 @@ FROM php:${PHP_VERSION}-fpm-bookworm AS base
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_NO_INTERACTION=1
 
+# postgresql-client-16 uit de PGDG-repository: bookworm heeft alleen client 15, en
+# pg_dump weigert een nieuwere server (de database is postgres:16). Het sleutelbestand
+# gaat via een tijdelijke keyring, en alleen de sleutel met deze vingerafdruk komt in
+# het signed-by-bestand: een extra meegeleverde sleutel wordt zo niet vertrouwd. gnupg
+# is alleen daarvoor nodig en gaat in dezelfde laag weer weg.
+# Bijeffect: met deze bron komen ook libpq5 en libpq-dev uit PGDG, dus pdo_pgsql
+# linkt tegen de libpq van PGDG en niet tegen die van bookworm.
+ARG PGDG_KEY_FINGERPRINT=B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
+
 RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
+    && install -d -m 755 /etc/apt/keyrings \
+    && export GNUPGHOME="$(mktemp -d)" \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --batch --import \
+    && gpg --batch --export "${PGDG_KEY_FINGERPRINT}" > /etc/apt/keyrings/pgdg.gpg \
+    && test -s /etc/apt/keyrings/pgdg.gpg \
+    && rm -rf "${GNUPGHOME}" && unset GNUPGHOME \
+    && apt-get purge -y --auto-remove gnupg \
+    && echo "deb [signed-by=/etc/apt/keyrings/pgdg.gpg] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
         cron \
         git \
@@ -20,7 +40,7 @@ RUN apt-get update \
         libicu-dev \
         locales \
         libonig-dev \
-        postgresql-client \
+        postgresql-client-16 \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" gd intl mbstring pdo pdo_pgsql pdo_mysql zip exif \
     && docker-php-ext-enable opcache \
@@ -38,7 +58,7 @@ FROM base AS vendor
 COPY composer.json composer.lock* ./
 RUN composer install --no-dev --prefer-dist --no-progress --optimize-autoloader --no-scripts
 
-FROM node:20-bookworm AS frontend
+FROM node:24-bookworm AS frontend
 WORKDIR /app
 COPY . .
 # De Filament theme (resources/css/filament/admin/theme.css) importeert CSS uit
@@ -58,15 +78,40 @@ RUN mkdir -p /opt/artifacts/public-build \
        fi
 
 FROM base AS dev
+# Alleen in dev: de testsuite heeft meer dan de 128M van php.ini-production nodig
+# (#167). Production erft van base en houdt die standaard.
+COPY docker/php/dev-memory.ini $PHP_INI_DIR/conf.d/zz-dev-memory.ini
+# pestphp/pest-plugin-browser (require-dev) eist ext-sockets, anders weigert
+# composer install. Alleen hier, niet in de basis- of productie-image.
+RUN docker-php-ext-install -j"$(nproc)" sockets
 COPY composer.json composer.lock* ./
 RUN composer install --prefer-dist --no-progress --no-scripts
 COPY . .
+
+# Browsertests (tests/Browser) met pest-plugin-browser: de dev-image plus Node en
+# Chromium met de systeembibliotheken die Playwright nodig heeft. De browserversie
+# volgt playwright uit package-lock.json, zodat die past bij node_modules in de
+# gemounte werkmap. Zie docs/AimTrack/tech/browsertests.md.
+FROM dev AS browser-tests
+COPY --from=node:24-bookworm /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:24-bookworm /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+# pcntl: de plugin stopt de Playwright-server met SIGTERM.
+RUN docker-php-ext-install -j"$(nproc)" pcntl
+RUN npx --yes "playwright@$(node -p "require('./package-lock.json').packages['node_modules/playwright'].version")" install --with-deps chromium \
+    && chmod -R a+rX /ms-playwright \
+    && rm -rf /var/lib/apt/lists/* /root/.npm
 
 FROM base AS production
 ENV APP_ENV=production \
     APP_DEBUG=false \
     PHP_OPCACHE_VALIDATE_TIMESTAMPS=0 \
     PHP_OPCACHE_MAX_ACCELERATED_FILES=10000
+
+COPY docker/php/hardening.ini $PHP_INI_DIR/conf.d/hardening.ini
+COPY docker/php/fpm-hardening.conf /usr/local/etc/php-fpm.d/zz-hardening.conf
 
 WORKDIR /var/www/html
 

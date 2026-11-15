@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Session;
+use App\Models\SessionShot;
 use App\Models\SessionWeapon;
 use App\Models\Weapon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -95,7 +97,7 @@ final class WeaponInsightsService
             return [];
         }
 
-        $shots = \App\Models\SessionShot::query()
+        $shots = SessionShot::query()
             ->whereIn('session_id', $sessionIds)
             ->selectRaw('session_id, SUM(score) as total')
             ->groupBy('session_id')
@@ -136,7 +138,7 @@ final class WeaponInsightsService
             return collect();
         }
 
-        return \App\Models\SessionShot::query()
+        return SessionShot::query()
             ->whereIn('session_id', $sessionIds)
             ->selectRaw('session_id, SUM(score) as total')
             ->groupBy('session_id')
@@ -144,7 +146,7 @@ final class WeaponInsightsService
             ->map(fn ($v): int => (int) $v);
     }
 
-    private function sessionsWithWeaponQuery(): \Illuminate\Database\Eloquent\Builder
+    private function sessionsWithWeaponQuery(): Builder
     {
         return Session::query()
             ->whereIn('id', SessionWeapon::query()

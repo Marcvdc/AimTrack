@@ -4,10 +4,16 @@ AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer s
 
 ## Kernfeatures
 - **Sessies**: datum, baan/vereniging, locatie, tijden, notities, attachments en meerdere wapen × afstand entries.
-- **Reflectie**: handmatige reflectie + AI-reflectie (samenvatting, went_well, needs_improvement, next_focus).
+- **Schotenbord**: per sessie schoten vastleggen en laten scoren (`SessionShotBoard`, `ShotScoringService`), met statistieken per sessie.
+- **Range Console**: overzicht van je sessies met kerncijfers, laatste sessie, laatste reflectie en trend (`RangeConsoleSummaryService`).
+- **Reflectie**: handmatige reflectie + AI-reflectie (samenvatting, went_well, needs_improvement, next_focus) en AI-inzichten per wapen.
 - **Wapenbeheer**: wapens met type/kaliber/serienummer/opslag; inzicht in gebruik per sessie.
-- **AI-coach**: vrije vragen op basis van eigen sessies/wapens.
+- **AI-coach**: chat met een Copilot (`eslam-reda-div/filament-copilot`) die je eigen sessies, wapens en scoredrift kan opzoeken.
+- **Trainingsdoelen**: doelen per gebruiker (`TrainingGoal`); de coach kan er een voorstellen en vastleggen.
+- **AI-instellingen**: AI draait op je eigen Claude API-key (BYO), per gebruiker in te stellen.
+- **Verenigingen**: een gebruiker kan lid, coach of beheerder zijn van een vereniging. Coaches en beheerders zien de sessies van de leden van hun actieve vereniging, alleen-lezen. Een vereniging kan een gedeelde Claude-key hebben.
 - **Export**: CSV/PDF per periode + wapenselectie met NL-disclaimer.
+- **Foutrapportage**: Sentry (`sentry/sentry-laravel`) als log-kanaal (`LOG_STACK` in `.env.example`) en voor mislukte queue-jobs, zodra `SENTRY_LARAVEL_DSN` gevuld is.
 - **Infra**: Docker Compose (nginx, php-fpm, db, queue) en queue-jobs voor AI-taken.
 
 ## Stack
@@ -28,7 +34,9 @@ AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer s
 7. Open `http://localhost:8080` vanuit Windows of WSL-browser en log in (standaard Laravel-auth). Gebruik Filament om sessies/wapens te beheren.
 
 ## AI-configuratie
-- Zet `AI_DRIVER`, `AI_MODEL`, `OPENAI_API_KEY` en `OPENAI_BASE_URL` (of andere provider variabelen) in `.env`.
+- De provider is Anthropic (Claude). Elke gebruiker zet de eigen key onder **AI-instellingen** in de app; de key wordt versleuteld opgeslagen. Heeft een gebruiker geen eigen key, dan geldt de gedeelde key van de actieve vereniging. Zonder gebruikers- of verenigingskey zijn de AI-functies verborgen; `ANTHROPIC_API_KEY` is alleen een fallback voor de Copilot-chat via `laravel/ai`, niet voor reflecties en wapeninzichten.
+- Env-variabelen (zie `.env.example` en `config/ai.php`): `AI_MODEL`, `ANTHROPIC_BASE_URL` en `AI_MAX_TOKENS`. `OPENAI_API_KEY` en `AI_DRIVER=openai` zijn na de migratie naar Claude vervallen.
+- Of de AI-functies zichtbaar zijn, hangt ook af van de feature flag `aimtrack-ai` (Pennant); de standaardwaarde komt uit `FEATURE_AIMTRACK_AI` en staat alleen in de `local`-omgeving aan.
 - AI-calls verlopen via queue-jobs (`GenerateSessionReflectionJob`, `GenerateWeaponInsightJob`). Zorg dat de `queue` container draait.
 - Prompts bevatten NL-disclaimers; AI-output is adviserend en vervangt geen veiligheidsregels of instructeurs.
 
@@ -36,10 +44,12 @@ AimTrack is een moderne, self-hosted schietlog voor sportschutters. Registreer s
 Gebruik de Filament **Export**-pagina om CSV of PDF te downloaden. Periode is verplicht; wapenselectie optioneel. Download bevat een disclaimer dat de gebruiker zelf verantwoordelijk blijft voor de actuele eisen.
 
 ## Documentatie
-- Techniek: `docs/architecture.md`, `docs/ai.md`, `docs/export.md`, `docs/infra.md`, `docs/operations.md`, `docs/security.md`
+- Techniek: `docs/architecture.md`, `docs/ai.md`, `docs/export.md`, `docs/infra.md`, `docs/operations.md`, `docs/security.md`, `docs/CI-CD-PLAN.md`, `docs/local-dev-wsl.md`
 - Gebruiker: `docs/user/quickstart.md`, `docs/user/sessions.md`, `docs/user/weapons.md`, `docs/user/export.md`, `docs/user/ai-coach.md`
 - AI Agents: `docs/ai-agents.md` - Automated development with AI agents
 - Overige plannen: `docs/PLAN.md`, `docs/BACKUPS.md`, `docs/PROD_HARDENING.md`
+- Kwaliteit: `docs/QA_PLAN.md` en `docs/QA_FINDINGS.md` (historisch)
+- Bovenaan de kerndocumenten staat een regel "Laatst bijgewerkt"; ontbreekt die, kijk dan met `git log -1 -- <bestand>`.
 
 ## Security & Responsible Disclosure
 - Meld kwetsbaarheden via **security@aimtrack.nl** met impact, reproduceerbare stappen en relevante logs.
@@ -94,35 +104,21 @@ Voorbeeld:
    - `docker compose -f docker/compose.dev.yml --env-file .env.local build --no-cache`  
    - `docker compose -f docker/compose.dev.yml --env-file .env.local up -d`
 
-## Staging Deployment
-- Branch: `staging` → workflow `.github/workflows/deploy-staging.yml`.
-- GitHub Environment: **staging** met secrets:
-  - `SSH_HOST` (WireGuard IP), `SSH_USER`, `SSH_PORT` (optioneel), `SSH_KEY` (PEM), `DEPLOY_PATH`
-  - `APP_URL`, `ENV_FILE_B64` (base64 van `.env`), `GHCR_USERNAME`, `GHCR_TOKEN`, `WG_CONFIG`
-- Flow: build & push image naar `ghcr.io/<owner>/aimtrack` met tags `<short_sha>` + `staging-latest`, installeer/start WireGuard in de workflow (config via `WG_CONFIG`), rsync `docker/` + `scripts/` naar de Pi, `remote_deploy.sh` draait `docker compose -f docker/compose.staging.yml pull/up`, optioneel migrations en healthcheck (`/health`). Tunnel wordt in een cleanup-stap weer afgesloten.
-- Networking: `staging.aimtrack.nl` verwijst naar het publieke IP van de Pi; forward extern poort 8080 (of gewenste poort) naar de host `WEB_PORT` (default 8080). TLS is optioneel voor staging; verkeer loopt via VPN/forwarding.
-- Concurrency: één staging deploy tegelijk; tag van de laatste succesvolle deploy wordt lokaal opgeslagen voor rollback.
+## Deployment
+Productie draait sinds 2026-10-11 op een eigen VM in de homelab van Marc, achter een Caddy-proxy.
+Een update gaat met de hand op die VM: `git pull`, `docker compose build`, `up -d`,
+`package:discover` en `migrate --force`. De exacte commando's, de compose en de controles na de
+uitrol staan in het runbook `docs/runbooks/aimtrack.md` in de (privé) repo `Marcvdc/homelab`.
 
-## Production Deployment
-- Branch: `main` → workflow `.github/workflows/deploy-production.yml` (vereist succesvolle CI-run).
-- GitHub Environment: **production** met dezelfde secret-namen als staging (andere waarden, inclusief `WG_CONFIG`).
-- Tags: `<short_sha>` + `prod-latest`.
-- Compose file: `docker/compose.prod.yml` (image uit GHCR, volumes voor code/storage/bootstrap cache).
-- Deploy stap gebruikt dezelfde scripts als staging; healthcheck via `APP_URL/health`. Publiek verkeer komt binnen op extern poort 18080 → forwarded naar webcontainer (inclusief HTTPS offload volgens hostconfig).
+Er is geen automatische deploy meer. De pipelines naar de oude Raspberry Pi (job
+`deploy-production` in `ci.yml` en `deploy-staging.yml`) zijn op 2026-10-12 uitgezet, omdat die
+host gecompromitteerd is geweest; zie `docs/plans/deploy-pipeline-uit-plan.md`. CI draait nog
+wel: lint, audit, test en een build van de productie-image, zonder push. De test
+`tests/Unit/GeenDeployWorkflowTest.php` faalt als er een deploy-workflow terugkomt; een nieuwe
+pipeline naar de homelab-VM vraagt dus een eigen plan.
 
-## Raspberry Pi / SSH & Runner Setup
-- Maak user `deploy` (of vergelijkbaar), voeg toe aan `docker`-group en zet `PermitRootLogin no`, key-only auth in `~deploy/.ssh/authorized_keys`.
-- Installeer Docker Engine + Compose plugin. Controleer dat `docker compose version` werkt voor de deploy user.
-- Bereid `DEPLOY_PATH` (bijv. `/opt/aimtrack`) en zorg voor schrijfrechten voor `deploy`.
-- Netwerk: als de Pi alleen op LAN bereikbaar is, gebruik een self-hosted runner met labels `self-hosted`, `linux` (en evt. `arm64`), of zorg voor VPN/Tailscale zodat GitHub-hosted runners via SSH kunnen verbinden.
-- SSH firewall open voor GitHub runner of LAN-runner; `ssh-keyscan` wordt in workflows gebruikt voor known_hosts.
-
-## Checklist (in te vullen)
-- [ ] Secrets per Environment in GitHub: `SSH_HOST`, `SSH_USER`, `SSH_KEY`, `DEPLOY_PATH`, `APP_URL`, `GHCR_USERNAME`, `GHCR_TOKEN`, `WG_CONFIG`, optioneel `SSH_PORT`, `ENV_FILE_B64`.
-- [ ] Raspberry Pi: deploy user + docker group, Docker/Compose geïnstalleerd, `DEPLOY_PATH` aangemaakt.
-- [ ] Runner-keuze: GitHub-hosted (als host publiek bereikbaar) of self-hosted op het LAN/VPN.
-- [ ] `.env.staging` en `.env.production` klaar op de server (of base64 in secrets).
-- [ ] DNS/hostnames naar staging/production URL ingesteld; poorten afgestemd (`WEB_PORT` in `.env`, extern 8080 voor staging, 18080/443 voor productie).
+`scripts/remote_deploy.sh`, `scripts/rollback.sh` en `docker/compose.staging.yml` staan er nog,
+voor als er zo'n pipeline komt. Geen workflow roept ze aan.
 
 ## Licentie
 MIT – zie [LICENSE](LICENSE).

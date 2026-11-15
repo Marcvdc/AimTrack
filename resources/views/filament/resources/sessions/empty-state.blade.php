@@ -23,7 +23,7 @@
             <a
                 href="{{ $createUrl }}"
                 data-testid="sessions-empty-create"
-                style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 8px; background: var(--at-accent); color: var(--at-cta-text); font-weight: 600; font-size: 13px; text-decoration: none;"
+                style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 8px; background: var(--at-accent); color: var(--at-cta-text); font-weight: 600; font-size: var(--at-text-body); text-decoration: none;"
             >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -39,9 +39,9 @@
         <x-slot:extra>
             <div
                 data-testid="sessions-empty-tip"
-                style="padding: 14px; background: var(--at-panel); border: 1px solid var(--at-line); border-radius: 10px; font-size: 12px; color: var(--at-muted); text-align: left;"
+                style="padding: 14px; background: var(--at-panel); border: 1px solid var(--at-line); border-radius: 10px; font-size: var(--at-text-small); color: var(--at-muted); text-align: left;"
             >
-                <div style="font-family: var(--at-font-mono); font-size: 10px; color: var(--at-accent); letter-spacing: 0.16em;">💡 TIP</div>
+                <div style="font-family: var(--at-font-mono); font-size: var(--at-text-micro); color: var(--at-accent); letter-spacing: 0.16em;">💡 TIP</div>
                 <div style="margin-top: 6px; color: var(--at-text);">
                     Heb je een papieren logboek? Foto's uploaden kan straks ook — AimTrack leest de score uit.
                 </div>

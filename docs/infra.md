@@ -1,5 +1,7 @@
 # Infra
 
+Laatst bijgewerkt: 2026-10-23 (inhoud niet nagelopen in #154)
+
 Overzicht van de infrastructuur en lokale ontwikkelsetup.
 
 ## Containers (Docker Compose)
@@ -9,7 +11,31 @@ Overzicht van de infrastructuur en lokale ontwikkelsetup.
 - **queue**: zelfde image als `app`, draait `php artisan queue:work --tries=3`.
 
 ## Netwerk & poorten
-- Web luistert op `:8080` (kan via compose override). DB standaard `5432`. Queue worker is intern.
+Per compose-bestand publiceren deze services een poort op de host. Een mapping zonder host-adres
+(`"80:80"`) bindt aan `0.0.0.0`, dus aan alle interfaces.
+
+| Bestand | Service | Hostpoort | Bedoeld bereik |
+|---|---|---|---|
+| `docker/compose.prod.yml` | `web` | `${WEB_PORT:-80}` | alleen de TLS-proxy |
+| `docker/compose.staging.yml` | `web` | `${WEB_PORT:-8080}` | alleen de TLS-proxy |
+| `docker/compose.dev.yml` | `web` | `${WEB_PORT:-8080}` | lokaal |
+| `docker/compose.dev.yml` | `db` | `${DB_FORWARD_PORT:-5432}` | lokaal |
+| `docker/compose.dev.yml` | `mailpit` | `${MAILPIT_HTTP_PORT:-8025}`, `${MAILPIT_SMTP_PORT:-1025}` | lokaal |
+| `docker-compose.yml` (root) | `web` | `18080` | alleen de TLS-proxy (zie #123) |
+| `docker-compose.yml` (root) | `mailpit` | `8025`, `1025` | lokaal |
+
+Afspraak voor productie en staging:
+
+- **Publiek:** alleen 80 en 443, en die bedient de TLS-proxy, niet een container uit deze repo.
+- **Niet publiek:** alles hierboven. De `web`-poort van de app-stack is er alleen voor de proxy
+  en hoort niet aan `0.0.0.0` te hangen; bind hem aan het adres waarop de proxy hem bereikt
+  (docker-gateway of LAN-adres). `127.0.0.1` werkt niet zolang de proxy zelf in een container
+  draait. Mailpit hoort in productie helemaal niet te draaien.
+- **Nooit gepubliceerd:** `app` (php-fpm op `9000`), `queue`, `backup` en in prod/staging ook
+  `db` (`5432`). Die zijn alleen op het interne compose-netwerk bereikbaar.
+
+Toets dit van buiten het netwerk, niet alleen met `docker ps`: een poort die daar op
+`0.0.0.0` staat, kan nog door een firewall worden tegengehouden, en omgekeerd.
 
 ## Configuratie (.env)
 Belangrijkste variabelen:
@@ -38,7 +64,7 @@ Belangrijkste variabelen:
 - Logs gaan naar stdout/stderr (container-friendly) en/of Sentry wanneer geconfigureerd.
 
 ## Backups
-- Zie `docs/BACKUPS.md` voor strategie (pg_dump + storage sync). Plan cron/automation buiten de app; minimaal dagelijkse DB-dump en storage sync naar object storage.
+- Zie `docs/BACKUPS.md`. De `backup`-dienst in de prod-compose maakt elke nacht een `pg_dump` naar een eigen volume; uploads en `.env` worden niet apart gebackupt, die komen terug via de offsite-kopie van de VM in de homelab.
 
 ## Deploy
 - Multi-stage Docker image mogelijk: builder (composer install zonder dev) + runtime (php-fpm + opcache).

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\SessionResource\Pages;
 
+use App\Filament\Concerns\PreservesOwnerOnSave;
 use App\Filament\Resources\SessionResource;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -9,6 +10,8 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditSession extends EditRecord
 {
+    use PreservesOwnerOnSave;
+
     protected static string $resource = SessionResource::class;
 
     protected function getHeaderActions(): array

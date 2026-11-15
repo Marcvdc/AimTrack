@@ -23,16 +23,18 @@ test('weapons list renders empty state when user has no weapons', function (): v
     $response->assertSee('Elk wapen krijgt zijn eigen overzicht', escape: false);
 });
 
-test('weapons empty state renders three starter template cards', function (): void {
+test('weapons empty state renders four starter template cards', function (): void {
     $user = User::factory()->create();
     $this->actingAs($user);
 
     $response = $this->get(WeaponResource::getUrl('index'));
 
     $response->assertSee('data-testid="weapons-template-luchtpistool"', escape: false);
+    $response->assertSee('data-testid="weapons-template-luchtgeweer"', escape: false);
     $response->assertSee('data-testid="weapons-template-pistool-9mm"', escape: false);
     $response->assertSee('data-testid="weapons-template-vrij-pistool"', escape: false);
     $response->assertSee('Luchtpistool', escape: false);
+    $response->assertSee('Luchtgeweer', escape: false);
     $response->assertSee('Vrij pistool', escape: false);
     $response->assertSee('4.5 mm', escape: false);
     $response->assertSee('9×19 mm', escape: false);
@@ -92,7 +94,20 @@ test('CreateWeapon with luchtpistool template pre-fills name, weapon_type and ca
         ->test(CreateWeapon::class)
         ->assertFormSet([
             'name' => 'Luchtpistool',
-            'weapon_type' => WeaponType::PISTOL->value,
+            'weapon_type' => WeaponType::AIR_PISTOL->value,
+            'caliber' => '4.5 mm',
+        ]);
+});
+
+test('CreateWeapon with luchtgeweer template pre-fills the air rifle type', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Livewire::withQueryParams(['template' => 'luchtgeweer'])
+        ->test(CreateWeapon::class)
+        ->assertFormSet([
+            'name' => 'Luchtgeweer',
+            'weapon_type' => WeaponType::AIR_RIFLE->value,
             'caliber' => '4.5 mm',
         ]);
 });

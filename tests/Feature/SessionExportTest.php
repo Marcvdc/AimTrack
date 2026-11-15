@@ -82,7 +82,7 @@ it('streams csv export with shared dataset and shots summary', function (): void
         '50',
         '9mm FMG',
         'Strakke groep',
-        Deviation::LEFT->value,
+        Deviation::LEFT->label(),
         '2',
         'Focussen op houding.',
         '3 schoten | gem. score 9,0 | beste score 10 | gem. ring 9,0',

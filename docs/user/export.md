@@ -10,6 +10,7 @@ Handleiding voor CSV/PDF-export.
 
 ## CSV
 - Geschikt voor spreadsheets. Bevat één regel per sessie × wapen met datum, baan/locatie, afstand, schoten, munitie en notities.
+- De kolom **Afwijking** is Nederlands: Links, Rechts, Hoog, Laag of Geen. Eerdere exports schreven hier de Engelse waarde (`left`, `right`); pas je sheets of formules daarop aan.
 
 ## PDF
 - Printvriendelijke versie met overzicht per periode, totalen per wapen/kaliber en een tabel met sessies.

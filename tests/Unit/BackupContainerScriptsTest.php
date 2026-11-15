@@ -70,3 +70,51 @@ test('runner draait standaard de productie-dump via direct mode', function () {
         ->toContain('scripts/backup-dev-db.sh')
         ->toContain('BACKUP_MODE');
 });
+
+/**
+ * De Pi-scripts (issue #190) zijn vervangen door de backup-dienst hierboven.
+ * Ze mogen niet terugkomen en de docs mogen er niet meer naar verwijzen,
+ * anders volgt iemand bij een herstel een pad dat niet meer bestaat.
+ */
+test('de vervallen Pi-backupscripts bestaan niet meer', function (string $script) {
+    expect(file_exists(base_path("scripts/{$script}")))->toBeFalse();
+})->with([
+    'backup-aimtrack.sh',
+    'restore-test-aimtrack.sh',
+]);
+
+test('docs, scripts en docker noemen de vervallen Pi-backupscripts niet meer', function () {
+    $vervallen = ['backup-aimtrack.sh', 'restore-test-aimtrack.sh'];
+    $bestanden = [base_path('Dockerfile'), base_path('README.md')];
+
+    foreach (['docs', 'scripts', 'docker'] as $map) {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator(base_path($map), FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $bestand) {
+            if ($bestand->isFile()) {
+                $bestanden[] = $bestand->getPathname();
+            }
+        }
+    }
+
+    $treffers = [];
+
+    foreach ($bestanden as $pad) {
+        $inhoud = file_get_contents($pad);
+
+        foreach ($vervallen as $script) {
+            if (str_contains($inhoud, $script)) {
+                $treffers[] = str_replace(base_path().'/', '', $pad)." noemt {$script}";
+            }
+        }
+    }
+
+    expect($treffers)->toBe([]);
+});
+
+test('het dev-backupscript blijft bestaan en wordt in de image uitvoerbaar gemaakt', function () {
+    expect(file_exists(base_path('scripts/backup-dev-db.sh')))->toBeTrue()
+        ->and(file_get_contents(base_path('Dockerfile')))->toContain('scripts/backup-dev-db.sh');
+});

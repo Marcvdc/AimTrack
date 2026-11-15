@@ -3,12 +3,14 @@
 declare(strict_types=1);
 
 use App\Enums\Deviation;
+use App\Exceptions\Ai\AiKeyMissingException;
 use App\Models\Session;
 use App\Models\SessionShot;
 use App\Models\SessionWeapon;
 use App\Models\User;
 use App\Services\Ai\ShooterCoach;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
@@ -57,7 +59,7 @@ test('reflectie loopt via de Anthropic Messages API met de user-key', function (
 
     expect($reflection->summary)->toBe('Sterke opening, dip in serie 2.');
 
-    Http::assertSent(function (\Illuminate\Http\Client\Request $request): bool {
+    Http::assertSent(function (Request $request): bool {
         return str_contains($request->url(), '/v1/messages')
             && $request->hasHeader('x-api-key', 'sk-ant-user-key')
             && $request->hasHeader('anthropic-version', '2023-06-01')
@@ -68,16 +70,17 @@ test('reflectie loopt via de Anthropic Messages API met de user-key', function (
     });
 });
 
-test('zonder user-key wordt er geen call gedaan en volgt een nette fallback', function (): void {
+test('zonder user-key wordt er geen call gedaan en volgt een herkenbare exception', function (): void {
     Http::fake();
 
     $user = User::factory()->create(['anthropic_api_key' => null]);
     $session = Session::factory()->create(['user_id' => $user->id]);
 
-    $reflection = fakeShooterCoach()->generateSessionReflection($session);
+    expect(fn () => fakeShooterCoach()->generateSessionReflection($session))
+        ->toThrow(AiKeyMissingException::class);
 
     Http::assertNothingSent();
-    expect($reflection->summary)->not->toBeEmpty();
+    expect($session->aiReflection()->exists())->toBeFalse();
 });
 
 test('reflection does not crash on a backed Deviation enum and persists', function (): void {
@@ -95,7 +98,7 @@ test('reflection does not crash on a backed Deviation enum and persists', functi
     expect($reflection->exists)->toBeTrue()
         ->and($reflection->summary)->not->toBeEmpty();
 
-    Http::assertSent(fn (\Illuminate\Http\Client\Request $request): bool => str_contains(
+    Http::assertSent(fn (Request $request): bool => str_contains(
         $request['messages'][0]['content'] ?? '',
         'afwijking: left',
     ));
@@ -129,7 +132,7 @@ test('reflection prompt includes numeric shot statistics', function (): void {
 
     fakeShooterCoach()->generateSessionReflection($session);
 
-    Http::assertSent(function (\Illuminate\Http\Client\Request $request): bool {
+    Http::assertSent(function (Request $request): bool {
         $prompt = $request['messages'][0]['content'] ?? '';
 
         return str_contains($prompt, 'Schotstatistiek')

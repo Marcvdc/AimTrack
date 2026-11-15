@@ -187,11 +187,11 @@ it('caches the loaded shots collection across method calls', function (): void {
 
     $service->totalShots();
 
-    \DB::enableQueryLog();
+    DB::enableQueryLog();
     $service->tienen();
     $service->negens();
     $service->totalScore();
-    $queries = collect(\DB::getQueryLog())->filter(fn (array $q): bool => str_contains($q['query'], 'session_shots'));
+    $queries = collect(DB::getQueryLog())->filter(fn (array $q): bool => str_contains($q['query'], 'session_shots'));
 
     expect($queries->count())->toBe(0);
 });

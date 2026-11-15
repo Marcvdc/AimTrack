@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Prepare storage directories
         run: |
@@ -29,15 +29,36 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: sqlite, pdo_sqlite, intl, mbstring, bcmath, pcntl, zip
+          extensions: sqlite, pdo_sqlite, intl, mbstring, bcmath, pcntl, sockets, zip
           coverage: none
+
+      # config.platform.php in composer.json bepaalt met welke PHP Composer en Dependabot
+      # rekenen (#212). Die pin moet bij een PHP-upgrade mee: zelfde minor als hier, en
+      # niet hoger dan de PHP die hier draait. Anders blijven updates stil liggen of
+      # kiest Composer pakketten die hier niet starten.
+      - name: Check PHP pin in composer.json
+        run: |
+          pin="$(composer config platform.php)"
+          echo "platform.php ${pin}, CI draait PHP $(php -r 'echo PHP_VERSION;')"
+          # shellcheck disable=SC2016 # de PHP-code staat bewust tussen enkele quotes
+          PIN="${pin}" php -r '
+            $pin = getenv("PIN");
+            [$maj, $min] = array_map("intval", explode(".", $pin));
+            if ($maj !== PHP_MAJOR_VERSION || $min !== PHP_MINOR_VERSION) {
+                fwrite(STDERR, "::error title=PHP-pin::platform.php is {$pin}, maar de CI draait PHP ".PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION.". Zet de pin op de laagste PHP waarop AimTrack draait.\n");
+                exit(1);
+            }
+            if (version_compare($pin, PHP_VERSION, ">")) {
+                fwrite(STDERR, "::error title=PHP-pin::platform.php {$pin} is hoger dan de PHP in de CI (".PHP_VERSION.").\n");
+                exit(1);
+            }'
 
       - name: Get Composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
       - name: Cache Composer dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-php-8.4-composer-${{ hashFiles('**/composer.lock') }}
@@ -49,13 +70,67 @@ jobs:
       - name: Run Pint
         run: vendor/bin/pint --test
 
+  audit:
+    name: Dependency audit (Composer)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, mbstring, bcmath, zip
+          coverage: none
+
+      # Faalt zodra er een security advisory op composer.lock staat, en sinds Composer
+      # 2.7 ook bij een abandoned package (audit.abandoned staat standaard op fail).
+      # De uitvoer gaat altijd naar de job summary, ook als de stap faalt. Sinds #179
+      # is de set leeg, dus elke nieuwe melding maakt de run rood (issue #189, deel
+      # van #136).
+      - name: Run composer audit
+        id: composer-audit
+        run: |
+          set +e
+          composer audit --locked --no-interaction --format=plain | tee composer-audit.txt
+          status=${PIPESTATUS[0]}
+          {
+            echo "### composer audit"
+            echo ""
+            echo '```'
+            cat composer-audit.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "${status}"
+
+      - name: Report audit outcome
+        if: ${{ failure() && steps.composer-audit.outcome == 'failure' }}
+        run: echo "::error title=composer audit::composer.lock heeft een security advisory of een abandoned package, zie de job summary."
+
+  # Valideert docker/nginx/default.conf met dezelfde minor als productie (#130). nginx
+  # zoekt de upstream "app" (php-fpm) al bij het laden op, dus die wijst hier naar
+  # 127.0.0.1. NginxConfigTest controleert de inhoud, deze job of nginx hem accepteert.
+  nginx:
+    name: Nginx config (nginx -t)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Run nginx -t
+        run: |
+          docker run --rm --add-host app:127.0.0.1 \
+            -v "${GITHUB_WORKSPACE}/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro" \
+            nginx:1.30-alpine nginx -t
+
   test:
     name: Tests (Pest)
     runs-on: ubuntu-latest
     needs: lint
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Prepare storage directories
         run: |
@@ -69,15 +144,18 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: sqlite, pdo_sqlite, intl, mbstring, bcmath, pcntl, zip
+          extensions: sqlite, pdo_sqlite, intl, mbstring, bcmath, pcntl, sockets, zip
           coverage: none
+          # Dezelfde grens als het dev-image (docker/php/dev-memory.ini, #167), zodat de
+          # suite hier en lokaal hetzelfde meet, in plaats van op de standaard van de action te leunen.
+          ini-values: memory_limit=512M
 
       - name: Get Composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
       - name: Cache Composer dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-php-8.4-composer-${{ hashFiles('**/composer.lock') }}
@@ -109,13 +187,106 @@ jobs:
           DB_DATABASE: ':memory:'
         run: vendor/bin/pest
 
+  # Browsertests in tests/Browser met pestphp/pest-plugin-browser: de echte pagina in
+  # Chromium, met touch- en muisinvoer (#144). Draait apart van de Pest-job, want
+  # die tests hebben gebouwde assets, Node en een browser nodig. Lokaal draaien:
+  # docs/AimTrack/tech/browsertests.md.
+  browser:
+    name: Browsertests (Pest)
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Prepare storage directories
+        run: |
+          mkdir -p storage/framework/cache
+          mkdir -p storage/framework/cache/data
+          mkdir -p storage/framework/sessions
+          mkdir -p storage/framework/views
+          chmod -R 775 storage/framework
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: sqlite, pdo_sqlite, intl, mbstring, bcmath, pcntl, sockets, zip
+          coverage: none
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-php-8.4-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-php-8.4-composer-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('./node_modules/playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright.outputs.version }}
+
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Chromium system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Generate application key
+        run: php artisan key:generate --ansi
+
+      - name: Run browser tests
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+        run: vendor/bin/pest tests/Browser
+
+      - name: Upload screenshots of failed browser tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-screenshots
+          path: tests/Browser/Screenshots
+          if-no-files-found: ignore
+
   build:
     name: Build
     runs-on: ubuntu-latest
     needs: test
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Prepare storage directories
         run: |
@@ -137,7 +308,7 @@ jobs:
         run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
       - name: Cache Composer dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-php-8.4-composer-${{ hashFiles('**/composer.lock') }}
@@ -148,9 +319,9 @@ jobs:
 
       - name: Setup Node
         if: hashFiles('**/package-lock.json') != '' || hashFiles('**/pnpm-lock.yaml') != '' || hashFiles('**/yarn.lock') != ''
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
           cache: npm
           cache-dependency-path: |
             **/package-lock.json
@@ -177,10 +348,10 @@ jobs:
           fi
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build production image (no push)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile
@@ -192,145 +363,3 @@ jobs:
           tags: aimtrack:ci-${{ github.sha }}
           cache-from: type=gha,scope=ci
           cache-to: type=gha,mode=max,scope=ci
-
-  deploy-production:
-    name: Deploy - Production
-    needs: build
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
-    environment: production
-    permissions:
-      contents: read
-      packages: write
-    concurrency:
-      group: deploy-production
-      cancel-in-progress: false
-    env:
-      ENV_FILE_B64: ${{ secrets.ENV_FILE_B64 }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Prepare variables
-        id: vars
-        run: |
-          SHORT_SHA="${GITHUB_SHA::7}"
-          OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
-          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
-          echo "registry_image=ghcr.io/${OWNER}/aimtrack" >> "$GITHUB_OUTPUT"
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.GHCR_USERNAME }}
-          password: ${{ secrets.GHCR_TOKEN }}
-
-      - name: Build and push image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile
-          push: true
-          provenance: false
-          platforms: linux/amd64,linux/arm64
-          build-args: |
-            PHP_VERSION=8.4
-            APP_ENV=production
-          tags: |
-            ${{ steps.vars.outputs.registry_image }}:${{ steps.vars.outputs.short_sha }}
-            ${{ steps.vars.outputs.registry_image }}:prod-latest
-          cache-from: type=gha,scope=deploy-production
-          cache-to: type=gha,mode=max,scope=deploy-production
-
-      - name: Install WireGuard
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wireguard
-
-      - name: Start WireGuard tunnel
-        env:
-          WG_CONFIG: ${{ secrets.WG_CONFIG }}
-        run: |
-          umask 077
-          echo "${WG_CONFIG}" > /tmp/wg0.conf
-          sudo wg-quick up /tmp/wg0.conf
-
-      - name: Verify WireGuard tunnel
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-        run: ping -c 2 "${SSH_HOST}"
-
-      - name: Configure SSH
-        env:
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-        run: |
-          install -m 700 -d ~/.ssh
-          echo "${SSH_KEY}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          PORT="${SSH_PORT:-22}"
-          ssh-keyscan -p "${PORT}" "${SSH_HOST}" >> ~/.ssh/known_hosts
-          test -s ~/.ssh/known_hosts
-
-      - name: Sync deployment assets
-        env:
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-        run: |
-          PORT="${SSH_PORT:-22}"
-          ssh -p "${PORT}" "${SSH_USER}@${SSH_HOST}" "mkdir -p '${DEPLOY_PATH}'"
-          rsync -avz -e "ssh -p ${PORT}" docker/ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/docker/"
-          rsync -avz -e "ssh -p ${PORT}" scripts/ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/scripts/"
-
-      - name: Upload environment file (optional)
-        if: ${{ env.ENV_FILE_B64 != '' }}
-        env:
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-        run: |
-          PORT="${SSH_PORT:-22}"
-          echo "${ENV_FILE_B64}" | base64 --decode > /tmp/env.production
-          scp -P "${PORT}" /tmp/env.production "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/.env"
-
-      - name: Remote deploy
-        env:
-          REGISTRY_IMAGE: ${{ steps.vars.outputs.registry_image }}
-          IMAGE_TAG: ${{ steps.vars.outputs.short_sha }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-          APP_URL: ${{ secrets.APP_URL }}
-        run: |
-          ssh -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "\
-            cd '${DEPLOY_PATH}' && \
-            REGISTRY_IMAGE='${REGISTRY_IMAGE}' \
-            IMAGE_TAG='${IMAGE_TAG}' \
-            APP_URL='${APP_URL}' \
-            GHCR_USERNAME='${GHCR_USERNAME}' \
-            GHCR_TOKEN='${GHCR_TOKEN}' \
-            ENV_FILE_B64='${ENV_FILE_B64}' \
-            COMPOSE_FILE='docker/compose.prod.yml' \
-            bash scripts/remote_deploy.sh"
-
-      - name: Teardown WireGuard tunnel
-        if: always()
-        run: |
-          if [ -f /tmp/wg0.conf ]; then
-            sudo wg-quick down /tmp/wg0.conf
-            rm -f /tmp/wg0.conf
-          fi

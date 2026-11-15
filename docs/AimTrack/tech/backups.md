@@ -32,14 +32,9 @@ Env placeholders zijn toegevoegd aan `.env.example`; pas ze aan in `.env` voor s
    Laat `BACKUP_DRY_RUN=0` om een echte dump te maken.
 2. **Log controleren:** `docker compose -f docker/compose.staging.yml logs -f backup` of lees `/backups/cron.log` op het gedeelde volume.
 3. **Retentie aanpassen:** wijzig `BACKUP_RETENTION_DAYS` in `.env` en herstart de `backup`-service.
-4. **Hersteltest:**
-   ```bash
-   docker compose -f docker/compose.staging.yml exec db \
-     pg_restore -d aimtrack_restore /backups/staging-db-YYYYMMDD-HHMMSS.sql.gz
-   ```
-   (Pak eerst uit met `gunzip` indien nodig.)
+4. **Terugzetten:** de dumps zijn platte SQL (gzip), dus `psql` en geen `pg_restore`, en ze staan op het volume van de `backup`-dienst, niet in de `db`-container. De stappen staan in `docs/BACKUPS.md` onder *Een dump terugzetten*.
 
 ## Monitoring & Alerts
 - Controleer dat `cron.log` dagelijks een "Done"-regel bevat.
 - Voeg infra-monitoring toe voor volumegebruik en cron failures (bijv. tail `cron.log` of health endpoint).
-- In lijn met C-PII-Logging blijven dumps lokaal op het backups-volume; offsite replicatie is optioneel en niet geautomatiseerd.
+- De dumps blijven op het backups-volume en worden door de dienst zelf niet offsite gezet. In productie valt de VM, met dat volume, onder de versleutelde offsite-backup van de homelab; zie `docs/BACKUPS.md`.

@@ -57,7 +57,7 @@
         @endfor
     </div>
 
-    <div style="display: flex; justify-content: space-between; margin-top: 8px; font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.08em;">
+    <div style="display: flex; justify-content: space-between; margin-top: 8px; font-family: var(--at-font-mono); font-size: var(--at-text-micro); color: var(--at-muted); letter-spacing: 0.08em;">
         <span>1</span>
         <span>{{ (int) round($totalSlots / 4) }}</span>
         <span>{{ (int) round($totalSlots / 2) }}</span>
@@ -66,7 +66,7 @@
     </div>
 
     @if ($showLegend)
-        <div style="display: flex; gap: 18px; margin-top: 12px; font-size: 11px; color: var(--at-muted); font-family: var(--at-font-mono);">
+        <div style="display: flex; gap: 18px; margin-top: 12px; font-size: var(--at-text-micro); color: var(--at-muted); font-family: var(--at-font-mono);">
             <span><span style="display: inline-block; width: 8px; height: 8px; background: var(--at-accent); margin-right: 6px;"></span>10+ ringen</span>
             @if ($dipFrom !== null)
                 <span><span style="display: inline-block; width: 8px; height: 8px; background: color-mix(in srgb, var(--at-warn) 70%, transparent); margin-right: 6px;"></span>concentratiedip {{ $dipFrom + 1 }}–{{ $dipTo + 1 }}</span>

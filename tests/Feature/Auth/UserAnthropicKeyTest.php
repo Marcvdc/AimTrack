@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 it('slaat de anthropic key encrypted op en geeft hem decrypted terug', function (): void {
@@ -22,5 +23,5 @@ it('verbergt de anthropic key in serialisatie', function (): void {
 it('casts ai_key_verified_at naar een datetime', function (): void {
     $user = User::factory()->create(['ai_key_verified_at' => now()]);
 
-    expect($user->fresh()->ai_key_verified_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+    expect($user->fresh()->ai_key_verified_at)->toBeInstanceOf(Carbon::class);
 });

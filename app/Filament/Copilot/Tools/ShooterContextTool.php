@@ -12,6 +12,7 @@ use App\Support\DateFormat;
 use EslamRedaDiv\FilamentCopilot\Tools\BaseTool;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Laravel\Ai\Tools\Request;
 use Stringable;
@@ -109,7 +110,7 @@ class ShooterContextTool extends BaseTool
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     * @return Collection<int, array<string, mixed>>
      */
     private function weaponAggregates(User $user, ?int $weaponId)
     {
@@ -131,7 +132,7 @@ class ShooterContextTool extends BaseTool
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, array<string, mixed>>  $stats
+     * @param  Collection<int, array<string, mixed>>  $stats
      */
     private function formatWeaponStats($stats): string
     {

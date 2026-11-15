@@ -59,18 +59,18 @@
                             <path d="M3 14h13l3-3h2v6h-3l-2 2h-3l-1 2H7l-1-2H3z" />
                             <path d="M9 14V9h4v5" />
                         </svg>
-                        <div style="font-size: 13px; font-weight: 600; color: var(--at-text);">Wapens · gebruik</div>
+                        <div style="font-size: var(--at-text-body); font-weight: 600; color: var(--at-text);">Wapens · gebruik</div>
                         <div class="at-label" style="margin-left: auto;">{{ $weaponUsage->count() }} actief</div>
                     </div>
                     <div class="at-weapon-usage" style="display: grid; grid-template-columns: repeat({{ min(3, max(1, $weaponUsage->count())) }}, 1fr);">
                         @foreach ($weaponUsage as $weapon)
                             <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px; @if (! $loop->last) border-right: 1px solid var(--at-line); @endif">
                                 <div class="at-label">{{ $weapon['type'] }}@if ($weapon['caliber'] !== '') · {{ $weapon['caliber'] }}@endif</div>
-                                <div style="font-size: 14px; font-weight: 600; color: var(--at-text);">{{ $weapon['name'] }}</div>
+                                <div style="font-size: var(--at-text-body); font-weight: 600; color: var(--at-text);">{{ $weapon['name'] }}</div>
                                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                                     <div>
-                                        <div style="font-family: var(--at-font-mono); font-size: 18px; font-weight: 600; color: var(--at-text);">{{ number_format($weapon['avg'], 1, ',', '.') }}</div>
-                                        <div style="font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted);">{{ $weapon['sessions'] }} sessies · {{ $weapon['shots'] }} schoten</div>
+                                        <div style="font-family: var(--at-font-mono); font-size: 1.125rem; font-weight: 600; color: var(--at-text);">{{ number_format($weapon['avg'], 1, ',', '.') }}</div>
+                                        <div style="font-family: var(--at-font-mono); font-size: var(--at-text-micro); color: var(--at-muted);">{{ $weapon['sessions'] }} sessies · {{ $weapon['shots'] }} schoten</div>
                                     </div>
                                     @if (count($weapon['series']) >= 2)
                                         <x-aimtrack.sparkline
@@ -92,7 +92,7 @@
         <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
             <div style="background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-lg); overflow: hidden;">
                 <div style="padding: 14px 16px; border-bottom: 1px solid var(--at-line); display: flex; align-items: center; gap: 10px;">
-                    <div style="font-size: 13px; font-weight: 600; color: var(--at-text);">Laatste sessie</div>
+                    <div style="font-size: var(--at-text-body); font-weight: 600; color: var(--at-text);">Laatste sessie</div>
                     <div class="at-label" style="margin-left: auto;">{{ $lastSession ? 'S-'.str_pad((string) $lastSession->id, 4, '0', STR_PAD_LEFT) : '—' }}</div>
                 </div>
                 <div style="padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
@@ -108,19 +108,19 @@
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%;">
                             <div>
                                 <div class="at-label" style="letter-spacing: 0.14em;">Score</div>
-                                <div style="font-family: var(--at-font-mono); font-size: 18px; font-weight: 600; color: var(--at-accent);">{{ $lastStats->totalScore() }}</div>
+                                <div style="font-family: var(--at-font-mono); font-size: 1.125rem; font-weight: 600; color: var(--at-accent);">{{ $lastStats->totalScore() }}</div>
                             </div>
                             <div>
                                 <div class="at-label" style="letter-spacing: 0.14em;">Beste</div>
-                                <div style="font-family: var(--at-font-mono); font-size: 18px; font-weight: 600; color: var(--at-text);">{{ $lastStats->bestShot() ?? '—' }}</div>
+                                <div style="font-family: var(--at-font-mono); font-size: 1.125rem; font-weight: 600; color: var(--at-text);">{{ $lastStats->bestShot() ?? '—' }}</div>
                             </div>
                             <div>
                                 <div class="at-label" style="letter-spacing: 0.14em;">Groep</div>
-                                <div style="font-family: var(--at-font-mono); font-size: 18px; font-weight: 600; color: var(--at-text);">{{ $lastStats->groupMm() !== null ? $lastStats->groupMm() : '—' }}<span style="font-size: 11px; color: var(--at-muted);">mm</span></div>
+                                <div style="font-family: var(--at-font-mono); font-size: 1.125rem; font-weight: 600; color: var(--at-text);">{{ $lastStats->groupMm() !== null ? $lastStats->groupMm() : '—' }}<span style="font-size: var(--at-text-micro); color: var(--at-muted);">mm</span></div>
                             </div>
                         </div>
                     @else
-                        <div style="padding: 32px 8px; color: var(--at-muted); font-size: 12px; text-align: center;">Nog geen sessies gelogd</div>
+                        <div style="padding: 32px 8px; color: var(--at-muted); font-size: var(--at-text-small); text-align: center;">Nog geen sessies gelogd</div>
                     @endif
                 </div>
             </div>
@@ -133,13 +133,13 @@
 
             <div style="background: var(--at-panel); border: 1px solid var(--at-line); border-radius: var(--at-r-lg); overflow: hidden;">
                 <div style="padding: 14px 16px; border-bottom: 1px solid var(--at-line); display: flex; align-items: center; gap: 10px;">
-                    <div style="font-size: 13px; font-weight: 600; color: var(--at-text);">Trend</div>
+                    <div style="font-size: var(--at-text-body); font-weight: 600; color: var(--at-text);">Trend</div>
                     <div class="at-label" style="margin-left: auto;">30d</div>
                 </div>
                 <div style="padding: 14px;">
                     <x-aimtrack.sparkline :data="array_values($trend)" :width="280" :height="70" :fill="true" fluid />
                     @if (count($trend) >= 2)
-                        <div style="display: flex; justify-content: space-between; margin-top: 8px; font-family: var(--at-font-mono); font-size: 10px; color: var(--at-muted); letter-spacing: 0.08em;">
+                        <div style="display: flex; justify-content: space-between; margin-top: 8px; font-family: var(--at-font-mono); font-size: var(--at-text-micro); color: var(--at-muted); letter-spacing: 0.08em;">
                             <span>{{ \App\Support\DateFormat::date(\Illuminate\Support\Carbon::parse(array_key_first($trend))) }}</span>
                             <span>{{ \App\Support\DateFormat::date(\Illuminate\Support\Carbon::parse(array_key_last($trend))) }}</span>
                         </div>

@@ -17,6 +17,7 @@ use BackedEnum;
 use EslamRedaDiv\FilamentCopilot\Contracts\CopilotPage as CopilotPageContract;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
@@ -104,9 +105,9 @@ class CoachPage extends Page implements CopilotPageContract
     /**
      * Open trainingsdoelen van de schutter ("Voorgestelde doelen"-rail).
      *
-     * @return \Illuminate\Support\Collection<int, TrainingGoal>
+     * @return Collection<int, TrainingGoal>
      */
-    public function getTrainingGoals(): \Illuminate\Support\Collection
+    public function getTrainingGoals(): Collection
     {
         /** @var User $user */
         $user = Auth::user();

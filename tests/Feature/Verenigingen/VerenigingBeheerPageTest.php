@@ -4,6 +4,7 @@ use App\Enums\VerenigingRol;
 use App\Filament\Pages\VerenigingBeheer;
 use App\Models\User;
 use App\Models\Vereniging;
+use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
 
 function beheerderVan(Vereniging $vereniging): User
@@ -66,7 +67,7 @@ it('verwijdert een lid via de record-actie', function (): void {
     $vereniging->members()->attach($lid, ['role' => VerenigingRol::Member->value]);
 
     Livewire::test(VerenigingBeheer::class)
-        ->callAction(\Filament\Actions\Testing\TestAction::make('verwijderLid')->table($lid));
+        ->callAction(TestAction::make('verwijderLid')->table($lid));
 
     expect($vereniging->members()->whereKey($lid->id)->exists())->toBeFalse();
 });

@@ -60,6 +60,20 @@ services:
       db:
         condition: service_healthy
 
+  # Browsertests (tests/Browser), alleen op verzoek; zie docs/AimTrack/tech/browsertests.md.
+  # docker compose --env-file .env -f docker/compose.dev.yml run --rm browser-tests
+  browser-tests:
+    profiles: ["browser"]
+    user: "${UID:-1000}:${GID:-1000}"
+    build:
+      context: ..
+      target: browser-tests
+    environment:
+      HOME: /tmp
+    volumes:
+      - ..:/var/www/html
+    command: ["php", "-d", "memory_limit=1G", "vendor/bin/pest", "tests/Browser"]
+
   mailpit:
     image: axllent/mailpit:latest
     restart: unless-stopped

@@ -31,6 +31,7 @@ use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section as InfoSection;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -69,8 +70,6 @@ class SessionResource extends Resource implements CopilotResourceContract
         return $schema
             ->columns(1)
             ->components([
-                static::userIdField(),
-
                 InfoSection::make('Sessie')
                     ->description('Basisgegevens van de sessie')
                     ->columns(2)
@@ -94,19 +93,11 @@ class SessionResource extends Resource implements CopilotResourceContract
             ]);
     }
 
-    public static function userIdField(): Hidden
-    {
-        return Hidden::make('user_id')
-            ->default(fn () => auth()->id())
-            ->required()
-            ->dehydrated(fn ($state) => filled($state));
-    }
-
     /**
      * Basisvelden van de sessie (zonder notities), herbruikt door de
      * Edit-form en de Range Console nieuwe-sessie wizard (stap Sessie).
      *
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     public static function sessionDetailFields(): array
     {
@@ -166,7 +157,7 @@ class SessionResource extends Resource implements CopilotResourceContract
     /**
      * Notitie-velden, herbruikt door de Edit-form en de wizard (stap Notities).
      *
-     * @return array<int, \Filament\Schemas\Components\Component>
+     * @return array<int, Component>
      */
     public static function notesFields(): array
     {
@@ -237,7 +228,7 @@ class SessionResource extends Resource implements CopilotResourceContract
                     ->label('Afwijking')
                     ->options(
                         collect(Deviation::cases())
-                            ->mapWithKeys(fn (Deviation $case) => [$case->value => ucfirst($case->value)])
+                            ->mapWithKeys(fn (Deviation $case) => [$case->value => $case->label()])
                             ->all(),
                     )
                     ->native(false),
@@ -436,7 +427,9 @@ class SessionResource extends Resource implements CopilotResourceContract
                                                 TextEntry::make('rounds_fired')->label('Patronen'),
                                                 TextEntry::make('ammo_type')->label('Munitie'),
                                                 TextEntry::make('group_quality_text')->label('Groepering'),
-                                                TextEntry::make('deviation')->label('Afwijking'),
+                                                TextEntry::make('deviation')
+                                                    ->label('Afwijking')
+                                                    ->formatStateUsing(fn (?Deviation $state): ?string => $state?->label()),
                                                 TextEntry::make('flyers_count')->label('Flyers'),
                                             ])
                                             ->columns(3),

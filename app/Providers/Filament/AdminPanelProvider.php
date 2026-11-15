@@ -5,6 +5,9 @@ namespace App\Providers\Filament;
 use App\Support\Features\AimtrackFeatureToggle;
 use EslamRedaDiv\FilamentCopilot\FilamentCopilotPlugin;
 use Filament\Actions\Action;
+use Filament\Auth\Pages\EmailVerification\EmailVerificationPrompt;
+use Filament\Auth\Pages\Register;
+use Filament\FontProviders\LocalFontProvider;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -23,13 +26,19 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
+        $registrationEnabled = (bool) config('auth.registration_enabled');
+
         return $panel
             ->default()
             ->id('admin')
             ->path('admin')
             ->login()
             ->passwordReset()
-            ->registration()
+            ->registration($registrationEnabled ? Register::class : null)
+            ->emailVerification(
+                $registrationEnabled ? EmailVerificationPrompt::class : null,
+                isRequired: $registrationEnabled,
+            )
             ->profile()
             ->brandLogo(fn (): HtmlString => new HtmlString(
                 Blade::render('<x-aimtrack.wordmark size="28" />')
@@ -41,7 +50,7 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::hex('#64f4b3'),
             ])
-            ->font('Inter')
+            ->font('Inter', provider: LocalFontProvider::class)
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->darkMode(true, isForced: true)
             ->sidebarWidth('14rem')
@@ -65,7 +74,7 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::SIDEBAR_LOGO_AFTER,
                 fn (): string => <<<'HTML'
-                    <div style="margin-top: 0.375rem; font-family: var(--at-font-mono); font-size: 0.625rem; letter-spacing: 0.12em; color: var(--at-muted);">
+                    <div style="margin-top: 0.375rem; font-family: var(--at-font-mono); font-size: var(--at-text-micro); letter-spacing: 0.12em; color: var(--at-muted);">
                         self-hosted
                     </div>
                 HTML,
@@ -113,6 +122,10 @@ class AdminPanelProvider extends PanelProvider
                 FilamentCopilotPlugin::make()
                     ->provider('anthropic')
                     ->model('claude-haiku-4-5-20251001')
+                    // De system prompt staat in config/filament-copilot.php. Met een lege
+                    // "extra" prompt voorkomen we dat het package diezelfde config-prompt
+                    // nog een tweede keer als "## Additional Instructions" toevoegt.
+                    ->systemPrompt('')
                     ->rateLimitEnabled()
                     ->memoryEnabled()
                     ->authorizeUsing(fn (): bool => app(AimtrackFeatureToggle::class)->aiEnabled()),
@@ -122,9 +135,12 @@ class AdminPanelProvider extends PanelProvider
     }
 
     /**
-     * Inject design-token CSS variables (Signal Mint dark) and webfont links
-     * into the Filament admin panel <head>. Source of truth lives at
-     * resources/css/aimtrack-tokens.css and the design handoff under
+     * Inject design-token CSS variables (Signal Mint dark) and the self-hosted
+     * webfont stylesheet into the Filament admin panel <head>. The panel font
+     * uses LocalFontProvider without a URL, so Filament emits no font link of
+     * its own (no Bunny Fonts, #128) and relies on the @font-face from here.
+     * Source of truth lives at resources/css/aimtrack-tokens.css and the
+     * design handoff under
      * .ai/design-handoff/project/design-tokens.jsx.
      */
     private function aimTrackDesignAssets(): string

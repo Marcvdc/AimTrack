@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources\WeaponResource\Pages;
 
+use App\Filament\Concerns\AssignsOwnerOnCreate;
 use App\Filament\Resources\WeaponResource;
 use App\Services\WeaponStarterTemplateService;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateWeapon extends CreateRecord
 {
+    use AssignsOwnerOnCreate;
+
     protected static string $resource = WeaponResource::class;
 
     public function mount(): void

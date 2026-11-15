@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\HasSeedDemoDataAction;
+use App\Models\TrainingGoal;
 use App\Models\User;
 use App\Services\RangeConsoleSummaryService;
 use App\Services\TrainingGoalService;
@@ -59,7 +60,7 @@ class Dashboard extends BaseDashboard
     }
 
     /**
-     * @return Collection<int, \App\Models\TrainingGoal>
+     * @return Collection<int, TrainingGoal>
      */
     public function getTrainingGoals(): Collection
     {

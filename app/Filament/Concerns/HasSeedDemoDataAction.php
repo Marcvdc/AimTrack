@@ -41,7 +41,7 @@ trait HasSeedDemoDataAction
             ))
             ->modalSubmitActionLabel('Ja, laad demo-data')
             ->extraAttributes([
-                'style' => 'padding: 10px 18px; border-radius: 8px; border: 1px solid var(--at-line); background: transparent; color: var(--at-text); font-size: 13px;',
+                'style' => 'padding: 10px 18px; border-radius: 8px; border: 1px solid var(--at-line); background: transparent; color: var(--at-text); font-size: var(--at-text-body);',
                 'data-testid' => 'seed-demo-data-trigger',
             ])
             ->action(function (): void {

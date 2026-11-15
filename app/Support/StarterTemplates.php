@@ -7,12 +7,14 @@ namespace App\Support;
 use App\Enums\WeaponType;
 
 /**
- * Starter-sjablonen voor de "geen wapens"-empty-state. Drie veelvoorkomende
+ * Starter-sjablonen voor de "geen wapens"-empty-state. Vier veelvoorkomende
  * wapenconfiguraties die nieuwe gebruikers in één klik kunnen aanmaken.
  *
- * Beslissing PLAN-fase-2 (punt 5): alle drie mappen op WeaponType::PISTOL —
- * AimTrack is een schietvereniging-app, geen luchtsport-app. Onderscheid
- * zit puur in caliber + label.
+ * Luchtdruk heeft sinds issue #145 een eigen WeaponType. De eerdere beslissing
+ * om luchtpistool op WeaponType::PISTOL te mappen is daarmee vervallen: de
+ * jeugd- en opleidingslijn draait volledig op luchtdruk, dus het type-filter,
+ * de groepering per wapentype en de disciplinevoortgang moeten die schutters
+ * apart kunnen tonen.
  */
 final class StarterTemplates
 {
@@ -26,8 +28,15 @@ final class StarterTemplates
                 'key' => 'luchtpistool',
                 'label' => 'Luchtpistool',
                 'caliber' => '4.5 mm',
-                'weapon_type' => WeaponType::PISTOL,
+                'weapon_type' => WeaponType::AIR_PISTOL,
                 'popular' => true,
+            ],
+            [
+                'key' => 'luchtgeweer',
+                'label' => 'Luchtgeweer',
+                'caliber' => '4.5 mm',
+                'weapon_type' => WeaponType::AIR_RIFLE,
+                'popular' => false,
             ],
             [
                 'key' => 'pistool-9mm',
