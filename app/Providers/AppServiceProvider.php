@@ -46,9 +46,7 @@ class AppServiceProvider extends ServiceProvider
                 'exception' => $event->exception->getMessage(),
             ]);
 
-            if (app()->bound('sentry')) {
-                app('sentry')->captureException($event->exception);
-            }
+            report($event->exception);
         });
     }
 }

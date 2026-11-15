@@ -130,8 +130,6 @@ Toegangs-URL's:
 
 Project name: ${PROJECT_NAME}
 
-Vergeet niet de registry in .ai/guidelines/parallel-worktrees.md bij te werken.
-
 Cleanup later:
   cd $WORKTREE_PATH && docker compose --env-file .env -f docker/compose.dev.yml down -v
   cd $REPO_ROOT && git worktree remove $WORKTREE_PATH

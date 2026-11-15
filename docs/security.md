@@ -1,10 +1,14 @@
 # Security
 
+Laatst bijgewerkt: 2026-11-14
+
 Beveiligingsrichtlijnen voor AimTrack.
 
 ## Threat model
-- Single-tenant app: risico’s vooral rond ongeautoriseerde toegang tot de host of database.
-- Gevoelige data: schietsessies, wapeninformatie, AI-output. Geen multi-user delen.
+- Eén applicatie en één database voor alle gebruikers, met een verenigingslaag erbovenop. Risico's: ongeautoriseerde toegang tot de host of database, en een gebruiker die bij data van een ander komt.
+- Gevoelige data: schietsessies, wapeninformatie, AI-output en de Claude API-keys van gebruikers en verenigingen (versleuteld opgeslagen).
+- Delen binnen een vereniging: een coach of beheerder van de actieve vereniging kan de sessies van de leden van die vereniging lezen, niet wijzigen (`SessionPolicy::view`, `User::isCoachVan`, `CoachSessieResource`). `WeaponPolicy::view` geeft via dezelfde `isCoachVan` ook leesrecht op de wapens van leden. Verder ziet een verenigingsbeheerder in "Mijn vereniging" de namen en e-mailadressen van alle leden (`VerenigingBeheer`). Dit zijn de plekken waar data van de ene gebruiker voor een andere zichtbaar is. Een fout in rol, lidmaatschap of actieve vereniging geeft dus inzage in andermans sessies; houd dat in het oog bij wijzigingen aan `VerenigingService` en de policies.
+- Wie `users.is_admin` heeft, ziet het gebruikersbeheer en de mislukte jobs.
 
 ## Basismaatregelen
 - **Auth**: gebruik standaard Laravel-auth met sterke wachtwoorden en HTTPS.
@@ -16,12 +20,12 @@ Beveiligingsrichtlijnen voor AimTrack.
 - **Rate limiting**: gebruik Laravel throttle middleware voor login/APIs indien blootgesteld.
 
 ## Data & opslag
-- Alle queries filteren op `user_id`. Gebruik policies/scopes in Filament resources.
+- Sessies en wapens filteren op `user_id` van de ingelogde gebruiker, met `SessionPolicy` en `WeaponPolicy`. De uitzondering is de coach-inzage hierboven.
 - Bestanden via Laravel storage; configureer private disks of presigned URLs voor downloads indien publiek internet.
 - Backups versleutelen waar mogelijk; beperk toegang tot storage bucket.
 
 ## AI-specifiek
-- Provider keuze via config; vermijd het delen van meer data dan nodig.
+- De provider is Anthropic. De key is per gebruiker (en optioneel per vereniging) en staat versleuteld in de database, niet in `.env`; vermijd het delen van meer data dan nodig.
 - Prompts bevatten veiligheidsdisclaimers; geen wapen- of veiligheidsadvies dat wetgeving schendt.
 - AI-jobs loggen status en fouten; bewaak rate limits en timeouts.
 
@@ -30,7 +34,7 @@ Beveiligingsrichtlijnen voor AimTrack.
 - Base images patchen en rebuilden; controleer PHP/Laravel security advisories.
 
 ## Logging & auditing
-- Gebruik Sentry/stack driver; log 5xx, failed jobs, en AI-fouten.
+- Logging loopt via de stack (`LOG_STACK`, met het kanaal `sentry`); mislukte queue-jobs gaan via de `Queue::failing`-hook naar het log en naar Sentry. Log failed jobs en AI-fouten.
 - Zorg dat logs geen secrets bevatten (mask keys). Bewaar retentie volgens beleid.
 
 ## Vulnerability disclosure

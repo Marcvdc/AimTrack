@@ -1,5 +1,7 @@
 # QA Smoke Plan – AimTrack
 
+Laatst bijgewerkt: 2026-11-14
+
 ## Doel
 Bevestigen dat de basisflows van AimTrack werken: gebruikers aanmaken, wapens registreren, sessies loggen (met bijlagen), AI-acties triggeren en exports genereren. We toetsen alleen MVP-flows zoals beschreven in docs/PLAN.md.
 
@@ -37,8 +39,8 @@ Bevestigen dat de basisflows van AimTrack werken: gebruikers aanmaken, wapens re
    - Controleer foutafhandeling bij mislukte AI-call (melding, status failed zonder crash).
 
 5. **AI-coach page**
-   - Free-form vraag met optioneel wapen + periode; check antwoord + disclaimer.
-   - Historie van vragen zichtbaar.
+   - Vraag stellen in de Copilot-chat op de AI-coach-pagina (met een Claude-key onder AI-instellingen); check antwoord + disclaimer.
+   - Het gesprek staat daarna bij de recente gesprekken.
 
 6. **Export**
    - Export page: selecteer periode + meerdere wapens, genereer CSV + PDF.

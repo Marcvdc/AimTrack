@@ -21,7 +21,7 @@
             background: var(--at-bg);
             color: var(--at-text);
             font-family: var(--at-font-body);
-            font-size: 15px;
+            font-size: var(--at-text-body);
             line-height: 1.6;
         }
 
@@ -39,7 +39,7 @@
             gap: var(--at-space-2);
             color: var(--at-muted);
             text-decoration: none;
-            font-size: 13px;
+            font-size: var(--at-text-body);
         }
 
         .mkc-back:hover { color: var(--at-accent); }
@@ -97,7 +97,7 @@
             border-radius: var(--at-r-md);
             color: var(--at-text);
             font-family: var(--at-font-body);
-            font-size: 15px;
+            font-size: var(--at-text-body);
             padding: var(--at-space-3);
         }
 
@@ -118,7 +118,7 @@
             color: var(--at-text);
             padding: var(--at-space-3);
             margin: 0;
-            font-size: 14px;
+            font-size: var(--at-text-body);
         }
 
         .mkc-btn {
@@ -129,7 +129,7 @@
             border-radius: var(--at-r-pill);
             font-family: var(--at-font-display);
             font-weight: 600;
-            font-size: 15px;
+            font-size: var(--at-text-body);
             padding: var(--at-space-3) var(--at-space-5);
             min-height: 44px;
             cursor: pointer;
@@ -146,7 +146,7 @@
             padding: var(--at-space-2) var(--at-space-4);
             cursor: pointer;
             font-family: var(--at-font-display);
-            font-size: 14px;
+            font-size: var(--at-text-body);
             margin-top: var(--at-space-3);
         }
 
@@ -171,7 +171,7 @@
             padding: var(--at-space-5) var(--at-space-6);
             border-top: 1px solid var(--at-line);
             color: var(--at-muted);
-            font-size: 13px;
+            font-size: var(--at-text-body);
             text-align: center;
         }
     </style>
