@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\Deviation;
 use App\Models\AiReflection;
 use App\Models\Session;
 use App\Models\SessionShot;
@@ -169,7 +170,7 @@ test('the shot pattern follows the storyline of the reflection text', function (
 
     // Sessie 2 (6 dagen terug) is de Glock-snelvuursessie met de left-pull.
     $glockSession = $sessions->firstWhere(fn (Session $s): bool => $s->sessionWeapons
-        ->contains(fn ($line): bool => $line->weapon?->name === 'Glock 17' && $line->deviation === App\Enums\Deviation::LEFT));
+        ->contains(fn ($line): bool => $line->weapon?->name === 'Glock 17' && $line->deviation === Deviation::LEFT));
 
     expect($glockSession)->not->toBeNull()
         ->and((new SessionStatsService($glockSession))->meanXmm())->toBeLessThan(0.0);

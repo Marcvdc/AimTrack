@@ -48,6 +48,9 @@ final class DateFormat
     /** Maand-granulariteit, uitsluitend voor trendassen op maandbuckets. */
     public const MONTH = 'M Y';
 
+    /** Dag en maand zonder jaar, uitsluitend voor smalle kolommen (de recente sessies op de landingspagina). */
+    public const DAY_MONTH = 'd-m';
+
     /** ISO 8601, uitsluitend voor machine-leesbare output (CSV, AI-payloads). */
     public const MACHINE_DATE = 'Y-m-d';
 
@@ -69,6 +72,11 @@ final class DateFormat
     public static function time(?DateTimeInterface $value): ?string
     {
         return self::inDisplayTimezone($value)?->format(self::TIME);
+    }
+
+    public static function dayMonth(?DateTimeInterface $value): ?string
+    {
+        return $value?->format(self::DAY_MONTH);
     }
 
     public static function month(?DateTimeInterface $value): ?string

@@ -5,6 +5,7 @@ namespace App\Support\Landing;
 use App\Models\AiReflection;
 use App\Models\Session;
 use App\Models\SessionWeapon;
+use App\Support\DateFormat;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Collection;
 
@@ -88,7 +89,7 @@ class LandingPageData
                 ->limit($limit)
                 ->get()
                 ->map(fn (Session $session): array => [
-                    'date' => $session->date?->format('d-m'),
+                    'date' => DateFormat::dayMonth($session->date),
                     'range' => $session->range_name ?: ($session->location ?: '—'),
                     'rounds' => (int) $session->rounds_total,
                 ])

@@ -106,6 +106,7 @@ De datumnotatie ligt vast in `App\Support\DateFormat`:
 | `DATE_TIME_SECONDS` | `d-m-Y H:i:s` | Alleen voor Filament-datumkiezers met seconden. |
 | `TIME_SECONDS` | `H:i:s` | Alleen voor Filament-tijdkiezers met seconden. |
 | `MONTH` | `M Y` | Uitzondering: trendassen die op maandbuckets draaien. |
+| `DAY_MONTH` | `d-m` | Uitzondering: smalle kolom met recente sessies op de landingspagina. |
 | `MACHINE_DATE` | `Y-m-d` | Uitzondering: CSV-export en AI-tool-payloads. |
 
 `AppServiceProvider` zet deze notaties ook als Filament-default, en daar zijn drie aanroepen voor

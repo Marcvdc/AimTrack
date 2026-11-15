@@ -23,13 +23,17 @@ test('month rendert maand-granulariteit voor trendassen, in het Nederlands', fun
     expect(DateFormat::month(Carbon::parse('2026-08-01')))->toBe('aug. 2026');
 });
 
+test('dayMonth rendert dag en maand voor smalle kolommen', function (): void {
+    expect(DateFormat::dayMonth(Carbon::parse('2026-08-09')))->toBe('09-08');
+});
+
 test('machineDate blijft ISO 8601 voor CSV en AI-payloads', function (): void {
     expect(DateFormat::machineDate(Carbon::parse('2026-08-09')))->toBe('2026-08-09');
 });
 
 test('elke helper is null-veilig', function (string $method): void {
     expect(DateFormat::{$method}(null))->toBeNull();
-})->with(['date', 'dateTime', 'time', 'month', 'machineDate']);
+})->with(['date', 'dateTime', 'time', 'month', 'dayMonth', 'machineDate']);
 
 test('dateTime verschuift de dag mee bij een tijdstip vlak voor middernacht UTC', function (): void {
     // 31 december 23:30 UTC is in Amsterdam al 1 januari 00:30 (wintertijd, +1).
