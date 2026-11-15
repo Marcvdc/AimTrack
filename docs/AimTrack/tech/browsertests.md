@@ -18,6 +18,14 @@ De browsertests staan niet in de testsuites van `phpunit.xml`. `php artisan test
 `vendor/bin/pest` slaan ze dus over; ze draaien alleen met het pad `tests/Browser` erbij. Zo blijft
 de gewone suite draaien in de dev-container, waar geen Node of browser in zit.
 
+De dev-image heeft sinds #144 de PHP-extensie `sockets` (stage `dev` in de `Dockerfile`), omdat
+`composer install` de plugin anders weigert. Een dev-image van vóór die wijziging moet dus opnieuw
+gebouwd worden, anders faalt `php artisan test` op `socket_create_listen()`:
+
+```bash
+docker compose --env-file .env -f docker/compose.dev.yml build app queue
+```
+
 ## Lokaal draaien
 
 De dev-image heeft geen Node en geen browser. Daarvoor is er de Docker-stage `browser-tests`

@@ -98,7 +98,7 @@
                 </div>
                 <p style="font-size: 11px; color: var(--at-muted); font-family: var(--at-font-mono); letter-spacing: 0.04em;">
                     @if ($canEdit)
-                        TIK = SCHOT · RECHTSKLIK OP EEN MARKER OF DE TABEL = VERWIJDEREN
+                        TIK = SCHOT · RECHTSKLIK OP EEN MARKER = VERWIJDEREN · OF VIA DE TABEL
                     @else
                         ALLEEN-LEZEN WEERGAVE
                     @endif
