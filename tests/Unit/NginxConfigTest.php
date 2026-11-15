@@ -92,12 +92,27 @@ it('rolt de CSP alleen als report-only uit, met een startpolicy die Filament en 
 
     expect($headers['content-security-policy-report-only'] ?? '')
         ->toContain("img-src 'self' data: blob: https://ui-avatars.com")
-        ->toContain("style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net")
-        ->toContain("font-src 'self' data: https://fonts.gstatic.com https://fonts.bunny.net")
+        ->toContain("style-src 'self' 'unsafe-inline';")
+        ->toContain("font-src 'self' data:;")
         ->toContain("script-src 'self' 'unsafe-inline' 'unsafe-eval'")
         ->toContain("connect-src 'self'")
         ->toContain("frame-ancestors 'none'")
         ->not->toContain('report-uri');
+});
+
+it('staat in de CSP geen externe font-host meer toe', function (string $host) {
+    expect(nginxAddHeaders()['server']['content-security-policy-report-only'] ?? '')
+        ->not->toContain($host);
+})->with([
+    'google css' => 'fonts.googleapis.com',
+    'google bestanden' => 'fonts.gstatic.com',
+    'bunny' => 'fonts.bunny.net',
+]);
+
+it('laat de statische-assets-location de zelf gehoste fonts met lange cache serveren', function () {
+    $config = (string) file_get_contents(base_path('docker/nginx/default.conf'));
+
+    expect($config)->toMatch('/location ~\*\s+\\\.\([^)]*\bwoff2\b[^)]*\bcss\b[^)]*\)\$\s*\{[^}]*expires\s+30d;/s');
 });
 
 it('laat geen location- of if-blok een eigen add_header zetten', function () {
