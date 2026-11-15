@@ -7,6 +7,7 @@ namespace App\Filament\Copilot\Tools;
 use App\Models\SessionWeapon;
 use App\Models\User;
 use App\Models\Weapon;
+use App\Support\DateFormat;
 use EslamRedaDiv\FilamentCopilot\Tools\BaseTool;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Str;
@@ -55,7 +56,7 @@ class WeaponLookupTool extends BaseTool
             ->get()
             ->map(fn (SessionWeapon $entry) => sprintf(
                 '  - %s | %sm | %s schoten | afwijking: %s | %s',
-                $entry->session?->date?->format('Y-m-d') ?? 'onbekend',
+                DateFormat::machineDate($entry->session?->date) ?? 'onbekend',
                 $entry->distance_m ?? '-',
                 $entry->rounds_fired ?? '-',
                 $entry->deviation?->value ?? '-',

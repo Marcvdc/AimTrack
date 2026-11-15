@@ -17,7 +17,7 @@
         : null;
     $chosenDistance = $firstRow['distance_m'] ?? null;
 
-    $sessionDate = ! empty($wizardData['date']) ? \Illuminate\Support\Carbon::parse($wizardData['date'])->translatedFormat('d M Y') : null;
+    $sessionDate = ! empty($wizardData['date']) ? \App\Support\DateFormat::date(\Illuminate\Support\Carbon::parse($wizardData['date'])) : null;
     $sessionRange = $wizardData['range_name'] ?? ($wizardData['location'] ?? null);
 @endphp
 

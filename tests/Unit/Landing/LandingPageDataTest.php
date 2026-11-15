@@ -33,6 +33,14 @@ test('stats aggregates sessions, rounds fired and reflections instance-wide', fu
         ->and($stats['ai_reflections'])->toBe(1);
 });
 
+test('recentSessions toont de datum als dag-maand via DateFormat', function (): void {
+    Cache::flush();
+
+    Session::factory()->create(['date' => '2026-08-09']);
+
+    expect(app(LandingPageData::class)->recentSessions()[0]['date'])->toBe('09-08');
+});
+
 test('stats are cached under the landing.stats key until flushed', function (): void {
     Cache::flush();
     $data = app(LandingPageData::class);
