@@ -81,9 +81,28 @@ FROM base AS dev
 # Alleen in dev: de testsuite heeft meer dan de 128M van php.ini-production nodig
 # (#167). Production erft van base en houdt die standaard.
 COPY docker/php/dev-memory.ini $PHP_INI_DIR/conf.d/zz-dev-memory.ini
+# pestphp/pest-plugin-browser (require-dev) eist ext-sockets, anders weigert
+# composer install. Alleen hier, niet in de basis- of productie-image.
+RUN docker-php-ext-install -j"$(nproc)" sockets
 COPY composer.json composer.lock* ./
 RUN composer install --prefer-dist --no-progress --no-scripts
 COPY . .
+
+# Browsertests (tests/Browser) met pest-plugin-browser: de dev-image plus Node en
+# Chromium met de systeembibliotheken die Playwright nodig heeft. De browserversie
+# volgt playwright uit package-lock.json, zodat die past bij node_modules in de
+# gemounte werkmap. Zie docs/AimTrack/tech/browsertests.md.
+FROM dev AS browser-tests
+COPY --from=node:24-bookworm /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:24-bookworm /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+# pcntl: de plugin stopt de Playwright-server met SIGTERM.
+RUN docker-php-ext-install -j"$(nproc)" pcntl
+RUN npx --yes "playwright@$(node -p "require('./package-lock.json').packages['node_modules/playwright'].version")" install --with-deps chromium \
+    && chmod -R a+rX /ms-playwright \
+    && rm -rf /var/lib/apt/lists/* /root/.npm
 
 FROM base AS production
 ENV APP_ENV=production \

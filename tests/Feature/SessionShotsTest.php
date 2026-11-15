@@ -172,3 +172,17 @@ test('cannot delete shots when not editable', function () {
     // Shot should still exist
     $this->assertDatabaseHas('session_shots', ['id' => $shot->id]);
 });
+
+test('de server slaat schoten die dicht bij elkaar liggen allemaal op', function () {
+    $user = User::factory()->create();
+    $session = Session::factory()->create(['user_id' => $user->id]);
+
+    Livewire::actingAs($user)
+        ->test(SessionShotBoard::class, ['session' => $session])
+        ->call('recordShot', 0.500, 0.500)
+        ->call('recordShot', 0.512, 0.505)
+        ->call('recordShot', 0.508, 0.495)
+        ->assertSet('pendingDeleteShotId', null);
+
+    expect($session->shots()->count())->toBe(3);
+});

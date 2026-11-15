@@ -49,3 +49,6 @@ public/vendor/
 # IDE files
 .vscode/
 .idea/
+
+# Pest browsertests
+/tests/Browser/Screenshots

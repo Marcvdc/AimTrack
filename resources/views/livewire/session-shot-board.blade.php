@@ -1,17 +1,5 @@
-<div class="mt-6 space-y-6" x-data="{
-        deleteConfirmationMessage: '',
-        pendingDeleteShotId: null,
-        ...targetBoard({
-            recordShot: (x, y) => $wire.recordShot(x, y),
-            canEdit: @js($canEdit),
-            rawMarkers: @entangle('markers').live,
-            turns: @entangle('turnOptions').live,
-            currentTurn: @entangle('currentTurnIndex').live,
-            turnLegend: @entangle('turnLegend').live,
-            showRings: @entangle('showRings').live,
-            allTurnsValue: @js(\App\Livewire\SessionShotBoard::ALL_TURNS_VALUE),
-        })
-    }">
+<div class="mt-6 space-y-6" x-data="{ deleteConfirmationMessage: '' }"
+    x-on:shot-delete-requested="deleteConfirmationMessage = $event.detail.message">
     @php
         $legendEntries = collect($turnLegend ?? [])->map(fn ($entry) => [
             'label' => $entry['label'] ?? 'Beurt',
@@ -92,9 +80,8 @@
                 allTurnsValue: @js(\App\Livewire\SessionShotBoard::ALL_TURNS_VALUE),
             })"
             class="w-full flex flex-col lg:flex-row gap-6"
-            x-on:keydown.escape.window="closeContextMenu()"
         >
-            <!-- Interactieve Roos — canvas-techniek ongewijzigd (klik=schot, long-press/rechtsklik=verwijderen) -->
+            <!-- Interactieve Roos: tik=schot, rechtsklik=verwijderen -->
             <div class="w-full max-w-xl space-y-3">
                 <div
                     class="relative w-full aspect-square overflow-hidden"
@@ -102,14 +89,16 @@
                     x-ref="board"
                     wire:ignore
                 >
-                    <canvas x-ref="canvas" class="absolute inset-0 w-full h-full" style="cursor: crosshair;"
-                    @click="handleCanvasClick($event)"
+                    <canvas x-ref="canvas" class="absolute inset-0 w-full h-full" style="cursor: crosshair; touch-action: manipulation;"
+                    @pointerdown="handlePointerDown($event)"
+                    @pointerup="handlePointerUp($event)"
+                    @pointercancel="cancelPointer()"
                     @contextmenu.prevent="handleCanvasRightClick($event)"
                 ></canvas>
                 </div>
                 <p style="font-size: 11px; color: var(--at-muted); font-family: var(--at-font-mono); letter-spacing: 0.04em;">
                     @if ($canEdit)
-                        KLIK = SCHOT · LANG INDRUKKEN OF RECHTSKLIK OP EEN MARKER = VERWIJDEREN
+                        TIK = SCHOT · RECHTSKLIK OP EEN MARKER = VERWIJDEREN · OF VIA DE TABEL
                     @else
                         ALLEEN-LEZEN WEERGAVE
                     @endif
@@ -133,8 +122,6 @@
 @pushOnce('scripts')
 <script>
     (() => {
-        console.log('[SessionShotBoard] script bootstrap starting');
-
         document.addEventListener('livewire:init', () => {
             const componentName = 'session-shot-board';
             Livewire.hook('message.sent', (message, component) => {
@@ -157,10 +144,11 @@
         });
 
         const TARGET_RADIUS_RATIO = 0.46;
+        // Een aanraking die verder dan dit (in pixels) beweegt tussen neerzetten en
+        // loslaten is een veeg of scroll, geen tik, en registreert geen schot.
+        const TAP_MAX_MOVEMENT = 10;
 
         const registerTargetBoard = () => {
-            console.log('[SessionShotBoard] registerTargetBoard executed');
-
             window.targetBoard = ({ recordShot, canEdit, rawMarkers, turns, currentTurn, turnLegend, showRings, allTurnsValue }) => ({
                 rawMarkers,
                 renderMarkers: [],
@@ -171,33 +159,15 @@
                 allTurnsValue: allTurnsValue ?? -1,
                 showRings: showRings ?? false,
                 canEdit,
-                longPressTimeout: null,
-                longPressTarget: null,
-                longPressTriggered: false,
-                longPressDelay: 2000,
-                contextMenu: {
-                    open: false,
-                    x: 0,
-                    y: 0,
-                    marker: null,
-                },
+                pointerStart: null,
                 init() {
-                    console.log('[SessionShotBoard] targetBoard init', {
-                        markersCount: this.renderMarkers?.length ?? 0,
-                        canEdit: this.canEdit,
-                        turns: this.turns,
-                        currentTurn: this.currentTurn,
-                    });
-
                     this.scheduleDraw();
                     this.onMarkersUpdated(this.rawMarkers);
                     this.$watch('rawMarkers', this.onMarkersUpdated.bind(this));
                     this.$watch('turns', (value) => {
-                        console.log('[SessionShotBoard] turns updated', value);
                         this.turns = Array.isArray(value) ? [...value] : [];
                     });
                     this.$watch('turnLegend', (value) => {
-                        console.log('[SessionShotBoard] turnLegend updated', value);
                         this.turnLegend = Array.isArray(value) ? [...value] : [];
                     });
                     this.$watch('showRings', (value) => {
@@ -205,23 +175,12 @@
                         this.scheduleDraw();
                     });
                     this.$watch('currentTurn', (value) => {
-                        const normalizedValue = this.normalizeTurnValue(value);
-                        console.log('[SessionShotBoard] currentTurn updated', {
-                            raw: value,
-                            normalized: normalizedValue,
-                        });
-
-                        this.currentTurn = normalizedValue;
+                        this.currentTurn = this.normalizeTurnValue(value);
                         this.updateCurrentMarkers();
                         this.scheduleDraw();
                     });
                     this.$watch('$wire.currentTurnIndex', (value) => {
                         const normalizedValue = this.normalizeTurnValue(value);
-
-                        console.log('[SessionShotBoard] $wire.currentTurnIndex updated', {
-                            raw: value,
-                            normalized: normalizedValue,
-                        });
 
                         if (this.currentTurn === normalizedValue) {
                             return;
@@ -238,16 +197,6 @@
                     const numericValue = Number(value ?? 0);
 
                     return Number.isNaN(numericValue) ? 0 : numericValue;
-                },
-                mapToBackend(value) {
-                    const offset = value - 0.5;
-                    const scale = 0.5 / TARGET_RADIUS_RATIO;
-                    return Math.min(Math.max(0.5 + offset * scale, 0), 1);
-                },
-                mapToBoard(value) {
-                    const offset = value - 0.5;
-                    const scale = TARGET_RADIUS_RATIO / 0.5;
-                    return 0.5 + offset * scale;
                 },
                 scheduleDraw() {
                     requestAnimationFrame(() => this.drawTarget());
@@ -338,16 +287,18 @@
 
                     this.drawMarkers(ctx, size);
                 },
+                markerRadius(size) {
+                    return Math.max(4, size * 0.012);
+                },
                 drawMarkers(ctx, size) {
                     if (! Array.isArray(this.currentMarkers) || this.currentMarkers.length === 0) {
                         return;
                     }
 
                     this.currentMarkers.forEach((marker) => {
-                        // Use raw normalized coordinates directly (0-1 range) for canvas positioning
                         const x = (marker.x ?? 0.5) * size;
                         const y = (marker.y ?? 0.5) * size;
-                        const radius = Math.max(4, size * 0.012);
+                        const radius = this.markerRadius(size);
 
                         ctx.save();
                         ctx.beginPath();
@@ -357,271 +308,121 @@
                         ctx.lineWidth = Math.max(2, size * 0.004);
                         ctx.strokeStyle = 'rgba(255,255,255,0.9)';
                         ctx.stroke();
-                        ctx.shadowColor = (marker.color ?? 'rgba(15,23,42,0.4)').replace('1)', '0.4)');
-                        ctx.shadowBlur = radius;
                         ctx.restore();
                     });
                 },
                 onMarkersUpdated(value) {
-                    console.log('[SessionShotBoard] markers updated', {
-                        count: value?.length ?? 0,
-                        sample: value?.slice?.(0, 3) ?? value,
-                    });
-
                     if (! Array.isArray(value)) {
                         return;
                     }
 
-                    this.renderMarkers = value.map((marker, index) => this.normalizeMarker(marker, index));
+                    this.renderMarkers = value.map((marker) => marker ?? null).filter(Boolean);
                     this.updateCurrentMarkers();
                     this.scheduleDraw();
                 },
                 updateCurrentMarkers() {
-                    const numericTurn = Number(this.currentTurn ?? 0);
-                    const currentTurn = Number.isNaN(numericTurn) ? 0 : numericTurn;
+                    const currentTurn = this.normalizeTurnValue(this.currentTurn);
 
-                    const markersForTurn = this.renderMarkers
-                        .filter(Boolean)
-                        .filter((marker) => {
-                            if (currentTurn === this.allTurnsValue) {
-                                return true;
-                            }
+                    this.currentMarkers = this.renderMarkers.filter((marker) => {
+                        if (currentTurn === this.allTurnsValue) {
+                            return true;
+                        }
 
-                            const markerTurn = Number(marker.turn_index ?? marker.turnIndex ?? marker.turn ?? null);
-                            return ! Number.isNaN(markerTurn) && markerTurn === currentTurn;
-                        });
+                        const markerTurn = Number(marker.turn_index ?? marker.turnIndex ?? marker.turn ?? null);
 
-                    console.log('[SessionShotBoard] updateCurrentMarkers', {
-                        currentTurn,
-                        totalMarkers: this.renderMarkers.length,
-                        markersForTurn: markersForTurn.length,
-                        sample: markersForTurn.slice(0, 3),
+                        return ! Number.isNaN(markerTurn) && markerTurn === currentTurn;
                     });
-
-                    this.currentMarkers = markersForTurn;
                 },
-                handleCanvasRightClick(event) {
-                    // Check if right-click is on a marker
-                    const clickedMarker = this.getMarkerAtPosition(event);
-                    
-                    if (clickedMarker) {
-                        // Set confirmation data and open modal
-                        this.$root.deleteConfirmationMessage = `Schot uit ${clickedMarker.turn_label || 'deze beurt'} verwijderen?`;
-                        this.$wire.set('pendingDeleteShotId', clickedMarker.id);
-                        this.$dispatch('open-modal', { id: 'delete-shot-modal' });
-                    }
-                },
-                handleCanvasClick(event) {
-                    // Check if click is on a marker
-                    const clickedMarker = this.getMarkerAtPosition(event);
-                    
-                    if (clickedMarker) {
-                        // Start long press for marker deletion
-                        this.startLongPress(clickedMarker);
-                        return;
-                    }
-                    
-                    // Otherwise, handle as normal shot registration
-                    this.handleClick(event);
-                },
+                /*
+                 * Het dichtstbijzijnde schot onder de aanwijzer, voor verwijderen via
+                 * rechtsklik. De trefzone is de getekende markerstraal plus een kleine
+                 * marge en schaalt mee met het bord. Een tik plaatst altijd een schot en
+                 * gebruikt dit dus niet.
+                 */
                 getMarkerAtPosition(event) {
-                    if (! Array.isArray(this.currentMarkers) || this.currentMarkers.length === 0) {
-                        return null;
-                    }
-
-                    const canvas = this.$refs.canvas;
-                    const rect = canvas.getBoundingClientRect();
+                    const rect = this.$refs.canvas.getBoundingClientRect();
                     const x = event.clientX - rect.left;
                     const y = event.clientY - rect.top;
-                    
-                    // Check each marker to see if click is within bounds
+                    const hitRadius = this.markerRadius(rect.width) + 4;
+                    let nearest = null;
+                    let nearestDistance = Infinity;
+
                     for (const marker of this.currentMarkers) {
-                        // Use raw normalized coordinates for marker position
-                        const markerX = (marker.x ?? 0.5) * rect.width;
-                        const markerY = (marker.y ?? 0.5) * rect.height;
-                        const markerRadius = 15; // Click radius for markers
-                        
-                        const distance = Math.sqrt(
-                            Math.pow(x - markerX, 2) + Math.pow(y - markerY, 2)
+                        const distance = Math.hypot(
+                            x - (marker.x ?? 0.5) * rect.width,
+                            y - (marker.y ?? 0.5) * rect.height,
                         );
-                        
-                        if (distance <= markerRadius) {
-                            return marker;
+
+                        if (distance <= hitRadius && distance < nearestDistance) {
+                            nearest = marker;
+                            nearestDistance = distance;
                         }
                     }
-                    
-                    return null;
-                },
-                handleClick(event) {
-                    console.log('[SessionShotBoard] handleClick', {
-                        canEdit: this.canEdit,
-                        eventType: event.type,
-                    });
 
-                    if (! this.canEdit) {
-                        console.log('[SessionShotBoard] click ignored because canEdit=false');
+                    return nearest;
+                },
+                handleCanvasRightClick(event) {
+                    this.pointerStart = null;
+
+                    const isMouseRightButton = (event.pointerType ?? 'mouse') === 'mouse' && event.button === 2;
+
+                    if (! this.canEdit || ! isMouseRightButton) {
                         return;
                     }
 
-                    const rect = this.$refs.board.getBoundingClientRect();
-                    const x = (event.clientX - rect.left) / rect.width;
-                    const y = (event.clientY - rect.top) / rect.height;
-                    const xNormalized = Math.min(Math.max(x, 0), 1);
-                    const yNormalized = Math.min(Math.max(y, 0), 1);
+                    const marker = this.getMarkerAtPosition(event);
 
-                    console.log('[SessionShotBoard] normalized coordinates', {
-                        xNormalized,
-                        yNormalized,
-                    });
-
-                    // Send raw normalized coordinates directly to backend
-                    recordShot(xNormalized, yNormalized);
-
-                    console.log('[SessionShotBoard] recordShot dispatched');
-                },
-                normalizeMarker(marker, index) {
                     if (! marker) {
-                        return null;
+                        return;
                     }
 
-                    const normalizeCoordinate = (value) => {
-                        if (typeof value !== 'number' || Number.isNaN(value)) {
-                            return 0.5;
-                        }
+                    this.$dispatch('shot-delete-requested', {
+                        message: `Schot uit ${marker.turn_label || 'deze beurt'} verwijderen?`,
+                    });
+                    this.$wire.set('pendingDeleteShotId', marker.id);
+                    this.$dispatch('open-modal', { id: 'delete-shot-modal' });
+                },
+                handlePointerDown(event) {
+                    if (event.button !== 0 && event.pointerType === 'mouse') {
+                        this.pointerStart = null;
 
-                        return value > 1 ? value / 100 : value;
+                        return;
+                    }
+
+                    this.pointerStart = {
+                        id: event.pointerId,
+                        x: event.clientX,
+                        y: event.clientY,
                     };
-
-                    // Backend coordinates are already normalized (0-1 range), convert directly to percentages
-                    const boardX = normalizeCoordinate(marker.x ?? marker.left ?? 0.5) * 100;
-                    const boardY = normalizeCoordinate(marker.y ?? marker.top ?? 0.5) * 100;
-
-                    return {
-                        ...marker,
-                        left: boardX,
-                        top: boardY,
-                        idx: `${marker.id}-${index}-${boardX}-${boardY}`,
-                    };
                 },
-                markerStyle(marker) {
-                    const size = 26;
-                    const color = marker.color ?? '#3b82f6';
+                handlePointerUp(event) {
+                    const start = this.pointerStart;
 
-                    return `left: ${marker.left}%; top: ${marker.top}%; width: ${size}px; height: ${size}px; background-color: ${color}; border-color: ${color};`;
-                },
-                markerClasses(marker) {
-                    return this.currentTurn === this.allTurnsValue ? 'opacity-80' : 'opacity-100';
-                },
-                shouldDisplayMarker(marker) {
-                    if (this.currentTurn === this.allTurnsValue) {
-                        return true;
-                    }
+                    this.pointerStart = null;
 
-                    const markerTurn = Number(marker.turn_index ?? marker.turnIndex ?? marker.turn ?? null);
-
-                    return ! Number.isNaN(markerTurn) && markerTurn === this.currentTurn;
-                },
-                startLongPress(marker) {
-                    this.queueLongPress(marker);
-                },
-                startKeyLongPress(marker, event) {
-                    if (event?.repeat) {
+                    if (! start || start.id !== event.pointerId || ! this.canEdit) {
                         return;
                     }
 
-                    this.queueLongPress(marker);
-                },
-                queueLongPress(marker) {
-                    if (! this.canEdit) {
+                    if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > TAP_MAX_MOVEMENT) {
                         return;
                     }
-
-                    this.cancelLongPress();
-                    this.closeContextMenu();
-                    this.longPressTarget = marker;
-                    this.longPressTriggered = false;
-                    this.longPressTimeout = setTimeout(() => {
-                        this.longPressTriggered = true;
-                        this.cancelLongPress({ keepTriggered: true });
-                        
-                        // Set confirmation data and open modal
-                        this.$root.deleteConfirmationMessage = `Schot uit ${marker.turn_label || 'deze beurt'} verwijderen?`;
-                        this.$wire.set('pendingDeleteShotId', marker.id);
-                        this.$dispatch('open-modal', { id: 'delete-shot-modal' });
-                    }, this.longPressDelay);
-                },
-                endLongPress(forceCancel = false) {
-                    if (this.longPressTriggered && ! forceCancel) {
-                        this.longPressTriggered = false;
-
-                        return;
-                    }
-
-                    this.cancelLongPress();
-                },
-                cancelLongPress(options = { keepTriggered: false }) {
-                    if (this.longPressTimeout) {
-                        clearTimeout(this.longPressTimeout);
-                    }
-
-                    this.longPressTimeout = null;
-
-                    if (! options.keepTriggered) {
-                        this.longPressTriggered = false;
-                    }
-
-                    this.longPressTarget = null;
-                },
-                openContextMenu(event, marker) {
-                    if (! this.canEdit || ! marker) {
-                        return;
-                    }
-
-                    this.cancelLongPress();
 
                     const rect = this.$refs.board.getBoundingClientRect();
-                    const padding = 12;
-                    const menuWidth = 200;
-                    const menuHeight = 140;
+                    const x = Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1);
+                    const y = Math.min(Math.max((event.clientY - rect.top) / rect.height, 0), 1);
 
-                    const relativeX = event.clientX - rect.left;
-                    const relativeY = event.clientY - rect.top;
-
-                    this.contextMenu.open = true;
-                    this.contextMenu.marker = marker;
-                    this.contextMenu.x = Math.min(Math.max(relativeX, padding), rect.width - menuWidth);
-                    this.contextMenu.y = Math.min(Math.max(relativeY, padding), rect.height - menuHeight);
+                    recordShot(x, y);
                 },
-                closeContextMenu() {
-                    this.contextMenu.open = false;
-                    this.contextMenu.marker = null;
-                },
-                deleteMarker(marker, options = { requireConfirm: true }) {
-                    if (! this.canEdit || ! marker) {
-                        return;
-                    }
-
-                    if (options.requireConfirm !== false) {
-                        // Call Livewire method that shows Filament confirmation
-                        this.$wire.confirmDeleteShot(marker.id);
-                        this.longPressTriggered = false;
-                        this.closeContextMenu();
-                        return;
-                    }
-
-                    // Direct deletion without confirmation
-                    this.$wire.deleteShot(marker.id);
-                    this.longPressTriggered = false;
-                    this.closeContextMenu();
+                cancelPointer() {
+                    this.pointerStart = null;
                 },
             });
         };
 
         if (window.Alpine) {
-            console.log('[SessionShotBoard] Alpine already present, registering immediately');
             registerTargetBoard();
         } else {
-            console.log('[SessionShotBoard] Alpine not ready, awaiting alpine:init');
             document.addEventListener('alpine:init', registerTargetBoard, { once: true });
         }
     })();
